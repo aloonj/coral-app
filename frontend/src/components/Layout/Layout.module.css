@@ -1,0 +1,325 @@
+.navLinks {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.link {
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.adminDropdown {
+  position: relative;
+  display: inline-block;
+  padding: 0.5rem 0;
+}
+
+.adminButton {
+  composes: link;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  background: none;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  width: 100%;
+}
+
+.chevron {
+  transition: transform 0.3s ease;
+}
+
+.adminButton.open .chevron {
+  transform: rotate(180deg);
+}
+
+.adminDropdownContent {
+  position: absolute;
+  background-color: white;
+  min-width: 200px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  border-radius: 6px;
+  padding: 0.5rem 0;
+  z-index: 100;
+  top: calc(100% + 30px); /* Match the increased bridge height */
+  right: 0;
+  transition: all 0.2s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  pointer-events: none;
+}
+
+.adminDropdownContent.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.dropdownLink {
+  color: #333;
+  display: block;
+  padding: 0.75rem 1.25rem;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.dropdownLink:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+@media (min-width: 769px) {
+  .adminDropdown {
+    display: flex;
+    align-items: center;
+  }
+
+  .adminButton {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .adminDropdown::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 30px; /* Increased bridge height for better hover access */
+  }
+
+  .link {
+    transition: all 0.3s ease;
+    background: linear-gradient(to right, transparent 50%, rgba(255,127,80,0.1) 50%);
+    background-size: 200% 100%;
+    background-position: 0 0;
+  }
+
+  .link:hover {
+    background-position: -100% 0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  /* Restore hover behavior on desktop */
+  .adminDropdown:hover .adminDropdownContent {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .adminDropdownContent.show {
+    /* Remove show class styles for desktop since we're using hover */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+.mobileMenu {
+  display: none;
+}
+
+.burgerMenu {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .burgerMenu {
+    display: block;
+    position: fixed;
+    top: 1.5rem;
+    right: max(1.5rem, calc(1.5rem + var(--scrollbar-width, 0px)));
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.2);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1001;
+    padding: 8px;
+    transition: background-color 0.3s ease;
+  }
+
+  .burgerMenu:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .burgerLine {
+    display: block;
+    width: 24px;
+    height: 2px;
+    margin: 5px 0;
+    background-color: white;
+    transition: 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  }
+
+  .burgerMenu.open .burgerLine:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .burgerMenu.open .burgerLine:nth-child(2) {
+    opacity: 0;
+  }
+
+  .burgerMenu.open .burgerLine:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  .logo {
+    transform: scale(0.8);
+    margin-left: -1rem;
+  }
+
+  .navLinks {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Start off-screen to the right */
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(165deg, #20B2AA 0%, #008B8B 100%);
+    padding: 5rem 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    transition: right 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+    justify-content: flex-start;
+    align-items: center;
+    overflow-y: auto;
+    z-index: 1000;
+    overscroll-behavior: contain;
+  }
+
+  .link {
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    justify-content: center;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .link:active {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(0.98);
+  }
+
+  .navLinks a,
+  .navLinks button,
+  .navLinks div {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+  }
+
+  .navLinks a svg,
+  .navLinks button svg,
+  .navLinks div svg {
+    margin: 0 0.5rem;
+  }
+
+  .navLinks div[style*="dropdownStyle"] {
+    padding: 0;
+  }
+
+  .adminDropdown {
+    width: 100%;
+    max-width: 300px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .adminButton {
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    justify-content: center;
+    transition: all 0.2s ease;
+    width: 100%;
+  }
+
+  .adminButton:active {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(0.98);
+  }
+
+  .adminDropdownContent {
+    position: static;
+    width: 100%;
+    max-width: 300px;
+    background-color: transparent;
+    margin-top: 0;
+    padding: 0;
+    box-shadow: none;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out, opacity 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .adminDropdownContent.show {
+    max-height: 500px;
+    opacity: 1;
+    padding-top: 0.5rem;
+  }
+
+  .dropdownLink {
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    margin: 0.25rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    backdrop-filter: blur(10px);
+  }
+
+  .dropdownLink:active {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(0.98);
+  }
+
+  .navLinks.open {
+    right: 0; /* Slide in from the right */
+  }
+
+  /* Prevent any horizontal scrolling */
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+}

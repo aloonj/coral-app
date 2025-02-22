@@ -1,0 +1,163 @@
+
+.container {
+  padding: 2rem;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.error {
+  color: #dc3545;
+  padding: 1rem;
+  margin: 1rem 0;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+}
+
+/* Status Grid */
+.statusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.statusCard {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.statusCard h3 {
+  margin: 0;
+  color: #666;
+  font-size: 1rem;
+}
+
+.count {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+  color: #2c3e50;
+}
+
+.failed {
+  color: #dc3545;
+}
+
+.skipped {
+  color: #6c757d;
+}
+
+/* Table Styles */
+.section {
+  margin: 2rem 0;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section h2 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.tableContainer {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.table tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Buttons */
+.retryButton,
+.retryAllButton,
+.cleanupButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.retryButton {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.retryButton:hover {
+  background-color: #138496;
+}
+
+.retryAllButton {
+  background-color: #6c757d;
+  color: white;
+  margin-top: 1rem;
+}
+
+.retryAllButton:hover {
+  background-color: #5a6268;
+}
+
+.cleanupButton {
+  background-color: #ffc107;
+  color: #212529;
+  margin-left: 1rem;
+}
+
+.cleanupButton:hover {
+  background-color: #e0a800;
+}
+
+/* Cleanup Controls */
+.cleanupControls {
+  display: flex;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.daysInput {
+  width: 80px;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.cleanupNote {
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}

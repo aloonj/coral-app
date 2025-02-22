@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(50, 50)">
+    <!-- Blue Coral -->
+    <path d="M200 50 Q220 20 240 50 Q260 80 280 50 Q300 20 320 50 Q340 80 360 50" fill="none" stroke="#0066cc" stroke-width="20"/>
+    <path d="M180 80 Q200 50 220 80 Q240 110 260 80 Q280 50 300 80 Q320 110 340 80" fill="none" stroke="#0066cc" stroke-width="20"/>
+    <path d="M160 110 Q180 80 200 110 Q220 140 240 110 Q260 80 280 110 Q300 140 320 110" fill="none" stroke="#0066cc" stroke-width="20"/>
+    
+    <!-- Clownfish -->
+    <g transform="translate(200, 100)">
+      <!-- Body -->
+      <path d="M0 0 Q30 -10 60 0 Q90 10 120 0 Q90 30 60 40 Q30 30 0 0" fill="#ff6600"/>
+      <!-- White Stripes -->
+      <path d="M20 5 Q35 0 50 5 Q35 15 20 5" fill="white"/>
+      <path d="M70 5 Q85 0 100 5 Q85 15 70 5" fill="white"/>
+      <!-- Eye -->
+      <circle cx="15" cy="10" r="5" fill="black"/>
+    </g>
+  </g>
+  
+  <!-- Text -->
+  <text x="100" y="400" font-family="Arial" font-size="48" fill="#ff6600">fraggle</text>
+  <text x="250" y="400" font-family="Arial" font-size="48" fill="#0066cc">ROCK</text>
+</svg>
