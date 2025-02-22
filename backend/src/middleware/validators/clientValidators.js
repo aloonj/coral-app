@@ -14,7 +14,10 @@ export const createClientValidator = [
   body('phone')
     .optional()
     .trim()
-    .matches(/^[+\d\s-()]+$/)
+    .custom(value => {
+      if (!value) return true; // Allow empty string
+      return /^[+\d\s-()]+$/.test(value);
+    })
     .withMessage('Phone number can only contain numbers, spaces, +, -, and ()'),
   body('address')
     .optional()
@@ -42,7 +45,10 @@ export const updateClientValidator = [
   body('phone')
     .optional()
     .trim()
-    .matches(/^[+\d\s-()]+$/)
+    .custom(value => {
+      if (!value) return true; // Allow empty string
+      return /^[+\d\s-()]+$/.test(value);
+    })
     .withMessage('Phone number can only contain numbers, spaces, +, -, and ()'),
   body('address')
     .optional()
