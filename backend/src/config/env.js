@@ -14,7 +14,8 @@ const requiredEnvVars = [
   'MYSQL_PASSWORD',
   'DB_HOST',
   'DB_PORT',
-  'JWT_SECRET'
+  'JWT_SECRET',
+  'MYSQL_DATABASE'
 ];
 
 // Optional environment variables with defaults
@@ -56,7 +57,7 @@ const env = {
     password: process.env.MYSQL_PASSWORD,
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT, 10),
-    name: 'coral_management'
+    name: process.env.MYSQL_DATABASE
   },
 
   // JWT
