@@ -310,15 +310,13 @@ export const removeClient = async (req, res) => {
 
     const { id } = req.params;
 
-    // Check if client exists using findByPk for better security
+    // Check if client exists and has any non-archived orders
     const client = await Client.findByPk(id, {
       include: [{
         model: Order,
         as: 'orders',
         where: {
-          status: {
-            [Op.notIn]: ['COMPLETED', 'CANCELLED']
-          }
+          archived: false
         },
         required: false
       }]
@@ -329,11 +327,11 @@ export const removeClient = async (req, res) => {
       return res.status(404).json({ message: 'Client not found' });
     }
 
-    // Check for outstanding orders
+    // Check for any non-archived orders
     if (client.orders && client.orders.length > 0) {
       await t.rollback();
       return res.status(400).json({ 
-        message: 'Cannot remove client with outstanding orders',
+        message: 'Cannot remove client with active orders. Please archive all orders first.',
         orderCount: client.orders.length
       });
     }

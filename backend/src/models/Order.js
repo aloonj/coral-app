@@ -11,7 +11,7 @@ const Order = sequelize.define('Order', {
   },
   clientId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true, // Allow null for archived orders
     references: {
       model: Client,
       key: 'id'
@@ -57,6 +57,16 @@ const Order = sequelize.define('Order', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
     comment: 'Indicates if the completed order has been archived'
+  },
+  archivedClientData: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    comment: 'Stores denormalized client data after archiving'
+  },
+  archivedItemsData: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    comment: 'Stores denormalized order items data after archiving'
   },
   paid: {
     type: DataTypes.BOOLEAN,

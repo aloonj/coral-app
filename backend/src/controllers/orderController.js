@@ -208,7 +208,20 @@ export const getOrders = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
-    res.json(orders);
+    // Transform orders to include archived data
+    const transformedOrders = orders.map(order => {
+      const orderData = order.toJSON();
+      
+      if (orderData.archived) {
+        // Use archived data for client and items
+        orderData.client = orderData.archivedClientData;
+        orderData.items = orderData.archivedItemsData;
+      }
+      
+      return orderData;
+    });
+
+    res.json(transformedOrders);
   } catch (error) {
     console.error('Get orders error:', error);
     res.status(500).json({ message: 'Error fetching orders' });
@@ -236,15 +249,22 @@ export const getOrderById = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Check if user has permission to view this order
+    // For archived orders, check authorization against archived client data
     if (!['ADMIN', 'SUPERADMIN'].includes(req.user.role)) {
       const client = await Client.findOne({ where: { email: req.user.email } });
-      if (!client || order.clientId !== client.id) {
+      if (!client || (order.clientId !== client.id && order.archivedClientData?.id !== client.id)) {
         return res.status(403).json({ message: 'Not authorized to view this order' });
       }
     }
 
-    res.json(order);
+    // Transform order to use archived data if needed
+    const orderData = order.toJSON();
+    if (orderData.archived) {
+      orderData.client = orderData.archivedClientData;
+      orderData.items = orderData.archivedItemsData;
+    }
+
+    res.json(orderData);
   } catch (error) {
     console.error('Get order error:', error);
     res.status(500).json({ message: 'Error fetching order' });
@@ -298,7 +318,19 @@ export const markOrderAsUnpaid = async (req, res) => {
 
 export const archiveOrder = async (req, res) => {
   try {
-    const order = await Order.findByPk(req.params.id);
+    const order = await Order.findByPk(req.params.id, {
+      include: [
+        {
+          model: Client,
+          as: 'client'
+        },
+        {
+          model: Coral,
+          as: 'items',
+          through: { attributes: ['quantity', 'priceAtOrder', 'subtotal'] }
+        }
+      ]
+    });
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -316,8 +348,48 @@ export const archiveOrder = async (req, res) => {
       });
     }
 
-    await order.update({ archived: true });
-    res.json(order);
+    // Prepare denormalized data
+    const clientData = {
+      id: order.client.id,
+      name: order.client.name,
+      email: order.client.email,
+      phone: order.client.phone,
+      address: order.client.address
+    };
+
+    const itemsData = order.items.map(item => ({
+      id: item.id,
+      speciesName: item.speciesName,
+      scientificName: item.scientificName,
+      OrderItem: {
+        quantity: item.OrderItem.quantity,
+        priceAtOrder: item.OrderItem.priceAtOrder,
+        subtotal: item.OrderItem.subtotal
+      }
+    }));
+
+    // Update order with denormalized data and remove relationships
+    await sequelize.transaction(async (t) => {
+      // Store denormalized data and remove client relationship
+      await order.update({
+        archived: true,
+        archivedClientData: clientData,
+        archivedItemsData: itemsData,
+        clientId: null
+      }, { transaction: t });
+
+      // Remove OrderItem associations
+      await OrderItem.destroy({
+        where: { OrderId: order.id },
+        transaction: t
+      });
+    });
+
+    res.json({
+      ...order.toJSON(),
+      client: clientData,
+      items: itemsData
+    });
   } catch (error) {
     console.error('Archive order error:', error);
     res.status(500).json({ message: 'Error archiving order' });
