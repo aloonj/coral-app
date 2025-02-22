@@ -7,6 +7,7 @@ import { createWriteStream } from 'fs';
 import { sequelize } from '../config/database.js';
 import Backup from '../models/Backup.js';
 import User from '../models/User.js';
+import NotificationService from './notificationService.js';
 
 const execAsync = promisify(exec);
 const BACKUP_PATH = process.env.BACKUPS;
@@ -48,6 +49,9 @@ class BackupService {
         size: stats.size,
         completedAt: new Date()
       });
+
+      // Send success notification with backup file
+      await NotificationService.sendBackupSuccessNotification(backup);
       
       await this.cleanupOldBackups();
       return backup;
@@ -63,8 +67,10 @@ class BackupService {
 
   static async createDatabaseBackup(backup) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '');
-    const filename = `database_${timestamp}.sql`;
-    const filepath = path.join(BACKUP_PATH, filename);
+    const sqlFilename = `database_${timestamp}.sql`;
+    const zipFilename = `database_${timestamp}.zip`;
+    const sqlFilepath = path.join(BACKUP_PATH, sqlFilename);
+    const zipFilepath = path.join(BACKUP_PATH, zipFilename);
 
     // Ensure backup directory exists
     await fs.mkdir(BACKUP_PATH, { recursive: true });
@@ -76,14 +82,38 @@ class BackupService {
       throw new Error('Database credentials are not properly configured. Please check environment variables.');
     }
 
-    const dumpCommand = `mysqldump -u ${MYSQL_USER} -p${MYSQL_PASSWORD} -h ${DB_HOST} -P ${DB_PORT} ${MYSQL_DATABASE} > ${filepath}`;
+    const dumpCommand = `mysqldump -u ${MYSQL_USER} -p${MYSQL_PASSWORD} -h ${DB_HOST} -P ${DB_PORT} ${MYSQL_DATABASE} > ${sqlFilepath}`;
     
     try {
       await execAsync(dumpCommand);
+      
+      // Create zip archive
+      const output = createWriteStream(zipFilepath);
+      const archive = archiver('zip', { zlib: { level: 9 } });
+      
+      archive.pipe(output);
+      archive.file(sqlFilepath, { name: sqlFilename });
+      
+      await new Promise((resolve, reject) => {
+        output.on('close', resolve);
+        archive.on('error', reject);
+        archive.finalize();
+      });
+
+      // Delete the temporary SQL file
+      await fs.unlink(sqlFilepath);
+      
+      await backup.update({ path: zipFilepath });
     } catch (error) {
+      // Clean up any temporary files
+      try {
+        await fs.unlink(sqlFilepath);
+        await fs.unlink(zipFilepath);
+      } catch (cleanupError) {
+        console.error('Error during cleanup:', cleanupError);
+      }
       throw new Error(`Database backup failed: ${error.message}`);
     }
-    await backup.update({ path: filepath });
   }
 
   static async createImagesBackup(backup) {
