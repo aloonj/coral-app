@@ -210,11 +210,13 @@ module.exports = {
       },
       clientId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'clients',
           key: 'id'
-        }
+        },
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE'
       },
       status: {
         type: Sequelize.ENUM('PENDING', 'CONFIRMED', 'PROCESSING', 'READY_FOR_PICKUP', 'COMPLETED', 'CANCELLED'),
@@ -303,6 +305,49 @@ module.exports = {
       }
     });
 
+    // Create backups table
+    await queryInterface.createTable('backups', {
+      id: {
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
+        primaryKey: true
+      },
+      type: {
+        type: Sequelize.ENUM('full', 'database', 'images'),
+        allowNull: false
+      },
+      status: {
+        type: Sequelize.ENUM('pending', 'in_progress', 'success', 'failed'),
+        defaultValue: 'pending',
+        allowNull: false
+      },
+      size: {
+        type: Sequelize.BIGINT,
+        allowNull: true,
+        comment: 'Size in bytes'
+      },
+      path: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      error: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      completedAt: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: false
+      }
+    });
+
     // Create unique constraint on OrderItems
     await queryInterface.addConstraint('OrderItems', {
       fields: ['OrderId', 'CoralId'],
@@ -374,6 +419,7 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     // Drop tables in reverse order to handle foreign key constraints
+    await queryInterface.dropTable('backups');
     await queryInterface.dropTable('notification_queue');
     await queryInterface.dropTable('OrderItems');
     await queryInterface.dropTable('Orders');
