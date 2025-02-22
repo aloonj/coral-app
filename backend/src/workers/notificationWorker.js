@@ -17,10 +17,19 @@ async function processNotification(notification) {
     if (notification.type === 'STATUS_UPDATE' || notification.type === 'ORDER_CONFIRMATION') {
       // First verify the order exists and get associated client
       const order = await Order.findByPk(notification.payload.orderId, {
-        include: [{
-          model: Client,
-          as: 'client'
-        }]
+        include: [
+          {
+            model: Client,
+            as: 'client'
+          },
+          {
+            model: Coral,
+            as: 'items',
+            through: {
+              attributes: ['quantity']
+            }
+          }
+        ]
       });
       
       if (!order || !order.client) {

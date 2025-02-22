@@ -25,7 +25,7 @@ class NotificationService {
   // Internal methods for actual sending
   static async _sendEmail(to, subject, html) {
     if (!emailTransporter) {
-      console.log(`[Email Disabled] Would have sent email from ${env.email.from} to ${to}:`);
+      console.log(`[Email Disabled] Would have sent email from ${env.email.from} to ${to} and cc ${env.email.from}:`);
       console.log(`Subject: ${subject}`);
       console.log(`Content: ${html.replace(/\n\s*/g, ' ').replace(/<[^>]*>/g, '')}`);
       return true;
@@ -34,6 +34,7 @@ class NotificationService {
       const info = await emailTransporter.sendMail({
         from: env.email.from,
         to,
+        cc: env.email.from,
         subject,
         html
       });
@@ -91,23 +92,35 @@ class NotificationService {
   }
 
   static async processStatusNotification(order, client, statusHistory = null) {
-    const subject = 'Order Status Update';
+    const subject = `Order #${order.id} Status Update for ${client.name}`;
     let message, emailHtml;
     
     if (statusHistory) {
       message = `Your order #${order.id} status changed from ${statusHistory.from} to ${statusHistory.to}`;
       emailHtml = `
         <h2>Order Status Update</h2>
+        <p>Dear ${client.name},</p>
         <p>${message}</p>
         <p><small>(${statusHistory.steps} status changes were batched into this notification)</small></p>
-        <p>Thank you for your business!</p>
+        <h3>Order Summary:</h3>
+        <ul>
+          ${order.items?.map(item => `<li>${item.OrderItem.quantity}x ${item.speciesName}</li>`).join('\n          ') || 'No items found'}
+        </ul>
+        <p>Thanks,</p>
+        <p>Fraggle Rock</p>
       `;
     } else {
       message = `Your order #${order.id} status has been updated to: ${order.status}`;
       emailHtml = `
         <h2>Order Status Update</h2>
+        <p>Dear ${client.name},</p>
         <p>${message}</p>
-        <p>Thank you for your business!</p>
+        <h3>Order Summary:</h3>
+        <ul>
+          ${order.items?.map(item => `<li>${item.OrderItem.quantity}x ${item.speciesName}</li>`).join('\n          ') || 'No items found'}
+        </ul>
+        <p>Thanks,</p>
+        <p>Fraggle Rock</p>
       `;
     }
 
