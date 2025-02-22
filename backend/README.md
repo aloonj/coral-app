@@ -11,6 +11,9 @@ A comprehensive backend system for managing coral inventory, orders, and client 
 - 📢 News bulletin system
 - 📁 File upload handling for coral images
 - 🔄 Automatic stock level management
+- 💾 Automated backup system
+- 👥 Client management portal
+- 📊 Advanced notification queue system
 
 ## Prerequisites
 
@@ -41,6 +44,8 @@ A comprehensive backend system for managing coral inventory, orders, and client 
    - SMTP settings for email
    - Twilio credentials for WhatsApp (optional)
    - Admin user details
+   - Backup configuration
+   - Notification settings
 
 5. Create the MySQL database:
    ```sql
@@ -97,6 +102,28 @@ The server will start on http://localhost:5000 by default.
 - DELETE /api/bulletins/:id - Delete bulletin (Admin)
 - GET /api/bulletins/unread-count - Get unread bulletins count
 
+### Backups
+- GET /api/backups - List all backups
+- POST /api/backups - Trigger manual backup
+- GET /api/backups/:id - Get backup details
+- GET /api/backups/:id/download - Download backup file
+- DELETE /api/backups/:id - Delete backup
+
+### Notifications
+- GET /api/notifications - List notifications
+- POST /api/notifications - Create notification
+- PUT /api/notifications/:id/read - Mark notification as read
+- DELETE /api/notifications/:id - Delete notification
+- GET /api/notifications/unread-count - Get unread count
+
+### Clients
+- GET /api/clients - List all clients
+- POST /api/clients - Create new client
+- GET /api/clients/:id - Get client details
+- PUT /api/clients/:id - Update client
+- DELETE /api/clients/:id - Delete client
+- GET /api/clients/:id/orders - Get client orders
+
 ## Environment Variables
 
 Required environment variables:
@@ -116,6 +143,15 @@ JWT_EXPIRES_IN=24h
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=secure_password
 ADMIN_NAME="System Admin"
+
+# Backup Configuration
+BACKUP_DIRECTORY=/path/to/backups
+BACKUP_RETENTION_DAYS=30
+BACKUP_SCHEDULE="0 0 * * *"
+
+# Notification Queue Configuration
+QUEUE_PROCESSING_INTERVAL=5000
+MAX_RETRY_ATTEMPTS=3
 ```
 
 Optional environment variables:
@@ -132,6 +168,11 @@ SMTP_FROM="Coral Management System <your_email@gmail.com>"
 TWILIO_ACCOUNT_SID=your_account_sid
 TWILIO_AUTH_TOKEN=your_auth_token
 TWILIO_WHATSAPP_NUMBER=your_whatsapp_number
+
+# Image Upload Configuration
+MAX_FILE_SIZE=5242880
+ALLOWED_FILE_TYPES=".jpg,.jpeg,.png,.webp"
+IMAGE_COMPRESSION_QUALITY=80
 ```
 
 ## File Structure
@@ -144,8 +185,26 @@ src/
 ├── models/         # Database models
 ├── routes/         # API routes
 ├── services/       # Business logic
+├── utils/          # Utility functions
+├── workers/        # Background workers
+│   ├── backupWorker.js    # Automated backup system
+│   └── notificationWorker.js # Notification queue processor
 └── server.js       # Application entry point
 ```
+
+## Background Workers
+
+### Backup Worker
+- Runs on a configurable schedule (default: daily at midnight)
+- Creates compressed database backups
+- Manages backup retention
+- Supports manual trigger through API
+
+### Notification Worker
+- Processes notification queue
+- Handles retry logic for failed notifications
+- Supports multiple notification channels (email, WhatsApp)
+- Manages notification status and history
 
 ## Error Handling
 
@@ -166,6 +225,9 @@ The API uses standard HTTP status codes and returns errors in the following form
 - Input validation
 - File upload restrictions
 - CORS configuration
+- Rate limiting
+- Request sanitization
+- SQL injection protection
 
 ## Contributing
 
