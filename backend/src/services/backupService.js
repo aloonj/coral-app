@@ -5,6 +5,7 @@ import path from 'path';
 import archiver from 'archiver';
 import { createWriteStream } from 'fs';
 import Backup from '../models/Backup.js';
+import User from '../models/User.js';
 
 const execAsync = promisify(exec);
 const BACKUP_PATH = process.env.BACKUPS;
@@ -127,6 +128,26 @@ class BackupService {
 
   static async getBackup(id) {
     return Backup.findByPk(id);
+  }
+
+  static async getLastSuccessfulBackupByType(type) {
+    return Backup.findOne({
+      where: { 
+        status: 'success',
+        type: type
+      },
+      order: [['completedAt', 'DESC']]
+    });
+  }
+
+  static async getAdminUsers() {
+    return User.findAll({
+      where: {
+        role: ['SUPERADMIN', 'ADMIN'],
+        status: 'ACTIVE'
+      },
+      attributes: ['email', 'name', 'role']
+    });
   }
 
   static async deleteBackup(id) {

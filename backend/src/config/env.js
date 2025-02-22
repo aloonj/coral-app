@@ -50,7 +50,9 @@ const env = {
   backup: {
     directory: process.env.BACKUPS,
     retentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS, 10),
-    scheduleTime: process.env.BACKUP_SCHEDULE_TIME || "0 2 * * *"
+    scheduleTime: process.env.BACKUP_SCHEDULE_TIME || "0 2 * * *",
+    monitorSchedule: process.env.BACKUP_MONITOR_SCHEDULE || "0 9 * * *", // Default 9 AM daily
+    maxAgeHours: parseInt(process.env.BACKUP_MAX_AGE_HOURS, 10) || 48 // Default 48 hours
   },
 
   // Server

@@ -186,6 +186,47 @@ class NotificationService {
     await this._sendEmail(user.email, subject, emailHtml, options);
   }
 
+  static async sendBackupAlert(message) {
+    const subject = 'Backup System Alert';
+    
+    // Get all active admin users
+    const adminUsers = await BackupService.getAdminUsers();
+    
+    if (adminUsers.length === 0) {
+      // Fallback to system email if no admins found
+      console.warn('No admin users found for backup alert, using system email');
+      const emailHtml = `
+        <h2>Backup System Alert</h2>
+        <p style="color: #d32f2f;">${message}</p>
+        <p>Please check the backup system to ensure it's functioning correctly.</p>
+        <p><strong>Warning: No admin users found in system!</strong></p>
+      `;
+      await this._sendEmail(env.email.from, subject, emailHtml);
+      return;
+    }
+
+    // Send personalized emails to each admin
+    await Promise.all(adminUsers.map(async (admin) => {
+      const emailHtml = `
+        <h2>Backup System Alert</h2>
+        <p>Dear ${admin.name},</p>
+        <p style="color: #d32f2f;">${message}</p>
+        <p>Please check the backup system to ensure it's functioning correctly.</p>
+        <p>You are receiving this as a ${admin.role.toLowerCase()} user.</p>
+      `;
+      
+      await this._sendEmail(admin.email, subject, emailHtml);
+      
+      // If WhatsApp is configured and admin has phone number
+      if (env.whatsapp.isConfigured && admin.phone) {
+        await this._sendWhatsApp(
+          admin.phone,
+          `Backup Alert: ${message}\nPlease check the backup system.`
+        );
+      }
+    }));
+  }
+
   // Queue notifications
   static async queueOrderConfirmation(order) {
     await NotificationQueueService.queueNotification('ORDER_CONFIRMATION', {
