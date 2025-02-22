@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import { Order } from '../models/Order.js';
 import { sequelize, Op } from '../config/database.js';
 import bcrypt from 'bcrypt';
+import NotificationService from '../services/notificationService.js';
 
 export const updateClient = async (req, res) => {
   const t = await sequelize.transaction();
@@ -111,6 +112,9 @@ export const regeneratePassword = async (req, res) => {
     try {
       await user.save({ transaction: t });
       await t.commit();
+      
+      // Send temporary password email
+      await NotificationService.sendTemporaryPasswordEmail(user, tempPassword);
       
       // Return the new temporary password
       res.json({ temporaryPassword: tempPassword });
@@ -268,6 +272,9 @@ export const createClient = async (req, res) => {
       }, { transaction: t });
 
       await t.commit();
+
+      // Send temporary password email
+      await NotificationService.sendTemporaryPasswordEmail(user, tempPassword);
 
       // Include the temporary password in the response
       res.status(201).json({
