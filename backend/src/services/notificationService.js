@@ -148,18 +148,18 @@ class NotificationService {
     );
   }
 
-  static async processLowStockNotification(coral, admin) {
-    const subject = 'Low Stock Alert';
-    const message = `Low stock alert for ${coral.speciesName}. Current quantity: ${coral.quantity} (Minimum: ${coral.minimumStock})`;
+  static async processLowStockNotification(coral) {
+    const isOutOfStock = coral.quantity === 0;
+    const subject = isOutOfStock ? 'URGENT: Out of Stock Alert' : 'Low Stock Alert';
+    const message = isOutOfStock
+      ? `URGENT: ${coral.speciesName} is now OUT OF STOCK (0 remaining)`
+      : `Low stock alert for ${coral.speciesName}. Current quantity: ${coral.quantity} (Minimum: ${coral.minimumStock})`;
     const emailHtml = `
-      <h2>Low Stock Alert</h2>
+      <h2>${subject}</h2>
       <p>${message}</p>
     `;
 
-    await Promise.all([
-      this._sendEmail(admin.email, subject, emailHtml),
-      admin.phone && this._sendWhatsApp(admin.phone, message)
-    ]);
+    await this._sendEmail(env.email.from, subject, emailHtml);
   }
 
   // Queue notifications
@@ -196,10 +196,9 @@ class NotificationService {
     });
   }
 
-  static async queueLowStockAlert(coral, admin) {
+  static async queueLowStockAlert(coral) {
     await NotificationQueueService.queueNotification('LOW_STOCK', {
       coralId: coral.id,
-      adminId: admin.id,
       coralData: {
         speciesName: coral.speciesName,
         quantity: coral.quantity,

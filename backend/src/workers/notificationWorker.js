@@ -108,10 +108,8 @@ async function processNotification(notification) {
       }
     } else if (notification.type === 'LOW_STOCK') {
       const coral = await Coral.findByPk(notification.payload.coralId);
-      const admin = await User.findOne({ where: { role: 'ADMIN' } });
-
-      if (coral && admin) {
-        await NotificationService.processLowStockNotification(coral, admin);
+      if (coral) {
+        await NotificationService.processLowStockNotification(coral);
         await NotificationQueueService.markAsCompleted(notification.id);
       }
     } else {

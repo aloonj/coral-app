@@ -143,15 +143,12 @@ export const createOrder = async (req, res) => {
         );
         
         if (lowStockCorals.length > 0) {
-          const admin = await Client.findOne({ where: { role: 'ADMIN' } });
-          if (admin) {
-            await Promise.all(
-              lowStockCorals.map(async update => {
-                const coral = await Coral.findByPk(update.id);
-                return NotificationService.queueLowStockAlert(coral, admin);
-              })
-            );
-          }
+          await Promise.all(
+            lowStockCorals.map(async update => {
+              const coral = await Coral.findByPk(update.id);
+              return NotificationService.queueLowStockAlert(coral);
+            })
+          );
         }
       })()
     ]).catch(error => {
