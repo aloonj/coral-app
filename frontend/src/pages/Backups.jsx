@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { backupService } from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 import styles from './Backups.module.css';
 
 const formatCronTime = (cronExpression) => {
@@ -195,14 +196,14 @@ const Backups = () => {
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Created</span>
                 <span className={styles.infoValue}>
-                  {new Date(backup.createdAt).toLocaleString()}
+                  {formatDate(backup.createdAt)}
                 </span>
               </div>
               {backup.completedAt && (
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>Completed</span>
                   <span className={styles.infoValue}>
-                    {new Date(backup.completedAt).toLocaleString()}
+                    {formatDate(backup.completedAt)}
                   </span>
                 </div>
               )}

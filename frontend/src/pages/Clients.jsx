@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 import styles from './Clients.module.css';
 
 const Clients = () => {
@@ -329,7 +330,7 @@ const Clients = () => {
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Join Date</span>
                 <span className={styles.infoValue}>
-                  {new Date(client.createdAt).toLocaleDateString()}
+                  {formatDate(client.createdAt)}
                 </span>
               </div>
             </div>

@@ -1,6 +1,7 @@
 
 
 import React, { useState, useEffect } from 'react';
+import { formatDate } from '../utils/dateUtils';
 import { orderService } from '../services/api';
 import StatusBadge from '../components/Orders/StatusBadge';
 import PaymentBadge from '../components/Orders/PaymentBadge';
@@ -262,7 +263,7 @@ const Orders = () => {
       <div className={styles.orderHeader}>
         <div>
           <div className={styles.orderNumber}>Order #{order.id}</div>
-          <div className={styles.orderDate}>{new Date(order.createdAt).toLocaleDateString()}</div>
+          <div className={styles.orderDate}>{formatDate(order.createdAt)}</div>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <PaymentBadge paid={order.paid} />
@@ -277,9 +278,7 @@ const Orders = () => {
         </div>
         <div className={styles.infoItem}>
           <span className={styles.infoLabel}>Pickup Date</span>
-          <span className={styles.infoValue}>
-            {order.preferredPickupDate ? new Date(order.preferredPickupDate).toLocaleDateString() : '-'}
-          </span>
+          <span className={styles.infoValue}>{formatDate(order.preferredPickupDate)}</span>
         </div>
         <div className={styles.infoItem}>
           <span className={styles.infoLabel}>Items</span>

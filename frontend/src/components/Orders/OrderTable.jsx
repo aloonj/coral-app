@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDate } from '../../utils/dateUtils';
 import StatusBadge from './StatusBadge';
 import PaymentBadge from './PaymentBadge';
 import OrderDetails from './OrderDetails';
@@ -171,10 +172,8 @@ const OrderTable = ({
               <tr>
                 <td style={styles.td}>#{order.id}</td>
                 <td style={styles.td}>{order.client?.name || 'Unknown Client'}</td>
-                <td style={styles.td}>{new Date(order.createdAt).toLocaleDateString()}</td>
-                <td style={styles.td}>
-                  {order.preferredPickupDate ? new Date(order.preferredPickupDate).toLocaleDateString() : '-'}
-                </td>
+                <td style={styles.td}>{formatDate(order.createdAt)}</td>
+                <td style={styles.td}>{formatDate(order.preferredPickupDate)}</td>
                 <td style={styles.td}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button

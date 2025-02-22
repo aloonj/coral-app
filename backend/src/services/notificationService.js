@@ -84,7 +84,7 @@ class NotificationService {
       <p>${message}</p>
       <p>Order Details:</p>
       <ul>
-        <li>Total Amount: $${order.totalAmount}</li>
+        <li>Total Amount: £${order.totalAmount}</li>
         <li>Status: ${order.status}</li>
         ${order.preferredPickupDate ? `<li>Preferred Pickup Date: ${new Date(order.preferredPickupDate).toLocaleDateString()}</li>` : ''}
       </ul>

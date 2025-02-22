@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { orderService } from '../services/api';
 import styles from './ClientOrders.module.css';
@@ -32,7 +33,7 @@ const OrderTable = ({ orders, title }) => {
             </div>
             <div className={styles['order-date']}>
               <strong>Date: </strong>
-              {new Date(order.createdAt).toLocaleDateString()}
+              {formatDate(order.createdAt)}
             </div>
             <div className={styles['order-items']}>
               <strong>Items:</strong>
