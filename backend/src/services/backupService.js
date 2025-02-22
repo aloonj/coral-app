@@ -16,6 +16,15 @@ if (!BACKUP_PATH) {
 const RETENTION_DAYS = process.env.BACKUP_RETENTION_DAYS || 30;
 
 class BackupService {
+  static getBackupConfiguration() {
+    return {
+      scheduleTime: process.env.BACKUP_SCHEDULE_TIME,
+      monitorSchedule: process.env.BACKUP_MONITOR_SCHEDULE,
+      retentionDays: process.env.BACKUP_RETENTION_DAYS,
+      maxAgeHours: process.env.BACKUP_MAX_AGE_HOURS
+    };
+  }
+
   static async createBackup(type = 'database') {
     const backup = await Backup.create({ type });
     

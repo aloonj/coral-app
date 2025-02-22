@@ -6,9 +6,27 @@
 
 .headerContainer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 1.5rem;
   margin-bottom: 2rem;
+}
+
+.configInfo {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border-left: 4px solid #28a745;
+}
+
+.configItem {
+  color: #495057;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.configItem:last-child {
+  margin-bottom: 0;
 }
 
 .header {
@@ -19,6 +37,7 @@
 .actions {
   display: flex;
   gap: 1rem;
+  align-self: flex-end;
 }
 
 .actionButton {

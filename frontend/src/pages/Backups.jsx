@@ -2,12 +2,36 @@ import { useState, useEffect } from 'react';
 import { backupService } from '../services/api';
 import styles from './Backups.module.css';
 
+const formatCronTime = (cronExpression) => {
+  if (!cronExpression) return 'Not configured';
+  const [minute, hour] = cronExpression.split(' ');
+  if (minute === '0') {
+    return `${parseInt(hour)}:00 AM`;
+  }
+  const hour12 = hour > 12 ? hour - 12 : hour;
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minute.padStart(2, '0')} ${ampm}`;
+};
+
 const Backups = () => {
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [creating, setCreating] = useState(false);
   const [pollingInterval, setPollingInterval] = useState(null);
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await backupService.getBackupConfig();
+        setConfig(response.data);
+      } catch (err) {
+        console.error('Failed to load backup configuration:', err);
+      }
+    };
+    loadConfig();
+  }, []);
 
   // Function to start polling
   const startPolling = (isInitial = false) => {
@@ -125,6 +149,14 @@ const Backups = () => {
     <div className={styles.container}>
       <div className={styles.headerContainer}>
         <h1 className={styles.header}>System Backups</h1>
+        {config && (
+          <div className={styles.configInfo}>
+            <div className={styles.configItem}>✓ Automatic backups are configured to run daily at {formatCronTime(config.scheduleTime)}</div>
+            <div className={styles.configItem}>✓ Backup health is monitored daily at {formatCronTime(config.monitorSchedule)}</div>
+            <div className={styles.configItem}>✓ Backups are retained for {config.retentionDays} days</div>
+            <div className={styles.configItem}>✓ System alerts if successful backups are older than {config.maxAgeHours} hours</div>
+          </div>
+        )}
         <div className={styles.actions}>
           <button 
             onClick={() => handleCreateBackup('database')}

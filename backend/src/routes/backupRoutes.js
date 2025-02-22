@@ -4,6 +4,16 @@ import BackupService from '../services/backupService.js';
 
 const router = express.Router();
 
+// Get backup configuration
+router.get('/config', authenticate, async (req, res) => {
+  try {
+    const config = BackupService.getBackupConfiguration();
+    res.json(config);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // List all backups
 router.get('/', authenticate, async (req, res) => {
   try {
