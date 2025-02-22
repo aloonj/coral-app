@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import User from '../models/User.js';
 import Client from '../models/Client.js';
 import sequelize from '../config/database.js';
+import NotificationService from '../services/notificationService.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -46,9 +47,11 @@ export const addAdminUser = async (req, res) => {
       role: 'ADMIN'
     });
 
+    // Send email with temporary password
+    await NotificationService.sendTemporaryPasswordEmail(user, temporaryPassword);
+
     res.status(201).json({
-      message: 'Admin user created successfully',
-      temporaryPassword,
+      message: 'Admin user created successfully. A temporary password has been sent to their email.',
       user: {
         id: user.id,
         email: user.email,
@@ -87,9 +90,11 @@ export const regenerateAdminPassword = async (req, res) => {
     user.password = temporaryPassword;
     await user.save();
 
+    // Send email with temporary password
+    await NotificationService.sendTemporaryPasswordEmail(user, temporaryPassword);
+
     res.json({
-      message: 'Password regenerated successfully',
-      temporaryPassword
+      message: 'Password regenerated successfully. A temporary password has been sent to the user\'s email.'
     });
   } catch (error) {
     console.error('Regenerate admin password error:', error);

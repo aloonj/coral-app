@@ -62,9 +62,8 @@ const AdminUsers = () => {
     setSuccess('');
 
     try {
-      const response = await api.post('/auth/admins', formData);
-      const { temporaryPassword } = response.data;
-      setSuccess(`Admin user added successfully. Temporary password: ${temporaryPassword}`);
+      await api.post('/auth/admins', formData);
+      setSuccess('Admin user added successfully. A temporary password has been sent to their email.');
       setShowAddForm(false);
       setFormData({ name: '', email: '', password: '' });
       fetchAdminUsers();
@@ -77,14 +76,18 @@ const AdminUsers = () => {
     setError('');
     setSuccess('');
 
-    const confirmed = window.confirm('Are you sure you want to reset this admin user\'s password? They will need to use the new temporary password to log in.');
+    const confirmed = window.confirm('Are you sure you want to reset this admin user\'s password? A new temporary password will be sent to their email.');
     if (!confirmed) {
       return;
     }
 
     try {
-      const response = await api.post(`/auth/admins/${id}/regenerate-password`);
-      setSuccess(`New temporary password: ${response.data.temporaryPassword}`);
+      await api.post(`/auth/admins/${id}/regenerate-password`, {}, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      setSuccess('Password reset successfully. A new temporary password has been sent to the user\'s email.');
     } catch (error) {
       setError(error.response?.data?.message || 'Error regenerating password');
     }

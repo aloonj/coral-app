@@ -23,21 +23,26 @@ const twilioClient = env.whatsapp.isConfigured && env.whatsapp.accountSid && env
 
 class NotificationService {
   // Internal methods for actual sending
-  static async _sendEmail(to, subject, html) {
+  static async _sendEmail(to, subject, html, options = { ccSender: true }) {
     if (!emailTransporter) {
-      console.log(`[Email Disabled] Would have sent email from ${env.email.from} to ${to} and cc ${env.email.from}:`);
+      console.log(`[Email Disabled] Would have sent email from ${env.email.from} to ${to}${options.ccSender ? ` and cc ${env.email.from}` : ''}:`);
       console.log(`Subject: ${subject}`);
       console.log(`Content: ${html.replace(/\n\s*/g, ' ').replace(/<[^>]*>/g, '')}`);
       return true;
     }
     try {
-      const info = await emailTransporter.sendMail({
+      const mailOptions = {
         from: env.email.from,
         to,
-        cc: env.email.from,
         subject,
         html
-      });
+      };
+      
+      if (options.ccSender) {
+        mailOptions.cc = env.email.from;
+      }
+      
+      const info = await emailTransporter.sendMail(mailOptions);
       console.log(`Email sent from ${env.email.from} to ${to}`);
       console.log('Message ID:', info.messageId);
       console.log('Mail server response:', info.response);
@@ -160,6 +165,25 @@ class NotificationService {
     `;
 
     await this._sendEmail(env.email.from, subject, emailHtml);
+  }
+
+  static async sendTemporaryPasswordEmail(user, temporaryPassword) {
+    const subject = 'Your Temporary Password';
+    // Don't CC the sender for password reset emails
+    const options = { ccSender: false };
+    const emailHtml = `
+      <h2>Temporary Password Reset</h2>
+      <p>Dear ${user.name},</p>
+      <p>Your password has been reset. Here is your temporary password:</p>
+      <p style="font-family: monospace; font-size: 1.2em; padding: 10px; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;">
+        ${temporaryPassword}
+      </p>
+      <p>Please log in with this temporary password and change it immediately for security purposes.</p>
+      <p>Thanks,</p>
+      <p>Fraggle Rock</p>
+    `;
+
+    await this._sendEmail(user.email, subject, emailHtml, options);
   }
 
   // Queue notifications
