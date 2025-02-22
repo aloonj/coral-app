@@ -299,9 +299,12 @@ export const createClient = async (req, res) => {
 };
 
 export const removeClient = async (req, res) => {
+  const t = await sequelize.transaction();
+  
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      await t.rollback();
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -322,21 +325,32 @@ export const removeClient = async (req, res) => {
     });
 
     if (!client) {
+      await t.rollback();
       return res.status(404).json({ message: 'Client not found' });
     }
 
     // Check for outstanding orders
     if (client.orders && client.orders.length > 0) {
+      await t.rollback();
       return res.status(400).json({ 
         message: 'Cannot remove client with outstanding orders',
         orderCount: client.orders.length
       });
     }
 
-    // Remove client using Sequelize's destroy method which is parameterized
-    await client.destroy();
-    res.json({ message: 'Client removed successfully' });
+    // Delete associated user first
+    await User.destroy({ 
+      where: { email: client.email },
+      transaction: t 
+    });
+
+    // Then delete the client
+    await client.destroy({ transaction: t });
+    
+    await t.commit();
+    res.json({ message: 'Client and associated user account removed successfully' });
   } catch (error) {
+    await t.rollback();
     console.error('Error removing client:', error);
     res.status(500).json({ message: 'Error removing client' });
   }
