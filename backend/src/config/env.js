@@ -46,6 +46,13 @@ Object.entries(envDefaults).forEach(([key, value]) => {
 
   // Environment configuration object
 const env = {
+  // Backup
+  backup: {
+    directory: process.env.BACKUPS,
+    retentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS, 10),
+    scheduleTime: process.env.BACKUP_SCHEDULE_TIME || "0 2 * * *"
+  },
+
   // Server
   nodeEnv: process.env.NODE_ENV,
   port: parseInt(process.env.PORT, 10),

@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import AdminUsers from './pages/AdminUsers';
 import ImageManagement from './pages/ImageManagement';
 import Notifications from './pages/Notifications';
+import Backups from './pages/Backups';
 const RootRedirect = () => {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -140,6 +141,14 @@ function App() {
               element={
                 <ProtectedRoute requireAdmin>
                   <Notifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/backups"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <Backups />
                 </ProtectedRoute>
               }
             />

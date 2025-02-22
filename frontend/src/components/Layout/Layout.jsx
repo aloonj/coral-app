@@ -276,6 +276,9 @@ const Layout = ({ children }) => {
                         <Link to="/notifications" className={styles.dropdownLink}>
                           Notifications
                         </Link>
+                        <Link to="/backups" className={styles.dropdownLink}>
+                          Backups
+                        </Link>
                       </div>
                     </div>
                   )}

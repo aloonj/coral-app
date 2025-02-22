@@ -15,6 +15,7 @@ import bulletinRoutes from './routes/bulletinRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import imageRoutes from './routes/imageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import backupRoutes from './routes/backupRoutes.js';
 
 // Make Op available globally for models
 global.Op = Op;
@@ -65,6 +66,7 @@ app.use('/api/bulletins', bulletinRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/backups', backupRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

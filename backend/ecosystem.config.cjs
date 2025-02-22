@@ -47,6 +47,30 @@ module.exports = {
       time: true,
       merge_logs: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
+    },
+    {
+      name: 'coral-backup-worker',
+      script: 'src/workers/backupWorker.js',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 5000,
+        HOST: 'localhost'
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 5000,
+        HOST: 'localhost'
+      },
+      error_file: 'logs/backup-err.log',
+      out_file: 'logs/backup-out.log',
+      log_file: 'logs/backup-combined.log',
+      time: true,
+      merge_logs: true,
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
     }
   ]
 };

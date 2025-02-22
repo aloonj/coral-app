@@ -177,4 +177,11 @@ export const notificationService = {
   sendTestNotification: () => api.post('/notifications/test', {}),
 };
 
+export const backupService = {
+  getAllBackups: () => api.get('/backups'),
+  createBackup: (type = 'full') => api.post('/backups', { type }),
+  downloadBackup: (id) => api.get(`/backups/${id}/download`, { responseType: 'blob' }),
+  deleteBackup: (id) => api.delete(`/backups/${id}`),
+};
+
 export default api;

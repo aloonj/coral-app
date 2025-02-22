@@ -3,6 +3,7 @@ import Coral from './Coral.js';
 import User from './User.js';
 import { Order } from './Order.js';
 import Client from './Client.js';
+import Backup from './Backup.js';
 
 // Define associations
 Coral.belongsTo(User, {
@@ -32,4 +33,4 @@ Order.belongsTo(Client, {
   as: 'client'
 });
 
-export { Category, Coral, User, Order, Client };
+export { Category, Coral, User, Order, Client, Backup };
