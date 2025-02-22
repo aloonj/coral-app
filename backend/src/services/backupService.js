@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import archiver from 'archiver';
 import { createWriteStream } from 'fs';
+import { sequelize } from '../config/database.js';
 import Backup from '../models/Backup.js';
 import User from '../models/User.js';
 
@@ -105,7 +106,7 @@ class BackupService {
 
     const oldBackups = await Backup.findAll({
       where: {
-        createdAt: { $lt: cutoffDate },
+        createdAt: { [sequelize.Sequelize.Op.lt]: cutoffDate },
         status: 'success'
       }
     });
@@ -143,7 +144,7 @@ class BackupService {
   static async getAdminUsers() {
     return User.findAll({
       where: {
-        role: ['SUPERADMIN', 'ADMIN'],
+        role: { [sequelize.Sequelize.Op.in]: ['SUPERADMIN', 'ADMIN'] },
         status: 'ACTIVE'
       },
       attributes: ['email', 'name', 'role']

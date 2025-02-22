@@ -33,32 +33,62 @@ process.on('SIGTERM', () => {
 
 // Monitor backup status
 cron.schedule(env.backup.monitorSchedule, async () => {
-  console.log('Checking backup status...');
+  try {
+    console.log('Starting backup status check...');
+    console.log('Monitor schedule:', env.backup.monitorSchedule);
+    console.log('Max age hours:', env.backup.maxAgeHours);
 
-  // Check database backups
-  const lastDbBackup = await BackupService.getLastSuccessfulBackupByType('database');
-  if (!lastDbBackup) {
-    await NotificationService.sendBackupAlert('No successful database backups found');
-  } else {
-    const hoursDbBackup = (Date.now() - lastDbBackup.completedAt) / (1000 * 60 * 60);
-    if (hoursDbBackup > env.backup.maxAgeHours) {
-      await NotificationService.sendBackupAlert(
-        `Last successful database backup was ${Math.floor(hoursDbBackup)} hours ago`
-      );
-    }
-  }
+    // Check database backups
+    console.log('Checking database backups...');
+    const lastDbBackup = await BackupService.getLastSuccessfulBackupByType('database');
+    console.log('Last database backup:', lastDbBackup ? {
+      id: lastDbBackup.id,
+      completedAt: lastDbBackup.completedAt,
+      status: lastDbBackup.status
+    } : 'None found');
 
-  // Check image backups
-  const lastImgBackup = await BackupService.getLastSuccessfulBackupByType('images');
-  if (!lastImgBackup) {
-    await NotificationService.sendBackupAlert('No successful image backups found');
-  } else {
-    const hoursImgBackup = (Date.now() - lastImgBackup.completedAt) / (1000 * 60 * 60);
-    if (hoursImgBackup > env.backup.maxAgeHours) {
-      await NotificationService.sendBackupAlert(
-        `Last successful image backup was ${Math.floor(hoursImgBackup)} hours ago`
-      );
+    if (!lastDbBackup) {
+      console.log('No database backups found, sending alert...');
+      await NotificationService.sendBackupAlert('No successful database backups found');
+    } else {
+      const hoursDbBackup = (Date.now() - new Date(lastDbBackup.completedAt).getTime()) / (1000 * 60 * 60);
+      console.log('Hours since last database backup:', hoursDbBackup);
+      
+      if (hoursDbBackup > env.backup.maxAgeHours) {
+        console.log('Database backup too old, sending alert...');
+        await NotificationService.sendBackupAlert(
+          `Last successful database backup was ${Math.floor(hoursDbBackup)} hours ago`
+        );
+      }
     }
+
+    // Check image backups
+    console.log('Checking image backups...');
+    const lastImgBackup = await BackupService.getLastSuccessfulBackupByType('images');
+    console.log('Last image backup:', lastImgBackup ? {
+      id: lastImgBackup.id,
+      completedAt: lastImgBackup.completedAt,
+      status: lastImgBackup.status
+    } : 'None found');
+
+    if (!lastImgBackup) {
+      console.log('No image backups found, sending alert...');
+      await NotificationService.sendBackupAlert('No successful image backups found');
+    } else {
+      const hoursImgBackup = (Date.now() - new Date(lastImgBackup.completedAt).getTime()) / (1000 * 60 * 60);
+      console.log('Hours since last image backup:', hoursImgBackup);
+      
+      if (hoursImgBackup > env.backup.maxAgeHours) {
+        console.log('Image backup too old, sending alert...');
+        await NotificationService.sendBackupAlert(
+          `Last successful image backup was ${Math.floor(hoursImgBackup)} hours ago`
+        );
+      }
+    }
+
+    console.log('Backup status check completed');
+  } catch (error) {
+    console.error('Error during backup status check:', error);
   }
 });
 

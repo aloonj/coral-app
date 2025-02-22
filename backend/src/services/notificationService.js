@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import twilio from 'twilio';
 import env from '../config/env.js';
 import NotificationQueueService from './notificationQueueService.js';
+import BackupService from './backupService.js';
 
 // Email configuration
 const emailTransporter = env.email.isConfigured
@@ -187,44 +188,66 @@ class NotificationService {
   }
 
   static async sendBackupAlert(message) {
-    const subject = 'Backup System Alert';
-    
-    // Get all active admin users
-    const adminUsers = await BackupService.getAdminUsers();
-    
-    if (adminUsers.length === 0) {
-      // Fallback to system email if no admins found
-      console.warn('No admin users found for backup alert, using system email');
-      const emailHtml = `
-        <h2>Backup System Alert</h2>
-        <p style="color: #d32f2f;">${message}</p>
-        <p>Please check the backup system to ensure it's functioning correctly.</p>
-        <p><strong>Warning: No admin users found in system!</strong></p>
-      `;
-      await this._sendEmail(env.email.from, subject, emailHtml);
-      return;
-    }
-
-    // Send personalized emails to each admin
-    await Promise.all(adminUsers.map(async (admin) => {
-      const emailHtml = `
-        <h2>Backup System Alert</h2>
-        <p>Dear ${admin.name},</p>
-        <p style="color: #d32f2f;">${message}</p>
-        <p>Please check the backup system to ensure it's functioning correctly.</p>
-        <p>You are receiving this as a ${admin.role.toLowerCase()} user.</p>
-      `;
+    try {
+      console.log('Sending backup alert:', message);
+      const subject = 'Backup System Alert';
       
-      await this._sendEmail(admin.email, subject, emailHtml);
+      // Get all active admin users
+      console.log('Fetching admin users...');
+      const adminUsers = await BackupService.getAdminUsers();
+      console.log('Found admin users:', adminUsers.map(u => ({ 
+        name: u.name, 
+        email: u.email, 
+        role: u.role 
+      })));
       
-      // If WhatsApp is configured and admin has phone number
-      if (env.whatsapp.isConfigured && admin.phone) {
-        await this._sendWhatsApp(
-          admin.phone,
-          `Backup Alert: ${message}\nPlease check the backup system.`
-        );
+      if (adminUsers.length === 0) {
+        // Fallback to system email if no admins found
+        console.warn('No admin users found for backup alert, using system email:', env.email.from);
+        const emailHtml = `
+          <h2>Backup System Alert</h2>
+          <p style="color: #d32f2f;">${message}</p>
+          <p>Please check the backup system to ensure it's functioning correctly.</p>
+          <p><strong>Warning: No admin users found in system!</strong></p>
+        `;
+        await this._sendEmail(env.email.from, subject, emailHtml, { ccSender: false });
+        return;
       }
-    }));
+
+      // Send personalized emails to each admin
+      console.log('Sending personalized emails to admins...');
+      await Promise.all(adminUsers.map(async (admin) => {
+        console.log(`Preparing email for admin: ${admin.name} (${admin.role})`);
+        const emailHtml = `
+          <h2>Backup System Alert</h2>
+          <p>Dear ${admin.name},</p>
+          <p style="color: #d32f2f;">${message}</p>
+          <p>Please check the backup system to ensure it's functioning correctly.</p>
+          <p>You are receiving this as a ${admin.role.toLowerCase()} user.</p>
+        `;
+        
+        try {
+          await this._sendEmail(admin.email, subject, emailHtml, { ccSender: false });
+          console.log(`Email sent successfully to ${admin.email}`);
+          
+          // If WhatsApp is configured and admin has phone number
+          if (env.whatsapp.isConfigured && admin.phone) {
+            console.log(`Sending WhatsApp message to ${admin.phone}`);
+            await this._sendWhatsApp(
+              admin.phone,
+              `Backup Alert: ${message}\nPlease check the backup system.`
+            );
+          }
+        } catch (error) {
+          console.error(`Failed to send notifications to admin ${admin.name}:`, error);
+        }
+      }));
+      
+      console.log('Backup alert notifications completed');
+    } catch (error) {
+      console.error('Error in sendBackupAlert:', error);
+      throw error; // Re-throw to be caught by the worker
+    }
   }
 
   // Queue notifications
