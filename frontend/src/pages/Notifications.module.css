@@ -1,6 +1,11 @@
-
 .container {
-  padding: 2rem;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 2rem;
+  }
 }
 
 .loading {
@@ -24,30 +29,56 @@
 /* Status Grid */
 .statusGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin: 2rem 0;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+@media (min-width: 768px) {
+  .statusGrid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+  }
 }
 
 .statusCard {
   background: white;
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
+@media (min-width: 768px) {
+  .statusCard {
+    padding: 1.5rem;
+  }
+}
+
 .statusCard h3 {
   margin: 0;
   color: #666;
-  font-size: 1rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .statusCard h3 {
+    font-size: 1rem;
+  }
 }
 
 .count {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: bold;
   margin: 0.5rem 0;
   color: #2c3e50;
+}
+
+@media (min-width: 768px) {
+  .count {
+    font-size: 2rem;
+  }
 }
 
 .failed {
@@ -60,34 +91,63 @@
 
 /* Table Styles */
 .section {
-  margin: 2rem 0;
+  margin: 1rem 0;
   background: white;
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 768px) {
+  .section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+  }
 }
 
 .section h2 {
   margin-top: 0;
   color: #2c3e50;
+  font-size: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .section h2 {
+    font-size: 1.5rem;
+  }
 }
 
 .tableContainer {
   overflow-x: auto;
   margin: 1rem 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .table {
+    font-size: 1rem;
+  }
 }
 
 .table th,
 .table td {
-  padding: 0.75rem;
+  padding: 0.5rem;
   text-align: left;
   border-bottom: 1px solid #e9ecef;
+}
+
+@media (min-width: 768px) {
+  .table th,
+  .table td {
+    padding: 0.75rem;
+  }
 }
 
 .table th {
@@ -110,11 +170,23 @@
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+@media (min-width: 768px) {
+  .retryButton,
+  .retryAllButton,
+  .cleanupButton {
+    width: auto;
+    margin: 0;
+  }
 }
 
 .retryButton {
   background-color: #17a2b8;
   color: white;
+  font-size: 0.875rem;
 }
 
 .retryButton:hover {
@@ -124,7 +196,6 @@
 .retryAllButton {
   background-color: #6c757d;
   color: white;
-  margin-top: 1rem;
 }
 
 .retryAllButton:hover {
@@ -134,7 +205,6 @@
 .cleanupButton {
   background-color: #ffc107;
   color: #212529;
-  margin-left: 1rem;
 }
 
 .cleanupButton:hover {
@@ -144,16 +214,35 @@
 /* Cleanup Controls */
 .cleanupControls {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
   margin: 1rem 0;
 }
 
+@media (min-width: 768px) {
+  .cleanupControls {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+  }
+
+  .cleanupButton {
+    margin-left: 1rem;
+  }
+}
+
 .daysInput {
-  width: 80px;
+  width: 100%;
   padding: 0.5rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+  .daysInput {
+    width: 80px;
+  }
 }
 
 .cleanupNote {
