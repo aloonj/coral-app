@@ -410,17 +410,40 @@ const Orders = () => {
           <div>
             {collapsedSections.has('archived') ? '▶' : '▼'} Archived Orders ({getFilteredArchivedOrders().length})
           </div>
-          <select
-            value={timeFilter}
-            onChange={(e) => setTimeFilter(e.target.value)}
-            className={styles.filterSelect}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <option value="all">All Time</option>
-            <option value="week">Past Week</option>
-            <option value="month">Past Month</option>
-            <option value="year">Past Year</option>
-          </select>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm('Are you sure you want to purge all archived orders? This action cannot be undone.')) {
+                  orderService.purgeArchivedOrders()
+                    .then(() => {
+                      setOrders(prev => ({
+                        ...prev,
+                        archived: []
+                      }));
+                    })
+                    .catch(err => {
+                      console.error('Error purging archived orders:', err);
+                      setError('Failed to purge archived orders: ' + (err.response?.data?.message || err.message));
+                    });
+                }
+              }}
+              className={`${styles.actionButton} ${styles.cancelled}`}
+            >
+              Purge All
+            </button>
+            <select
+              value={timeFilter}
+              onChange={(e) => setTimeFilter(e.target.value)}
+              className={styles.filterSelect}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <option value="all">All Time</option>
+              <option value="week">Past Week</option>
+              <option value="month">Past Month</option>
+              <option value="year">Past Year</option>
+            </select>
+          </div>
         </div>
         {!collapsedSections.has('archived') && (
           <div className={styles.orderGrid}>

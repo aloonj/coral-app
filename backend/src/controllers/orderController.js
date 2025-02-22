@@ -646,3 +646,20 @@ export const deleteOrder = async (req, res) => {
     res.status(500).json({ message: 'Error deleting order' });
   }
 };
+
+export const purgeArchivedOrders = async (req, res) => {
+  try {
+    // Delete all archived orders
+    const result = await Order.destroy({
+      where: { archived: true }
+    });
+
+    res.json({ 
+      message: 'Archived orders purged successfully',
+      count: result
+    });
+  } catch (error) {
+    console.error('Purge archived orders error:', error);
+    res.status(500).json({ message: 'Error purging archived orders' });
+  }
+};

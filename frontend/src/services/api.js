@@ -150,6 +150,7 @@ export const orderService = {
     return api.put(`/orders/${id}/status`, data);
   },
   deleteOrder: (id) => api.delete(`/orders/${id}`),
+  purgeArchivedOrders: () => api.delete('/orders/purge/archived'),
 };
 
 export const bulletinService = {

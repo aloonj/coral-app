@@ -10,7 +10,8 @@ import {
   deleteOrder,
   archiveOrder,
   markOrderAsPaid,
-  markOrderAsUnpaid
+  markOrderAsUnpaid,
+  purgeArchivedOrders
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -114,6 +115,12 @@ router.delete('/:id',
   authenticate,
   authorize('ADMIN', 'SUPERADMIN'),
   deleteOrder
+);
+
+router.delete('/purge/archived',
+  authenticate,
+  authorize('ADMIN', 'SUPERADMIN'),
+  purgeArchivedOrders
 );
 
 export default router;
