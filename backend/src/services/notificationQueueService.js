@@ -7,7 +7,7 @@ class NotificationQueueService {
       return await NotificationQueue.create({
         type,
         payload,
-        batchWindow: options.batchWindow || 30, // Default 30 seconds
+        batchWindow: options.batchWindow || 300, // Default 5 minutes
         maxAttempts: options.maxAttempts || 3,
         nextAttempt: options.delay ? new Date(Date.now() + options.delay) : new Date()
       });
@@ -44,11 +44,11 @@ class NotificationQueueService {
     
     const notifications = await NotificationQueue.findAll({
       where: {
-        status: 'PENDING',
         type: 'STATUS_UPDATE',
         createdAt: {
           [Op.between]: [startTime, endTime]
-        }
+        },
+        status: 'PENDING' // Only include pending notifications
       },
       order: [['createdAt', 'ASC']]
     });

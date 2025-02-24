@@ -87,7 +87,7 @@ class NotificationService {
       <p>Order Details:</p>
       <ul>
         <li>Total Amount: £${order.totalAmount}</li>
-        <li>Status: ${order.status}</li>
+        <li>Status: ${order.status === 'READY_FOR_PICKUP' ? 'Ready for Pickup/Delivery' : order.status}</li>
         ${order.preferredPickupDate ? `<li>Preferred Pickup Date: ${new Date(order.preferredPickupDate).toLocaleDateString()}</li>` : ''}
       </ul>
       <p>We'll notify you when your order status changes.</p>
@@ -103,13 +103,28 @@ class NotificationService {
     const subject = `Order #${order.id} Status Update for ${client.name}`;
     let message, emailHtml;
     
+    const formatStatus = (status) => status === 'READY_FOR_PICKUP' ? 'Ready for Pickup/Delivery' : status;
+    
     if (statusHistory) {
-      message = `Your order #${order.id} status changed from ${statusHistory.from} to ${statusHistory.to}`;
+      const { from, to, steps, intermediateStatuses = [] } = statusHistory;
+      
+      // Create status progression message
+      let statusProgression = `${formatStatus(from)}`;
+      if (intermediateStatuses.length > 0) {
+        statusProgression += ` → ${intermediateStatuses.map(formatStatus).join(' → ')}`;
+      }
+      statusProgression += ` → ${formatStatus(to)}`;
+      
+      message = `Your order #${order.id} has progressed through the following statuses: ${statusProgression}`;
       emailHtml = `
         <h2>Order Status Update</h2>
         <p>Dear ${client.name},</p>
         <p>${message}</p>
-        <p><small>(${statusHistory.steps} status changes were batched into this notification)</small></p>
+        <p><small>(${steps} status changes were batched into this notification)</small></p>
+        <div style="margin: 20px 0; padding: 10px; background-color: #f5f5f5; border-radius: 4px;">
+          <p style="margin: 0;"><strong>Status Progression:</strong></p>
+          <p style="margin: 10px 0;">${statusProgression}</p>
+        </div>
         <h3>Order Summary:</h3>
         <ul>
           ${order.items?.map(item => `<li>${item.OrderItem.quantity}x ${item.speciesName}</li>`).join('\n          ') || 'No items found'}
@@ -118,7 +133,7 @@ class NotificationService {
         <p>Fraggle Rock</p>
       `;
     } else {
-      message = `Your order #${order.id} status has been updated to: ${order.status}`;
+      message = `Your order #${order.id} status has been updated to: ${formatStatus(order.status)}`;
       emailHtml = `
         <h2>Order Status Update</h2>
         <p>Dear ${client.name},</p>

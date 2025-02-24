@@ -92,7 +92,7 @@ const Orders = () => {
     const statusMessages = {
       CONFIRMED: 'Are you sure you want to confirm this order?',
       PROCESSING: 'Are you sure you want to mark this order as processing?',
-      READY_FOR_PICKUP: 'Are you sure you want to mark this order as ready for pickup?',
+      READY_FOR_PICKUP: 'Are you sure you want to mark this order as ready for pickup/delivery?',
       COMPLETED: 'Are you sure you want to mark this order as completed?',
       CANCELLED: 'Are you sure you want to cancel this order? This action cannot be undone.',
       PENDING: 'Are you sure you want to move this order back to pending?',
@@ -321,9 +321,10 @@ const Orders = () => {
               className={`${styles.actionButton} ${styles[nextStatus.toLowerCase()]}`}
             >
               {nextStatus === 'CANCELLED' ? 'Cancel Order' : 
-               'Mark as ' + nextStatus.replace(/_/g, ' ').split(' ').map(word => 
-                 word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-               ).join(' ') + ' →'}
+               'Mark as ' + (nextStatus === 'READY_FOR_PICKUP' ? 'Ready for Pickup/Delivery' :
+                 nextStatus.replace(/_/g, ' ').split(' ').map(word => 
+                   word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                 ).join(' ')) + ' →'}
             </button>
           ))}
 

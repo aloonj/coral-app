@@ -114,7 +114,7 @@ Coral.belongsToMany(Order, {
 
 // Hooks
 Order.addHook('beforeValidate', (order) => {
-  // Initialize notifications if new order
+  // Initialize notifications array if new order
   if (!order.notificationsSent) {
     order.notificationsSent = [{
       type: 'ORDER_CREATED',
@@ -122,7 +122,7 @@ Order.addHook('beforeValidate', (order) => {
       status: 'PENDING'
     }];
   }
-  // Add status change notification if status changed
+  // Only track status changes in the notifications array, don't trigger notifications
   else if (order.changed('status')) {
     const notifications = [...order.notificationsSent];
     notifications.push({

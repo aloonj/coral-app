@@ -36,7 +36,7 @@ const OrderStats = ({ orders, isAdmin, onStatusSelect, selectedStatus }) => {
 
   const gridStyle = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(125px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
     gap: '1rem',
     marginBottom: '2rem'
   };
@@ -57,12 +57,14 @@ const OrderStats = ({ orders, isAdmin, onStatusSelect, selectedStatus }) => {
   });
 
   const titleStyle = (color) => ({
-    fontSize: '1.25rem',
+    fontSize: '1.125rem',
     marginBottom: '0.5rem',
     fontWeight: 'bold',
     color: color,
     display: 'flex',
-    alignItems: 'center'
+    alignItems: 'center',
+    wordBreak: 'break-word',
+    hyphens: 'auto'
   });
 
   const numberStyle = {
@@ -170,7 +172,7 @@ const OrderStats = ({ orders, isAdmin, onStatusSelect, selectedStatus }) => {
         }}
       >
         <div style={titleStyle('#285E61')}>
-          Ready for Pickup
+          Ready for Pickup/Delivery
         </div>
         <div style={numberStyle}>{stats.readyForPickup}</div>
       </div>
@@ -239,7 +241,7 @@ const ActiveOrdersGrid = ({ orders, onStatusUpdate, selectedStatus, newOrderId }
               borderRadius: '0.25rem',
               fontSize: '0.875rem'
             }}>
-              {order.status.replace('_', ' ')}
+              {order.status === 'READY_FOR_PICKUP' ? 'Ready for Pickup/Delivery' : order.status.replace('_', ' ')}
             </span>
           </div>
           
@@ -333,9 +335,10 @@ const ActiveOrdersGrid = ({ orders, onStatusUpdate, selectedStatus, newOrderId }
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    Mark as {nextStatus.replace(/_/g, ' ').split(' ').map(word => 
-                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                    ).join(' ')} →
+                    Mark as {nextStatus === 'READY_FOR_PICKUP' ? 'Ready for Pickup/Delivery' :
+                      nextStatus.replace(/_/g, ' ').split(' ').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                      ).join(' ')} →
                   </button>
                 )}
               </div>
@@ -441,7 +444,7 @@ const Dashboard = () => {
               const statusMessages = {
                 CONFIRMED: 'Are you sure you want to confirm this order?',
                 PROCESSING: 'Are you sure you want to mark this order as processing?',
-                READY_FOR_PICKUP: 'Are you sure you want to mark this order as ready for pickup?',
+                READY_FOR_PICKUP: 'Are you sure you want to mark this order as ready for pickup/delivery?',
                 COMPLETED: 'Are you sure you want to mark this order as completed?',
                 PENDING: 'Are you sure you want to move this order back to pending?'
               };

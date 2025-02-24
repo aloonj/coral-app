@@ -13,6 +13,9 @@ const getStatusColor = (status) => {
 };
 
 const formatStatus = (status) => {
+  if (status === 'READY_FOR_PICKUP') {
+    return 'Ready for Pickup/Delivery';
+  }
   return status.replace(/_/g, ' ')
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())

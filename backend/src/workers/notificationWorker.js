@@ -43,56 +43,59 @@ async function processNotification(notification) {
       const batchNotifications = await NotificationQueueService.findBatchableNotifications(notification);
       console.log(`Found ${batchNotifications.length} notifications for this order`);
       
-      if (batchNotifications.length > 1) {
-        console.log(`Processing batch of ${batchNotifications.length} notifications`);
-        console.log('Notification IDs in batch:', batchNotifications.map(n => n.id).join(', '));
+      if (notification.type === 'STATUS_UPDATE') {
+        // For status updates, always check for batching
+        const isOldestInBatch = batchNotifications[0]?.id === notification.id;
         
-        // Find the oldest notification in the batch
-        const oldestNotification = batchNotifications[0];
-        console.log(`Oldest notification in batch: ${oldestNotification.id}`);
-        
-        if (oldestNotification.id === notification.id) {
-          console.log('This is the oldest notification - processing entire batch');
-          
-          // Process batch
-          const firstStatus = batchNotifications[0].payload.statusAtQueue;
-          const lastStatus = batchNotifications[batchNotifications.length - 1].payload.statusAtQueue;
-
-          console.log(`Processing status transition: ${firstStatus} -> ${lastStatus} (${batchNotifications.length} steps)`);
-
-          const orderData = order.toJSON();
-          await NotificationService.processStatusNotification(
-            orderData,
-            order.client,
-            {
-              from: firstStatus,
-              to: lastStatus,
-              steps: batchNotifications.length
-            }
-          );
-
-          // Mark all notifications in batch as completed
-          await NotificationQueueService.markAsCompleted(
-            batchNotifications.map(n => n.id)
-          );
+        if (batchNotifications.length > 1) {
+          if (isOldestInBatch) {
+            console.log(`Processing batch of ${batchNotifications.length} notifications`);
+            console.log('Notification IDs in batch:', batchNotifications.map(n => n.id).join(', '));
+            
+            // Get all unique statuses in order
+            const statusChanges = batchNotifications
+              .map(n => n.payload.statusAtQueue)
+              .filter((status, index, array) => array.indexOf(status) === index);
+            
+            console.log(`Status progression: ${statusChanges.join(' -> ')}`);
+            
+            const orderData = order.toJSON();
+            await NotificationService.processStatusNotification(
+              orderData,
+              order.client,
+              {
+                from: statusChanges[0],
+                to: statusChanges[statusChanges.length - 1],
+                steps: statusChanges.length,
+                intermediateStatuses: statusChanges.slice(1, -1)
+              }
+            );
+            
+            // Mark all notifications in batch as completed at once
+            console.log('Marking all notifications in batch as completed');
+            await NotificationQueueService.markAsCompleted(
+              batchNotifications.map(n => n.id)
+            );
+          } else {
+            // If not the oldest, mark this notification as completed since it will be handled by the oldest
+            console.log(`Notification ${notification.id} is part of a batch but not the oldest - marking as completed`);
+            await NotificationQueueService.markAsCompleted(notification.id);
+          }
+          return;
         } else {
-          console.log(`Notification ${notification.id} is newer - skipping as part of batch`);
+          // Process single notification (no batch)
+          console.log(`Processing single notification for order #${order.id}`);
+          const orderData = order.toJSON();
+          await NotificationService.processStatusNotification(orderData, order.client);
           await NotificationQueueService.markAsCompleted(notification.id);
         }
-        return;
-      }
-
-      // Process single notification
-      console.log(`Processing single notification for order #${order.id}`);
-      const orderData = order.toJSON();
-      
-      if (notification.type === 'STATUS_UPDATE') {
-        await NotificationService.processStatusNotification(orderData, order.client);
       } else { // ORDER_CONFIRMATION
+        // Process order confirmation immediately
+        console.log(`Processing order confirmation for order #${order.id}`);
+        const orderData = order.toJSON();
         await NotificationService.processOrderConfirmation(orderData, order.client);
+        await NotificationQueueService.markAsCompleted(notification.id);
       }
-      
-      await NotificationQueueService.markAsCompleted(notification.id);
     } else if (notification.type === 'BULLETIN') {
       const bulletin = await Bulletin.findByPk(notification.payload.bulletinId);
       const users = await User.findAll({
@@ -130,7 +133,7 @@ async function processNotifications() {
     for (const notification of notifications) {
       await processNotification(notification);
     }
-  } catch (error) {
+   } catch (error) {
     console.error('Error in notification processing loop:', error);
   }
 
