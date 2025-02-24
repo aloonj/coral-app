@@ -457,13 +457,5 @@ const EditCoral = () => {
     </div>
   );
 };
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-};
 
 export default EditCoral;
