@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 import styles from './AdminUsers.module.css';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -241,7 +242,7 @@ const AdminUsers = () => {
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Join Date</span>
                 <span className={styles.infoValue}>
-                  {new Date(user.createdAt).toLocaleDateString()}
+                  {formatDate(user.createdAt)}
                 </span>
               </div>
             </div>
