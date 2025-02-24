@@ -82,6 +82,16 @@
   gap: 1rem;
 }
 
+.button {
+  padding: 0.5rem 1rem;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
 .imageInput {
   composes: input;
   flex: 1;
@@ -151,16 +161,6 @@
   margin-top: 1rem;
   display: flex;
   gap: 1rem;
-}
-
-.button {
-  padding: 0.5rem 1rem;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s;
 }
 
 .submitButton {
