@@ -275,7 +275,7 @@ const QuickOrder = () => {
       {isAdmin && (
         <div className={styles.clientSelector}>
           <label>
-            Select Client:
+            Order on behalf of:
             <select
               value={selectedClient}
               onChange={(e) => setSelectedClient(e.target.value)}
