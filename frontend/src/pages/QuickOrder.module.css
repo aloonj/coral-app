@@ -5,11 +5,45 @@
   position: relative;
 }
 
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
 .header {
   font-size: 2rem;
   font-weight: bold;
-  margin-bottom: 1.5rem;
   color: #2D3748;
+  margin: 0;
+}
+
+.layoutToggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.layoutButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  background-color: #EDF2F7;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #4A5568;
+}
+
+.layoutButton:hover {
+  background-color: #E2E8F0;
+}
+
+.layoutButton.active {
+  background-color: #4299E1;
+  color: white;
 }
 
 .clientSelector {
@@ -34,13 +68,22 @@
 
 .coralGrid {
   display: grid;
-  grid-template-columns: 1fr;
   gap: 0.75rem;
   margin-top: 0.75rem;
   /* Ensure space for the fixed footer */
   padding-bottom: 100px;
   position: relative;
   z-index: 1;
+}
+
+/* List view (default) */
+.list {
+  grid-template-columns: 1fr;
+}
+
+/* Grid view */
+.grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 }
 
 .categoryHeader {
@@ -70,23 +113,44 @@
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   overflow: hidden;
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
   margin: 0 0.5rem;
   position: relative;
   z-index: 2;
 }
 
+/* List view card (default) */
+.listCard {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+/* Grid view card */
+.gridCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .imageContainer {
   position: relative;
-  width: 400px;
-  height: 250px;
-  flex-shrink: 0;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* List view image container */
+.listCard .imageContainer {
+  width: 400px;
+  height: 250px;
+  flex-shrink: 0;
+}
+
+/* Grid view image container */
+.gridCard .imageContainer {
+  width: 100%;
+  height: 200px;
 }
 
 .image {
@@ -107,9 +171,20 @@
 .cardContent {
   padding: 1rem;
   flex-grow: 1;
+}
+
+/* List view card content */
+.listCard .cardContent {
   display: flex;
   flex-direction: row;
   gap: 2rem;
+}
+
+/* Grid view card content */
+.gridCard .cardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .cardMainContent {
@@ -120,10 +195,19 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  min-width: 200px;
-  justify-content: center;
   position: relative;
   z-index: 2;
+}
+
+/* List view side content */
+.listCard .cardSideContent {
+  min-width: 200px;
+  justify-content: center;
+}
+
+/* Grid view side content */
+.gridCard .cardSideContent {
+  margin-top: auto;
 }
 
 .coralName {
@@ -307,17 +391,42 @@
   .cardSideContent {
     width: 100%;
   }
+  
+  /* Force list view on tablet */
+  .coralGrid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .coralCard {
+    flex-direction: row !important;
+  }
+  
+  .gridCard .imageContainer {
+    width: 300px;
+    height: 200px;
+  }
 }
 
 @media (max-width: 768px) {
   .container {
     padding: 0.5rem;
   }
+  
+  .headerContainer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
 
   .header {
     font-size: 1.5rem;
-    margin-bottom: 1rem;
     padding: 0 0.5rem;
+  }
+  
+  /* Hide layout toggle on mobile */
+  .layoutToggle {
+    display: none;
   }
 
   .clientSelector {
@@ -331,7 +440,7 @@
   }
 
   .coralGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     gap: 0.75rem;
   }
 
@@ -342,12 +451,12 @@
 
   .coralCard {
     margin: 0 0.5rem;
-    flex-direction: column;
+    flex-direction: column !important;
   }
 
   .imageContainer {
-    width: 100%;
-    height: 200px;
+    width: 100% !important;
+    height: 200px !important;
   }
 
   .cardContent {

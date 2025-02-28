@@ -22,6 +22,16 @@ const QuickOrder = () => {
   const showAdditionalDetails = import.meta.env.VITE_SHOW_ADDITIONAL_CORAL_DETAILS === 'true';
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedCoral, setSelectedCoral] = useState(null);
+  const [layoutView, setLayoutView] = useState(() => {
+    // Get saved layout preference from localStorage or default to 'list'
+    const savedLayout = localStorage.getItem('quickOrderLayout');
+    return savedLayout || 'list';
+  });
+
+  // Save layout preference to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('quickOrderLayout', layoutView);
+  }, [layoutView]);
 
   const loadingStyle = {
     display: 'flex',
@@ -270,7 +280,37 @@ const QuickOrder = () => {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.header}>Order Corals</h1>
+      <div className={styles.headerContainer}>
+        <h1 className={styles.header}>Order Corals</h1>
+        <div className={styles.layoutToggle}>
+          <button 
+            className={`${styles.layoutButton} ${layoutView === 'list' ? styles.active : ''}`}
+            onClick={() => setLayoutView('list')}
+            title="List View"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+          </button>
+          <button 
+            className={`${styles.layoutButton} ${layoutView === 'grid' ? styles.active : ''}`}
+            onClick={() => setLayoutView('grid')}
+            title="Grid View"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </button>
+        </div>
+      </div>
 
       {isAdmin && (
         <div className={styles.clientSelector}>
@@ -292,7 +332,7 @@ const QuickOrder = () => {
         </div>
       )}
 
-      <div className={styles.coralGrid}>
+      <div className={`${styles.coralGrid} ${styles[layoutView]}`}>
         {categories.map(category => {
           const categoryCorals = groupedCorals[category.id] || [];
           
@@ -315,7 +355,7 @@ const QuickOrder = () => {
               </div>
             </div>,
             ...(!collapsedCategories.has(category.id) ? categoryCorals.map(coral => (
-              <div key={coral.id} className={styles.coralCard}>
+              <div key={coral.id} className={`${styles.coralCard} ${styles[`${layoutView}Card`]}`}>
                 <div className={styles.imageContainer}>
                   <ImageGallery
                     images={[coral.imageUrl]}
