@@ -204,7 +204,7 @@ const Layout = ({ children }) => {
                 }
               }}
             >
-                  {user && (
+              {user && (
                 <>
                   <Link to="/dashboard" className={styles.link}>
                     <FaChartBar size={18} />

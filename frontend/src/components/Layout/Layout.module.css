@@ -207,6 +207,14 @@
     overscroll-behavior: contain;
   }
 
+  /* Ensure all links in the mobile menu are visible */
+  .navLinks > a, 
+  .navLinks > div {
+    display: flex !important;
+    width: 100%;
+    max-width: 300px;
+  }
+
   .link {
     padding: 1rem;
     border-radius: 8px;
