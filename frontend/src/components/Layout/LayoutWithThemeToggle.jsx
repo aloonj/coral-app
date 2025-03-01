@@ -400,10 +400,11 @@ const LayoutWithThemeToggle = ({ children }) => {
               '& .MuiDrawer-paper': { 
                 width: 220,
                 boxSizing: 'border-box',
-                position: 'relative',
-                height: '100%',
+                position: 'fixed',
+                height: 'calc(100vh - 64px)',
                 top: '64px', // Ensure it's below the AppBar
                 overflowX: 'hidden',
+                borderRight: '1px solid rgba(0,0,0,0.12)', // Optional: add a subtle border
               },
             }}
             open
