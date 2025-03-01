@@ -84,13 +84,21 @@ const LayoutWithThemeToggle = ({ children }) => {
 
   // Create separate drawer content for mobile and desktop to ensure proper rendering
   const drawerContent = (
-    <Box sx={{ width: 220, overflowX: 'hidden' }}>
-      <Divider />
-      
+    <Box sx={{ 
+      width: 220, 
+      overflowX: 'hidden',
+      marginTop: 0
+    }}>
       {user ? (
-        <List>
-          {/* Dashboard menu item - ensure it's visible on both mobile and desktop */}
-          <ListItem button onClick={() => handleNavigation('/dashboard')}>
+        <List sx={{ 
+          padding: '16px 0'
+        }}>
+          {/* Dashboard menu item */}
+          <ListItem 
+            button 
+            onClick={() => handleNavigation('/dashboard')}
+            data-testid="dashboard-menu-item"
+          >
             <ListItemIcon>
               <DashboardIcon />
             </ListItemIcon>
@@ -366,7 +374,17 @@ const LayoutWithThemeToggle = ({ children }) => {
             }}
             sx={{
               display: { xs: 'block', md: 'none' },
-              '& .MuiDrawer-paper': { width: 220, overflowX: 'hidden' },
+              '& .MuiDrawer-paper': { 
+                width: 220, 
+                overflowX: 'hidden',
+                paddingTop: '80px', /* Ensure content starts below the app bar */
+                '& .MuiList-root': {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  padding: '1rem 0'
+                }
+              },
             }}
           >
             {drawerContent}
