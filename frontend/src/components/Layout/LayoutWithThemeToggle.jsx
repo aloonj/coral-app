@@ -272,7 +272,8 @@ const LayoutWithThemeToggle = ({ children }) => {
                 sx={{ 
                   color: theme.palette.secondary.main,
                   fontWeight: 500,
-                  fontFamily: 'Quicksand, VAG Rounded, sans-serif'
+                  fontFamily: 'Quicksand, VAG Rounded, sans-serif',
+                  textShadow: theme.palette.mode === 'dark' ? '0px 0px 4px rgba(255,255,255,0.3)' : 'none'
                 }}
               >
                 fraggle
@@ -280,11 +281,12 @@ const LayoutWithThemeToggle = ({ children }) => {
               <Typography 
                 variant="h6" 
                 sx={{ 
-                  color: '#0066CC',
+                  color: theme.palette.mode === 'dark' ? '#4D94FF' : '#0066CC', // Brighter blue in dark mode
                   fontWeight: 700,
                   fontFamily: 'Raleway, "Source Sans Pro", "Work Sans", sans-serif',
                   marginLeft: '2px',
-                  letterSpacing: '0.02em'
+                  letterSpacing: '0.02em',
+                  textShadow: theme.palette.mode === 'dark' ? '0px 0px 4px rgba(255,255,255,0.3)' : 'none'
                 }}
               >
                 ROCK
@@ -383,7 +385,18 @@ const LayoutWithThemeToggle = ({ children }) => {
                   flexDirection: 'column',
                   gap: '0.5rem',
                   padding: '1rem 0'
-                }
+                },
+                // Improve dark mode visibility
+                ...(theme.palette.mode === 'dark' && {
+                  backgroundColor: '#222222', // Slightly lighter than default dark background
+                  '& .MuiListItemIcon-root': {
+                    color: 'rgba(255,255,255,0.9)' // Brighter icons
+                  },
+                  '& .MuiListItemText-primary': {
+                    color: '#FFFFFF', // Brighter text
+                    fontWeight: 500
+                  }
+                })
               },
             }}
           >
@@ -404,7 +417,20 @@ const LayoutWithThemeToggle = ({ children }) => {
                 height: 'calc(100vh - 64px)',
                 top: '64px', // Ensure it's below the AppBar
                 overflowX: 'hidden',
-                borderRight: '1px solid rgba(0,0,0,0.12)', // Optional: add a subtle border
+                borderRight: theme.palette.mode === 'dark' 
+                  ? '1px solid rgba(255,255,255,0.08)' 
+                  : '1px solid rgba(0,0,0,0.12)', // Better border in dark mode
+                // Improve dark mode visibility
+                ...(theme.palette.mode === 'dark' && {
+                  backgroundColor: '#222222', // Slightly lighter than default dark background
+                  '& .MuiListItemIcon-root': {
+                    color: 'rgba(255,255,255,0.9)' // Brighter icons
+                  },
+                  '& .MuiListItemText-primary': {
+                    color: '#FFFFFF', // Brighter text
+                    fontWeight: 500
+                  }
+                })
               },
             }}
             open
@@ -421,7 +447,21 @@ const LayoutWithThemeToggle = ({ children }) => {
           p: 3,
           width: { md: `calc(100% - 220px)` },
           mt: '64px', // Toolbar height
-          bgcolor: 'background.default'
+          bgcolor: 'background.default',
+          // Improve dark mode content readability
+          ...(theme.palette.mode === 'dark' && {
+            '& .MuiTypography-h1, & .MuiTypography-h2, & .MuiTypography-h3, & .MuiTypography-h4, & .MuiTypography-h5, & .MuiTypography-h6': {
+              color: '#FFFFFF',
+              textShadow: '0px 0px 1px rgba(255,255,255,0.1)'
+            },
+            '& .MuiCard-root': {
+              boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+              border: '1px solid rgba(255,255,255,0.05)'
+            },
+            '& .MuiPaper-root': {
+              backgroundImage: 'none'
+            }
+          })
         }}
       >
         <Container maxWidth="xl" sx={{ py: 2 }}>
