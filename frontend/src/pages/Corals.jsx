@@ -355,7 +355,6 @@ const Corals = () => {
 
             {!collapsedCategories.has(category.id) && (
               <div className={styles.coralGrid}>
-              <div className={styles.coralGrid}>
                 {categoryCorals.map(coral => (
                   <div key={coral.id} className={styles.card} style={cardStyle(coral)}>
                     <div className={styles.imageContainer}>
