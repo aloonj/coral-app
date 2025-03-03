@@ -68,7 +68,7 @@ export const updateCoral = async (req, res) => {
     }
 
     // Check if user has permission
-    if (coral.createdBy !== req.user.id && req.user.role !== 'ADMIN') {
+    if (coral.createdBy !== req.user.id && !['ADMIN', 'SUPERADMIN'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Not authorized to update this coral' });
     }
 
@@ -109,7 +109,7 @@ export const deleteCoral = async (req, res) => {
     }
 
     // Check if user has permission
-    if (coral.createdBy !== req.user.id && req.user.role !== 'ADMIN') {
+    if (coral.createdBy !== req.user.id && !['ADMIN', 'SUPERADMIN'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Not authorized to delete this coral' });
     }
 
