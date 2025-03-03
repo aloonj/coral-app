@@ -313,13 +313,9 @@ const Corals = () => {
         )}
       </div>
 
-      <div style={{ marginBottom: '2rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+      <div className={styles.categoryFilters}>
         <button
-          style={{
-            ...buttonStyle,
-            backgroundColor: selectedCategory === null ? '#319795' : '#CBD5E0',
-            padding: '0.25rem 0.75rem',
-          }}
+          className={`${styles.categoryFilterButton} ${selectedCategory === null ? styles.active : ''}`}
           onClick={() => setSelectedCategory(null)}
         >
           All Categories
@@ -327,11 +323,7 @@ const Corals = () => {
         {activeCategories.map(category => (
           <button
             key={category.id}
-            style={{
-              ...buttonStyle,
-              backgroundColor: selectedCategory === category.id ? '#319795' : '#CBD5E0',
-              padding: '0.25rem 0.75rem',
-            }}
+            className={`${styles.categoryFilterButton} ${selectedCategory === category.id ? styles.active : ''}`}
             onClick={() => setSelectedCategory(category.id)}
           >
             {category.name}
@@ -351,29 +343,16 @@ const Corals = () => {
         return (
           <div key={category.id} style={{ marginBottom: '2rem' }}>
             <div 
-              style={{
-                ...categoryHeaderStyle,
-                marginBottom: '1rem',
-                padding: '1rem',
-                background: 'linear-gradient(135deg, #2C5282 0%, #4299E1 100%)',
-                borderRadius: '0.5rem',
-              }}
+              className={styles.categoryHeader}
               onClick={() => toggleCategory(category.id)}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  {collapsedCategories.has(category.id) ? '▶' : '▼'} {category.name}
-                </div>
+              <div>
+                {collapsedCategories.has(category.id) ? '▶' : '▼'} {category.name}
               </div>
             </div>
 
             {!collapsedCategories.has(category.id) && (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: '2.5rem',
-                padding: '1.5rem',
-              }}>
+              <div className={styles.coralGrid}>
                 {categoryCorals.map(coral => (
                   <div key={coral.id} className={styles.card} style={cardStyle(coral)}>
                     <div className={styles.imageContainer}>
@@ -387,7 +366,7 @@ const Corals = () => {
                         }}
                       />
                     </div>
-                    <div style={cardContentStyle}>
+                    <div className={styles.cardContent}>
                       <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem' }}>{coral.speciesName}</h3>
                       <p style={{ margin: '0 0 0.5rem', color: '#718096', fontSize: '0.875rem' }}>
                         {coral.scientificName}
