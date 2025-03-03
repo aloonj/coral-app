@@ -71,7 +71,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 50 * 1024 * 1024 // 50MB limit
   }
 });
 
@@ -85,7 +85,7 @@ export const uploadCoralImage = upload.single('image'); // Single image upload f
 export const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
+      return res.status(400).json({ message: 'File too large. Maximum size is 50MB.' });
     }
     return res.status(400).json({ message: err.message });
   } else if (err) {
