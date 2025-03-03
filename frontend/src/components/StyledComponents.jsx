@@ -6,7 +6,9 @@ import {
   Typography, 
   Chip,
   TextField,
-  Paper
+  Paper,
+  Alert,
+  CircularProgress
 } from '@mui/material';
 
 // Card for coral items with stock status styling
@@ -117,7 +119,49 @@ export const CardContent = styled(Box)(({ theme }) => ({
 // Form field with label
 export const FormField = styled(TextField)(({ theme }) => ({
   marginBottom: theme.spacing(2),
+  '& .MuiOutlinedInput-root': {
+    '&:hover fieldset': {
+      borderColor: theme.palette.primary.main,
+    },
+  },
 }));
+
+// Form container
+export const FormContainer = styled(Box)(({ theme }) => ({
+  maxWidth: '400px',
+  width: '100%',
+  margin: '0 auto',
+  padding: theme.spacing(3),
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.shape.borderRadius,
+  boxShadow: theme.shadows[3],
+}));
+
+// Form error alert
+export const FormError = styled(Alert)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+  width: '100%',
+}));
+
+// Submit button with loading state
+export const SubmitButton = styled(Button)(({ theme, loading }) => ({
+  width: '100%',
+  padding: theme.spacing(1.2),
+  position: 'relative',
+  '& .MuiCircularProgress-root': {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: '-12px',
+    marginLeft: '-12px',
+  },
+}));
+
+// Loading spinner
+export const LoadingSpinner = styled(CircularProgress)({
+  color: 'inherit',
+  size: 24,
+});
 
 // Dashboard stat card
 export const StatCard = styled(Paper)(({ theme, active, color }) => ({

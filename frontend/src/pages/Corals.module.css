@@ -2,6 +2,9 @@
   padding: 1rem;
   max-width: 1400px;
   margin: 0 auto;
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .header {
@@ -27,16 +30,39 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 0.5rem;
+    max-width: 100%;
+  }
+  
+  .header {
+    font-size: 1.5rem;
+    padding: 0 0.5rem;
+  }
+  
   .container > div:first-of-type {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+    margin-bottom: 1rem;
   }
   
   .container > div:first-of-type > div {
     display: flex;
+    flex-direction: column;
+    width: 100%;
     gap: 0.5rem;
-    flex-wrap: wrap;
+    padding: 0 0.5rem;
+  }
+  
+  .container > div:first-of-type .button {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+  
+  .card {
+    margin: 0;
+    border-radius: 0.5rem;
   }
 }
 
@@ -114,4 +140,45 @@
 
 .card:hover .image {
   transform: scale(1.2);
+}
+
+.categoryTabs {
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0 0.5rem;
+}
+
+.coralGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .categoryTabs {
+    padding: 0 0.5rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    width: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .categoryTabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+  }
+  
+  .coralGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0.5rem;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
 }

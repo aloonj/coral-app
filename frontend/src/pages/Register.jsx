@@ -1,10 +1,10 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AuthForm from '../components/Auth/AuthForm';
-import { Container, Box, Typography } from '@mui/material';
+import { Container, Box } from '@mui/material';
 import { PageTitle } from '../components/StyledComponents';
 
-const Login = () => {
+const Register = () => {
   const { user } = useAuth();
   
   if (user) {
@@ -13,22 +13,14 @@ const Login = () => {
 
   return (
     <Container maxWidth="md">
-      <Box sx={{ 
-        py: 4, 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center',
-        width: '100%'
-      }}>
+      <Box sx={{ py: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <PageTitle variant="h1" align="center" gutterBottom>
-          Login to Your Account
+          Create an Account
         </PageTitle>
-        <Box sx={{ width: '100%', maxWidth: '400px' }}>
-          <AuthForm mode="login" />
-        </Box>
+        <AuthForm mode="register" />
       </Box>
     </Container>
   );
 };
 
-export default Login;
+export default Register;

@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Corals from './pages/Corals';
 import QuickOrder from './pages/QuickOrder';
 import Login from './pages/Login';
+// Register import removed as external registration is not needed
 import EditCoral from './pages/EditCoral';
 import AddCoral from './pages/AddCoral';
 import Orders from './pages/Orders';
@@ -16,6 +17,7 @@ import ImageManagement from './pages/ImageManagement';
 import Notifications from './pages/Notifications';
 import Backups from './pages/Backups';
 import ThemeGuide from './components/ThemeGuide';
+
 const RootRedirect = () => {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -29,7 +31,6 @@ const ProtectedRoute = ({ children, requireAdmin, requireClient }) => {
   if (!user) return <Navigate to="/login" />;
   if (requireAdmin && user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') return <Navigate to="/dashboard" />;
   if (requireClient && user.role !== 'CLIENT') return <Navigate to="/dashboard" />;
-  
   
   return children;
 };
@@ -73,6 +74,7 @@ function App() {
               } 
             />
             <Route path="/login" element={<Login />} />
+            {/* Register route removed as external registration is not needed */}
             <Route 
               path="/corals/add" 
               element={
@@ -161,7 +163,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* Catch-all route for unknown paths (including /register) */}
+            {/* Catch-all route for unknown paths */}
             <Route
               path="*"
               element={
