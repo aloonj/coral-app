@@ -115,6 +115,7 @@ const Corals = () => {
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     maxWidth: '1400px',
     margin: '0 auto',
+    boxSizing: 'border-box',
   };
 
   const headerStyle = {
@@ -218,6 +219,7 @@ const Corals = () => {
     width: '90%',
     maxHeight: 'calc(90vh - 64px)', // Subtract header height from max height
     overflowY: 'auto',
+    boxSizing: 'border-box',
   };
 
   const modalOverlayStyle = {
@@ -352,6 +354,7 @@ const Corals = () => {
             </div>
 
             {!collapsedCategories.has(category.id) && (
+              <div className={styles.coralGrid}>
               <div className={styles.coralGrid}>
                 {categoryCorals.map(coral => (
                   <div key={coral.id} className={styles.card} style={cardStyle(coral)}>

@@ -2,6 +2,14 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/api';
+import { useTheme } from '@mui/material/styles';
+import { 
+  FormContainer, 
+  FormField, 
+  FormError, 
+  SubmitButton 
+} from '../StyledComponents';
+import { CircularProgress, Typography, Link } from '@mui/material';
 
 const AuthForm = ({ mode = 'login' }) => {
   const [formData, setFormData] = useState({
@@ -13,6 +21,7 @@ const AuthForm = ({ mode = 'login' }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
+  const theme = useTheme();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -66,91 +75,72 @@ const AuthForm = ({ mode = 'login' }) => {
     }
   };
 
+  // Registration toggle removed as per requirements
+
   return (
-    <div style={{ maxWidth: '400px', margin: '40px auto', padding: '0 20px' }}>
+    <FormContainer>
       {error && (
-        <div style={{ color: 'red', marginBottom: '20px', textAlign: 'center' }}>
-          {error}
-        </div>
+        <FormError severity="error">{error}</FormError>
       )}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      
+      <form onSubmit={handleSubmit}>
         {mode === 'register' && (
-          <div>
-            <label htmlFor="name" style={{ display: 'block', marginBottom: '5px' }}>Name</label>
-            <input
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter your name"
-              required
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-              }}
-            />
-          </div>
+          <FormField
+            id="name"
+            name="name"
+            label="Name"
+            variant="outlined"
+            fullWidth
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="Enter your name"
+            required
+            autoComplete="name"
+          />
         )}
 
-        <div>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter your email"
-            required
-            style={{
-              width: '100%',
-              padding: '8px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-            }}
-          />
-        </div>
+        <FormField
+          id="email"
+          name="email"
+          type="email"
+          label="Email"
+          variant="outlined"
+          fullWidth
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="Enter your email"
+          required
+          autoComplete="email"
+        />
 
-        <div>
-          <label htmlFor="password" style={{ display: 'block', marginBottom: '5px' }}>Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Enter your password"
-            required
-            style={{
-              width: '100%',
-              padding: '8px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-            }}
-          />
-        </div>
+        <FormField
+          id="password"
+          name="password"
+          type="password"
+          label="Password"
+          variant="outlined"
+          fullWidth
+          value={formData.password}
+          onChange={handleChange}
+          placeholder="Enter your password"
+          required
+          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+        />
 
-        <button
+        <SubmitButton
           type="submit"
+          variant="contained"
+          color="primary"
           disabled={loading}
-          style={{
-            width: '100%',
-            padding: '10px',
-            backgroundColor: '#319795',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading ? 0.7 : 1,
-          }}
+          fullWidth
+          disableElevation
         >
-          {loading ? 'Loading...' : mode === 'login' ? 'Login' : 'Register'}
-        </button>
-
+          {loading ? <CircularProgress size={24} /> : mode === 'login' ? 'Login' : 'Register'}
+        </SubmitButton>
+        
+        {/* Registration link removed as per requirements */}
       </form>
-    </div>
+    </FormContainer>
   );
 };
 
