@@ -427,7 +427,7 @@ const Dashboard = () => {
       </h1>
       
       {/* Hero Gallery */}
-      <HeroGallery images={coralsWithImages} interval={5000} />
+      <HeroGallery images={coralsWithImages} interval={10000} />
       
       <OrderStats 
         orders={orders} 

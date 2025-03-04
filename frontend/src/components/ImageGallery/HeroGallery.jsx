@@ -1,31 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BASE_URL } from '../../services/api';
 import styles from './HeroGallery.module.css';
 
-const HeroGallery = ({ images = [], interval = 5000 }) => {
+const HeroGallery = ({ images = [], interval = 10000 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     if (images.length <= 1) return;
     
-    const timer = setInterval(() => {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
-        setIsTransitioning(false);
-      }, 500); // Transition duration
-    }, interval);
+    const startTimer = () => {
+      timerRef.current = setInterval(() => {
+        if (!isPaused) {
+          setIsTransitioning(true);
+          setTimeout(() => {
+            setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
+            setIsTransitioning(false);
+          }, 500); // Transition duration
+        }
+      }, interval);
+    };
     
-    return () => clearInterval(timer);
-  }, [images.length, interval]);
+    startTimer();
+    
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [images.length, interval, isPaused]);
 
   if (!images || images.length === 0) return null;
 
   const currentImage = images[currentIndex];
 
+  const handleMouseEnter = () => {
+    setIsPaused(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsPaused(false);
+  };
+
   return (
-    <div className={styles.heroGalleryContainer}>
+    <div 
+      className={styles.heroGalleryContainer}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div 
         className={`${styles.heroImage} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}
         style={{ 
