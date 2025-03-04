@@ -128,3 +128,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Uploaded files - keep directory structure but ignore contents
+backend/uploads/*
+# But don't ignore .gitkeep files so empty directories are tracked
+!backend/uploads/**/.gitkeep
