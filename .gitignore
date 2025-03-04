@@ -132,4 +132,4 @@ dist
 # Uploaded files - keep directory structure but ignore contents
 backend/uploads/*
 # But don't ignore .gitkeep files so empty directories are tracked
-!backend/uploads/**/.gitkeep
+!backend/uploads/.gitkeep
