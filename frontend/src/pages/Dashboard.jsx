@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { orderService, coralService } from '../services/api';
 import styles from './Dashboard.module.css';
+import HeroGallery from '../components/ImageGallery/HeroGallery';
 
 // Helper functions for order status transitions
 const getNextStatus = (currentStatus) => {
@@ -356,6 +357,7 @@ const Dashboard = () => {
   const [newOrderId, setNewOrderId] = useState(null);
   const [orders, setOrders] = useState([]);
   const [corals, setCorals] = useState([]);
+  const [coralsWithImages, setCoralsWithImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
@@ -381,6 +383,12 @@ const Dashboard = () => {
 
         setOrders(ordersRes.data);
         setCorals(coralsRes.data);
+        
+        // Filter corals that have images
+        const coralsWithImgs = coralsRes.data.filter(coral => 
+          coral.imageUrl && coral.imageUrl.trim() !== ''
+        );
+        setCoralsWithImages(coralsWithImgs);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -417,6 +425,9 @@ const Dashboard = () => {
       <h1 style={headerStyle}>
         {isAdmin ? 'Admin Dashboard' : 'My Dashboard'}
       </h1>
+      
+      {/* Hero Gallery */}
+      <HeroGallery images={coralsWithImages} interval={5000} />
       
       <OrderStats 
         orders={orders} 
