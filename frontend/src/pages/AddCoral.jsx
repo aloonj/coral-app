@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { coralService, categoryService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { config } from '../config';
 import styles from './AddCoral.module.css';
 
 const AddCoral = () => {
@@ -172,7 +173,7 @@ const AddCoral = () => {
         )}
 
         <div className={styles.formGroup}>
-          <label className={styles.label}>Price</label>
+          <label className={styles.label}>Price ({config.defaultCurrency})</label>
           <input
             className={styles.input}
             type="number"

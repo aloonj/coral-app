@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api, { coralService, categoryService, imageService, BASE_URL } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { config } from '../config';
 import ImageSelector from '../components/ImageGallery/ImageSelector';
 import styles from './EditCoral.module.css';
 
@@ -224,7 +225,7 @@ const EditCoral = () => {
         )}
 
         <div className={styles.formGroup}>
-          <label className={styles.label}>Price</label>
+          <label className={styles.label}>Price ({config.defaultCurrency})</label>
           <input
             className={styles.input}
             type="number"
