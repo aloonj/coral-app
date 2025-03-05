@@ -326,14 +326,14 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
+      <Container maxWidth="lg" disableGutters sx={{ py: 4, textAlign: 'center' }}>
         <CircularProgress />
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
+    <Container maxWidth="lg" disableGutters sx={{ py: 3 }}>
       <PageTitle variant="h1">
         {isAdmin ? 'Admin Dashboard' : 'My Dashboard'}
       </PageTitle>

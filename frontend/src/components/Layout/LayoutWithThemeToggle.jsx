@@ -445,8 +445,8 @@ const LayoutWithThemeToggle = ({ children }) => {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: user ? `calc(100% - 220px)` : '100%' }, // Full width when not logged in
-          ml: { md: user ? '220px' : '0' }, // Adjust margin based on authentication status
+          width: { md: `calc(100% - 220px)` },
+          ml: { md: '220px' },
           mt: '64px', // Toolbar height
           bgcolor: 'background.default',
           // Improve dark mode content readability
@@ -465,7 +465,7 @@ const LayoutWithThemeToggle = ({ children }) => {
           })
         }}
       >
-        <Container maxWidth="xl" sx={{ py: 2 }}>
+        <Container maxWidth="xl" disableGutters sx={{ py: 2 }}>
           {children}
         </Container>
       </Box>
