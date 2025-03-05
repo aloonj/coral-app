@@ -449,11 +449,10 @@ const LayoutWithThemeToggle = ({ children }) => {
           mt: '64px', // Toolbar height
           bgcolor: 'background.default',
           transition: 'margin-left 0.3s ease', // Smooth transition for margin changes
-          // Only apply margin and width adjustment when drawer is visible on desktop
-          ...(user && {
-            ml: { xs: 0, md: '220px' }, // No margin on mobile, 220px on desktop
-            width: { xs: '100%', md: 'calc(100% - 220px)' }, // Full width on mobile, adjusted on desktop
-          }),
+    // Only apply width adjustment when drawer is visible on desktop
+    ...(user && {
+      width: { xs: '100%', md: 'calc(100% - 220px)' }, // Full width on mobile, adjusted on desktop
+    }),
           // Improve dark mode content readability
           ...(theme.palette.mode === 'dark' && {
             '& .MuiTypography-h1, & .MuiTypography-h2, & .MuiTypography-h3, & .MuiTypography-h4, & .MuiTypography-h5, & .MuiTypography-h6': {
