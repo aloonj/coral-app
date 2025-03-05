@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/api';
 import { useTheme } from '@mui/material/styles';
 import { 
-  FormContainer, 
   FormField, 
   FormError, 
   SubmitButton 
 } from '../StyledComponents';
-import { CircularProgress, Typography, Link } from '@mui/material';
+import { CircularProgress, Box, Fade } from '@mui/material';
+import { useColorMode } from '../../theme/ThemeContext';
 
 const AuthForm = ({ mode = 'login' }) => {
   const [formData, setFormData] = useState({
@@ -22,6 +22,7 @@ const AuthForm = ({ mode = 'login' }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const theme = useTheme();
+  const { mode: themeMode } = useColorMode();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -75,13 +76,15 @@ const AuthForm = ({ mode = 'login' }) => {
     }
   };
 
-  // Registration toggle removed as per requirements
-
   return (
-    <FormContainer>
-      {error && (
-        <FormError severity="error">{error}</FormError>
-      )}
+    <Box sx={{ width: '100%' }}>
+      <Fade in={!!error} timeout={300}>
+        <Box sx={{ mb: error ? 2 : 0 }}>
+          {error && (
+            <FormError severity="error">{error}</FormError>
+          )}
+        </Box>
+      </Fade>
       
       <form onSubmit={handleSubmit}>
         {mode === 'register' && (
@@ -96,6 +99,21 @@ const AuthForm = ({ mode = 'login' }) => {
             placeholder="Enter your name"
             required
             autoComplete="name"
+            sx={{
+              mb: 2.5,
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: theme.palette.primary.main,
+                  borderWidth: 2,
+                },
+              },
+              '& .MuiInputLabel-root.Mui-focused': {
+                color: theme.palette.primary.main,
+              },
+            }}
           />
         )}
 
@@ -111,6 +129,21 @@ const AuthForm = ({ mode = 'login' }) => {
           placeholder="Enter your email"
           required
           autoComplete="email"
+          sx={{
+            mb: 2.5,
+            '& .MuiOutlinedInput-root': {
+              '&:hover fieldset': {
+                borderColor: theme.palette.primary.main,
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 2,
+              },
+            },
+            '& .MuiInputLabel-root.Mui-focused': {
+              color: theme.palette.primary.main,
+            },
+          }}
         />
 
         <FormField
@@ -125,6 +158,21 @@ const AuthForm = ({ mode = 'login' }) => {
           placeholder="Enter your password"
           required
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+          sx={{
+            mb: 3,
+            '& .MuiOutlinedInput-root': {
+              '&:hover fieldset': {
+                borderColor: theme.palette.primary.main,
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 2,
+              },
+            },
+            '& .MuiInputLabel-root.Mui-focused': {
+              color: theme.palette.primary.main,
+            },
+          }}
         />
 
         <SubmitButton
@@ -133,14 +181,30 @@ const AuthForm = ({ mode = 'login' }) => {
           color="primary"
           disabled={loading}
           fullWidth
-          disableElevation
+          sx={{
+            py: 1.2,
+            fontWeight: 600,
+            fontSize: '1rem',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: theme.shadows[4],
+            },
+            '&:active': {
+              transform: 'translateY(0)',
+              boxShadow: theme.shadows[2],
+            },
+            ...(themeMode === 'dark' && {
+              background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+            }),
+          }}
         >
           {loading ? <CircularProgress size={24} /> : mode === 'login' ? 'Login' : 'Register'}
         </SubmitButton>
-        
-        {/* Registration link removed as per requirements */}
       </form>
-    </FormContainer>
+    </Box>
   );
 };
 
