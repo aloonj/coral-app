@@ -5,11 +5,48 @@ import { useAuth } from '../contexts/AuthContext';
 import { config } from '../config';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
 import ImageModal from '../components/ImageGallery/ImageModal';
-import styles from './QuickOrder.module.css';
+import { useTheme } from '@mui/material/styles';
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Button,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  Divider,
+  Chip,
+  IconButton,
+  CircularProgress,
+  Stack,
+  ToggleButtonGroup,
+  ToggleButton,
+  FormHelperText,
+  Card,
+  CardContent,
+  CardMedia,
+  CardActions,
+  InputAdornment,
+  Collapse
+} from '@mui/material';
+import { 
+  ViewList as ViewListIcon,
+  ViewModule as ViewModuleIcon,
+  Add as AddIcon,
+  Remove as RemoveIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon
+} from '@mui/icons-material';
+import { PageTitle } from '../components/StyledComponents';
 
 const QuickOrder = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const theme = useTheme();
   const [corals, setCorals] = useState([]);
   const [categories, setCategories] = useState([]);
   const [clients, setClients] = useState([]);
@@ -32,15 +69,6 @@ const QuickOrder = () => {
   useEffect(() => {
     localStorage.setItem('quickOrderLayout', layoutView);
   }, [layoutView]);
-
-  const loadingStyle = {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '50vh',
-    fontSize: '1.25rem',
-    color: '#4A5568',
-  };
 
   useEffect(() => {
     if (!user) {
@@ -83,19 +111,56 @@ const QuickOrder = () => {
     };
 
     fetchData();
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Early return for loading and error states
   if (!user) {
-    return <div style={loadingStyle}>Redirecting to login...</div>;
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '50vh' 
+        }}
+      >
+        <Typography variant="h6" color="text.secondary">
+          Redirecting to login...
+        </Typography>
+      </Box>
+    );
   }
 
   if (loading) {
-    return <div style={loadingStyle}>Loading...</div>;
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '50vh' 
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (error) {
-    return <div style={{...loadingStyle, color: '#E53E3E'}}>{error}</div>;
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '50vh' 
+        }}
+      >
+        <Typography variant="h6" color="error">
+          {error}
+        </Typography>
+      </Box>
+    );
   }
 
   const handleQuantityChange = (coralId, value) => {
@@ -169,284 +234,353 @@ const QuickOrder = () => {
     return acc;
   }, {});
 
-  // Styles
-  const containerStyle = {
-    padding: '1rem',
-    maxWidth: '1400px',
-    margin: '0 auto',
-  };
-
-  const tableStyle = {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '1rem',
-    backgroundColor: 'white',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  };
-
-  const thStyle = {
-    padding: '1rem',
-    textAlign: 'left',
-    backgroundColor: '#F7FAFC',
-    borderBottom: '2px solid #E2E8F0',
-    color: '#4A5568',
-    fontWeight: 'bold',
-  };
-
-  const tdStyle = {
-    padding: '1rem',
-    borderBottom: '1px solid #E2E8F0',
-    verticalAlign: 'middle',
-  };
-
-  const categoryHeaderStyle = {
-    padding: '1rem',
-    backgroundColor: '#EBF8FF',
-    color: '#2C5282',
-    fontWeight: 'bold',
-    fontSize: '1.2rem',
-    textAlign: 'left',
-  };
-
-  const thumbnailStyle = {
-    width: '120px',
-    height: '120px',
-    objectFit: 'cover',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    margin: 0,
-    display: 'block',
-  };
-
-  const quantityControlStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-  };
-
-  const buttonStyle = {
-    padding: '0.5rem 1rem',
-    backgroundColor: '#319795',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    transition: 'background-color 0.2s',
-  };
-
-  const disabledButtonStyle = {
-    opacity: 0.5,
-    cursor: 'not-allowed',
-  };
-
-  const quantityButtonStyle = {
-    ...buttonStyle,
-    padding: '0.25rem 0.5rem',
-    backgroundColor: '#4A5568',
-  };
-
-  const quantityInputStyle = {
-    width: '60px',
-    padding: '0.25rem',
-    textAlign: 'center',
-    border: '1px solid #CBD5E0',
-    borderRadius: '0.25rem',
-  };
-
-  const headerStyle = {
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    marginBottom: '1.5rem',
-    color: '#2D3748',
-  };
-
   const getStockStatus = (coral) => {
     if (coral.quantity === 0) return 'OUT_OF_STOCK';
     if (coral.quantity <= coral.minimumStock) return 'LOW_STOCK';
     return 'AVAILABLE';
   };
 
-  const stockLevelStyle = (status) => ({
-    padding: '0.25rem 0.5rem',
-    borderRadius: '0.25rem',
-    fontSize: '0.875rem',
-    fontWeight: 'bold',
-    backgroundColor: status === 'AVAILABLE' ? '#C6F6D5' : 
-                    status === 'LOW_STOCK' ? '#FEEBC8' : '#FED7D7',
-    color: status === 'AVAILABLE' ? '#22543D' :
-           status === 'LOW_STOCK' ? '#744210' : '#822727',
-  });
+  const getStockChipProps = (status) => {
+    switch(status) {
+      case 'AVAILABLE':
+        return {
+          label: 'In Stock',
+          color: 'success',
+          variant: 'filled'
+        };
+      case 'LOW_STOCK':
+        return {
+          label: 'Low Stock',
+          color: 'warning',
+          variant: 'filled'
+        };
+      case 'OUT_OF_STOCK':
+        return {
+          label: 'Out of Stock',
+          color: 'error',
+          variant: 'filled'
+        };
+      default:
+        return {
+          label: 'Unknown',
+          color: 'default',
+          variant: 'outlined'
+        };
+    }
+  };
+
+  const handleLayoutChange = (event, newLayout) => {
+    if (newLayout !== null) {
+      setLayoutView(newLayout);
+    }
+  };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.headerContainer}>
-        <h1 className={styles.header}>Order Corals</h1>
-        <div className={styles.layoutToggle}>
-          <button 
-            className={`${styles.layoutButton} ${layoutView === 'list' ? styles.active : ''}`}
-            onClick={() => setLayoutView('list')}
-            title="List View"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="8" y1="6" x2="21" y2="6"></line>
-              <line x1="8" y1="12" x2="21" y2="12"></line>
-              <line x1="8" y1="18" x2="21" y2="18"></line>
-              <line x1="3" y1="6" x2="3.01" y2="6"></line>
-              <line x1="3" y1="12" x2="3.01" y2="12"></line>
-              <line x1="3" y1="18" x2="3.01" y2="18"></line>
-            </svg>
-          </button>
-          <button 
-            className={`${styles.layoutButton} ${layoutView === 'grid' ? styles.active : ''}`}
-            onClick={() => setLayoutView('grid')}
-            title="Grid View"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-          </button>
-        </div>
-      </div>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        mb: 3
+      }}>
+        <PageTitle variant="h1">Order Corals</PageTitle>
+        <ToggleButtonGroup
+          value={layoutView}
+          exclusive
+          onChange={handleLayoutChange}
+          aria-label="view layout"
+          size="small"
+        >
+          <ToggleButton value="list" aria-label="list view">
+            <ViewListIcon />
+          </ToggleButton>
+          <ToggleButton value="grid" aria-label="grid view">
+            <ViewModuleIcon />
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
       {isAdmin && (
-        <div className={styles.clientSelector}>
-          <label>
-            Order on behalf of:
-            <select
+        <Box sx={{ mb: 3 }}>
+          <FormControl fullWidth variant="outlined">
+            <InputLabel id="client-select-label">Order on behalf of</InputLabel>
+            <Select
+              labelId="client-select-label"
+              id="client-select"
               value={selectedClient}
               onChange={(e) => setSelectedClient(e.target.value)}
-              required
+              label="Order on behalf of"
             >
-              <option value="">Select a client...</option>
+              <MenuItem value="">
+                <em>Select a client...</em>
+              </MenuItem>
               {clients.map(client => (
-                <option key={client.id} value={client.id}>
+                <MenuItem key={client.id} value={client.id}>
                   {client.name} ({client.email})
-                </option>
+                </MenuItem>
               ))}
-            </select>
-          </label>
-        </div>
+            </Select>
+          </FormControl>
+        </Box>
       )}
 
-      <div className={`${styles.coralGrid} ${styles[layoutView]}`}>
-        {categories.map(category => {
-          const categoryCorals = groupedCorals[category.id] || [];
-          
-          if (categoryCorals.length === 0) return null;
-          
-          const categoryTotal = categoryCorals.reduce((total, coral) => 
-            total + (orderQuantities[coral.id] || 0), 0);
+      {categories.map(category => {
+        const categoryCorals = groupedCorals[category.id] || [];
+        
+        if (categoryCorals.length === 0) return null;
+        
+        const categoryTotal = categoryCorals.reduce((total, coral) => 
+          total + (orderQuantities[coral.id] || 0), 0);
 
-          return [
-            <div
-              key={`category-${category.id}`}
-              className={styles.categoryHeader}
+        return (
+          <Box key={`category-${category.id}`} sx={{ mb: 3 }}>
+            <Paper 
+              sx={{ 
+                p: 2, 
+                mb: 2,
+                background: theme.palette.primary.main,
+                color: theme.palette.primary.contrastText,
+                cursor: 'pointer',
+                '&:hover': {
+                  boxShadow: 3
+                }
+              }}
               onClick={() => toggleCategory(category.id)}
             >
-              <div>
-                {collapsedCategories.has(category.id) ? '▶' : '▼'} {category.name}
-              </div>
-              <div>
-                {categoryTotal > 0 && `${categoryTotal} ordered`}
-              </div>
-            </div>,
-            ...(!collapsedCategories.has(category.id) ? categoryCorals.map(coral => (
-              <div key={coral.id} className={`${styles.coralCard} ${styles[`${layoutView}Card`]}`}>
-                <div className={styles.imageContainer}>
-                  <ImageGallery
-                    images={[coral.imageUrl]}
-                    alt={coral.speciesName}
-                    className={styles.image}
-                    onImageClick={() => {
-                      setSelectedCoral(coral);
-                      setShowImageModal(true);
-                    }}
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center'
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  {collapsedCategories.has(category.id) ? 
+                    <ExpandMoreIcon sx={{ mr: 1 }} /> : 
+                    <ExpandLessIcon sx={{ mr: 1 }} />
+                  }
+                  <Typography variant="h6" component="div">
+                    {category.name}
+                  </Typography>
+                </Box>
+                {categoryTotal > 0 && (
+                  <Chip 
+                    label={`${categoryTotal} ordered`} 
+                    color="secondary"
+                    size="small"
                   />
-                </div>
-                <div className={styles.cardContent}>
-                  <div className={styles.cardMainContent}>
-                    <div className={styles.coralName}>{coral.speciesName}</div>
-                    <div className={styles.scientificName}>{coral.scientificName}</div>
-                    <div className={styles.description}>{coral.description}</div>
-                  </div>
-                  <div className={styles.cardSideContent}>
-                    <div className={`${styles.stockLevel} ${
-                      getStockStatus(coral) === 'AVAILABLE' ? styles.available :
-                      getStockStatus(coral) === 'LOW_STOCK' ? styles.lowStock :
-                      styles.outOfStock
-                    }`}>
-                      {getStockStatus(coral) === 'OUT_OF_STOCK' ? 'Out of stock' :
-                       getStockStatus(coral) === 'LOW_STOCK' ? `${coral.quantity} in stock (Low Stock)` :
-                       `${coral.quantity} in stock`}
-                    </div>
-                    <div className={styles.price}>{config.defaultCurrency}{coral.price}</div>
-                    <div className={styles.quantityControl}>
-                      <button
-                        className={styles.quantityButton}
-                        onClick={() => handleQuantityChange(coral.id, orderQuantities[coral.id] - 1)}
-                        disabled={getStockStatus(coral) === 'OUT_OF_STOCK' || orderQuantities[coral.id] === 0}
+                )}
+              </Box>
+            </Paper>
+            
+            <Collapse in={!collapsedCategories.has(category.id)}>
+              <Grid container spacing={2}>
+                {categoryCorals.map(coral => {
+                  const stockStatus = getStockStatus(coral);
+                  const stockChipProps = getStockChipProps(stockStatus);
+                  
+                  return (
+                    <Grid 
+                      item 
+                      key={coral.id} 
+                      xs={12} 
+                      md={layoutView === 'grid' ? 4 : 12}
+                    >
+                      <Card 
+                        sx={{ 
+                          display: 'flex',
+                          flexDirection: layoutView === 'grid' ? 'column' : 'row',
+                          height: '100%'
+                        }}
                       >
-                        -
-                      </button>
-                      <input
-                        type="number"
-                        className={styles.quantityInput}
-                        value={orderQuantities[coral.id]}
-                        onChange={(e) => handleQuantityChange(coral.id, parseInt(e.target.value) || 0)}
-                        min="0"
-                        max={coral.quantity}
-                        disabled={getStockStatus(coral) === 'OUT_OF_STOCK'}
-                      />
-                      <button
-                        className={styles.quantityButton}
-                        onClick={() => handleQuantityChange(coral.id, orderQuantities[coral.id] + 1)}
-                        disabled={getStockStatus(coral) === 'OUT_OF_STOCK' || orderQuantities[coral.id] >= coral.quantity}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )) : [])
-          ];
-        }).filter(Boolean).flat()}
-      </div>
+                        <Box 
+                          sx={{ 
+                            width: layoutView === 'grid' ? '100%' : 300,
+                            position: 'relative',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <CardMedia
+                            component="div"
+                            sx={{ 
+                              height: 200,
+                              cursor: 'pointer',
+                              '&:hover': {
+                                transform: 'scale(1.05)',
+                                transition: 'transform 0.3s ease'
+                              }
+                            }}
+                            onClick={() => {
+                              setSelectedCoral(coral);
+                              setShowImageModal(true);
+                            }}
+                          >
+                            <ImageGallery
+                              images={[coral.imageUrl]}
+                              alt={coral.speciesName}
+                              style={{ 
+                                width: '100%', 
+                                height: '100%', 
+                                objectFit: 'cover' 
+                              }}
+                            />
+                          </CardMedia>
+                        </Box>
+                        
+                        <Box sx={{ 
+                          display: 'flex',
+                          flexDirection: 'column',
+                          flexGrow: 1
+                        }}>
+                          <CardContent sx={{ flexGrow: 1 }}>
+                            <Box sx={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              mb: 1
+                            }}>
+                              <Box>
+                                <Typography variant="h6" component="div">
+                                  {coral.speciesName}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  {coral.scientificName}
+                                </Typography>
+                              </Box>
+                              <Chip 
+                                {...stockChipProps}
+                                size="small"
+                              />
+                            </Box>
+                            
+                            <Typography variant="body2" color="text.secondary" paragraph>
+                              {coral.description}
+                            </Typography>
+                            
+                            <Box sx={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              mt: 2
+                            }}>
+                              <Typography variant="h6" color="primary">
+                                {config.defaultCurrency}{coral.price}
+                              </Typography>
+                              
+                              <Box sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center'
+                              }}>
+                                <IconButton 
+                                  size="small"
+                                  onClick={() => handleQuantityChange(coral.id, orderQuantities[coral.id] - 1)}
+                                  disabled={stockStatus === 'OUT_OF_STOCK' || orderQuantities[coral.id] === 0}
+                                  color="primary"
+                                >
+                                  <RemoveIcon />
+                                </IconButton>
+                                
+                                <TextField
+                                  type="number"
+                                  variant="outlined"
+                                  size="small"
+                                  value={orderQuantities[coral.id]}
+                                  onChange={(e) => handleQuantityChange(coral.id, parseInt(e.target.value) || 0)}
+                                  inputProps={{ 
+                                    min: 0, 
+                                    max: coral.quantity,
+                                    style: { textAlign: 'center' }
+                                  }}
+                                  disabled={stockStatus === 'OUT_OF_STOCK'}
+                                  sx={{ width: 60, mx: 1 }}
+                                />
+                                
+                                <IconButton 
+                                  size="small"
+                                  onClick={() => handleQuantityChange(coral.id, orderQuantities[coral.id] + 1)}
+                                  disabled={stockStatus === 'OUT_OF_STOCK' || orderQuantities[coral.id] >= coral.quantity}
+                                  color="primary"
+                                >
+                                  <AddIcon />
+                                </IconButton>
+                              </Box>
+                            </Box>
+                            
+                            {stockStatus !== 'OUT_OF_STOCK' && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'right', mt: 1 }}>
+                                {coral.quantity} available
+                              </Typography>
+                            )}
+                          </CardContent>
+                        </Box>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </Collapse>
+          </Box>
+        );
+      })}
 
       {/* Order Summary */}
       {Object.values(orderQuantities).some(q => q > 0) && (
-        <div className={styles.orderSummary}>
-          <div className={styles.orderSummaryContent}>
-            <div className={styles.orderTotal}>
-              Total Items: {Object.values(orderQuantities).reduce((a, b) => a + b, 0)}
-              <br />
-              Total Price: {config.defaultCurrency}
-              {corals.reduce((total, coral) => {
-                return total + (coral.price * (orderQuantities[coral.id] || 0));
-              }, 0).toFixed(2)}
-            </div>
-            <div className={styles.orderButtons}>
-              <button
-                className={styles.clearOrderButton}
-                onClick={clearOrder}
-              >
-                Clear Order
-              </button>
-              <button
-                className={styles.placeOrderButton}
-                onClick={handleBulkOrder}
-                disabled={isAdmin && !selectedClient}
-                title={isAdmin && !selectedClient ? 'Please select a client before placing the order' : ''}
-              >
-                Place Order
-              </button>
-            </div>
-          </div>
-        </div>
+        <Paper 
+          elevation={3}
+          sx={{ 
+            position: 'fixed', 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            zIndex: 10,
+            p: 2,
+            backgroundColor: theme.palette.background.paper
+          }}
+        >
+          <Container maxWidth="lg">
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              flexWrap: { xs: 'wrap', sm: 'nowrap' },
+              gap: 2
+            }}>
+              <Box>
+                <Typography variant="body1">
+                  <strong>Total Items:</strong> {Object.values(orderQuantities).reduce((a, b) => a + b, 0)}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Total Price:</strong> {config.defaultCurrency}
+                  {corals.reduce((total, coral) => {
+                    return total + (coral.price * (orderQuantities[coral.id] || 0));
+                  }, 0).toFixed(2)}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 2,
+                width: { xs: '100%', sm: 'auto' }
+              }}>
+                <Button 
+                  variant="outlined" 
+                  color="error"
+                  onClick={clearOrder}
+                  fullWidth={true}
+                >
+                  Clear Order
+                </Button>
+                <Button 
+                  variant="contained" 
+                  color="success"
+                  onClick={handleBulkOrder}
+                  disabled={isAdmin && !selectedClient}
+                  fullWidth={true}
+                >
+                  Place Order
+                </Button>
+              </Box>
+            </Box>
+          </Container>
+        </Paper>
       )}
 
       {/* Image Modal */}
@@ -460,7 +594,7 @@ const QuickOrder = () => {
           }}
         />
       )}
-    </div>
+    </Container>
   );
 };
 
