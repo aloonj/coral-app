@@ -445,10 +445,15 @@ const LayoutWithThemeToggle = ({ children }) => {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: `calc(100% - 220px)` },
-          ml: { md: '220px' },
+          width: '100%', // Full width by default
           mt: '64px', // Toolbar height
           bgcolor: 'background.default',
+          transition: 'margin-left 0.3s ease', // Smooth transition for margin changes
+          // Only apply margin and width adjustment when drawer is visible on desktop
+          ...(user && {
+            ml: { xs: 0, md: '220px' }, // No margin on mobile, 220px on desktop
+            width: { xs: '100%', md: 'calc(100% - 220px)' }, // Full width on mobile, adjusted on desktop
+          }),
           // Improve dark mode content readability
           ...(theme.palette.mode === 'dark' && {
             '& .MuiTypography-h1, & .MuiTypography-h2, & .MuiTypography-h3, & .MuiTypography-h4, & .MuiTypography-h5, & .MuiTypography-h6': {
@@ -465,7 +470,14 @@ const LayoutWithThemeToggle = ({ children }) => {
           })
         }}
       >
-        <Container maxWidth="xl" disableGutters sx={{ py: 2 }}>
+        <Container 
+          maxWidth="xl" 
+          disableGutters 
+          sx={{ 
+            py: 2,
+            mx: 'auto', // Ensure container is centered
+          }}
+        >
           {children}
         </Container>
       </Box>
