@@ -446,6 +446,7 @@ const LayoutWithThemeToggle = ({ children }) => {
           flexGrow: 1,
           p: 3,
           width: { md: user ? `calc(100% - 220px)` : '100%' }, // Full width when not logged in
+          ml: { md: user ? '220px' : '0' }, // Adjust margin based on authentication status
           mt: '64px', // Toolbar height
           bgcolor: 'background.default',
           // Improve dark mode content readability
