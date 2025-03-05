@@ -19,7 +19,14 @@ import {
   Divider,
   Alert,
   IconButton,
-  Modal
+  Modal,
+  Container,
+  Paper,
+  Card,
+  CardContent as MuiCardContent,
+  CardMedia,
+  Collapse,
+  CircularProgress
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -55,6 +62,7 @@ const Corals = () => {
   const [corals, setCorals] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showInactiveCategories, setShowInactiveCategories] = useState(true); // Start with inactive visible for admin
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -76,6 +84,7 @@ const Corals = () => {
         setCategories(categoriesRes.data);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setError('Error loading data. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -173,7 +182,24 @@ const Corals = () => {
           minHeight: '50vh' 
         }}
       >
-        <Typography variant="h5" color="text.secondary">Loading...</Typography>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '50vh' 
+        }}
+      >
+        <Typography variant="h6" color="error">
+          {error}
+        </Typography>
       </Box>
     );
   }
@@ -191,12 +217,7 @@ const Corals = () => {
   const activeCategories = categories.filter(cat => cat.status !== 'INACTIVE');
 
   return (
-    <Box sx={{ 
-      maxWidth: '1400px', 
-      mx: 'auto', 
-      p: { xs: 1, md: 2 },
-      position: 'relative'
-    }}>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
       {categoryError && (
         <FormError severity="error" sx={{ mb: 2 }}>
           {categoryError}
@@ -206,10 +227,8 @@ const Corals = () => {
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
-        alignItems: { xs: 'flex-start', md: 'center' },
-        flexDirection: { xs: 'column', md: 'row' },
-        mb: 3,
-        gap: { xs: 2, md: 0 }
+        alignItems: 'center',
+        mb: 3
       }}>
         <PageTitle variant="h1">Coral Management</PageTitle>
         {hasAdminPrivileges && (
@@ -292,146 +311,182 @@ const Corals = () => {
         if (categoryCorals.length === 0) return null;
 
         return (
-          <Box key={category.id} sx={{ mb: 4 }}>
-            <SectionHeader 
-              onClick={() => toggleCategory(category.id)}
+          <Box key={`category-${category.id}`} sx={{ mb: 3 }}>
+            <Paper 
               sx={{ 
+                p: 2, 
+                mb: 2,
+                background: theme.palette.primary.main,
+                color: theme.palette.primary.contrastText,
                 cursor: 'pointer',
                 '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 2
+                  boxShadow: 3
                 }
               }}
+              onClick={() => toggleCategory(category.id)}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                {collapsedCategories.has(category.id) ? <ExpandMoreIcon /> : <ExpandLessIcon />} 
-                <Typography variant="h6" component="span" sx={{ ml: 1 }}>
-                  {category.name}
-                </Typography>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center'
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  {collapsedCategories.has(category.id) ? 
+                    <ExpandMoreIcon sx={{ mr: 1 }} /> : 
+                    <ExpandLessIcon sx={{ mr: 1 }} />
+                  }
+                  <Typography variant="h6" component="div">
+                    {category.name}
+                  </Typography>
+                </Box>
               </Box>
-            </SectionHeader>
-
-            {!collapsedCategories.has(category.id) && (
-              <Grid 
-                container 
-                spacing={3} 
-                sx={{ 
-                  p: { xs: 1, md: 2 },
-                  mt: 0 // Reset margin top
-                }}
-              >
-                {categoryCorals.map(coral => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={coral.id}>
-                    <CoralCard stockStatus={getStockStatus(coral)}>
-                      <Box 
-                        sx={{ 
-                          position: 'relative',
-                          height: 220,
-                          overflow: 'hidden',
-                          borderTopLeftRadius: theme.shape.borderRadius,
-                          borderTopRightRadius: theme.shape.borderRadius,
-                        }}
-                      >
-                        <ImageGallery
-                          images={[coral.imageUrl]}
-                          alt={coral.speciesName}
-                          sx={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            transform: 'scale(1.15)',
-                            transition: 'transform 0.3s ease',
-                            '&:hover': {
-                              transform: 'scale(1.2)',
-                            }
+            </Paper>
+            
+            <Collapse in={!collapsedCategories.has(category.id)}>
+              <Grid container spacing={2}>
+                {categoryCorals.map(coral => {
+                  const stockStatus = getStockStatus(coral);
+                  
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={coral.id}>
+                      <Card sx={{ 
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%'
+                      }}>
+                        <Box 
+                          sx={{ 
+                            position: 'relative',
+                            overflow: 'hidden'
                           }}
-                          onImageClick={() => {
-                            setSelectedCoral(coral);
-                            setShowImageModal(true);
-                          }}
-                        />
-                      </Box>
-                      <CardContent>
-                        <Typography variant="h5" component="h3" gutterBottom>
-                          {coral.speciesName}
-                        </Typography>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                          {coral.scientificName}
-                        </Typography>
-                        <Typography variant="body2" sx={{ mb: 2 }}>
-                          {coral.description}
-                        </Typography>
-                        {showAdditionalDetails && (
-                          <>
-                            <Box sx={{ mb: 1 }}>
-                              <Typography component="span" variant="body2" fontWeight="bold">
-                                Care Level:
-                              </Typography>{' '}
-                              <Typography component="span" variant="body2">
-                                {coral.careLevel}
+                        >
+                          <CardMedia
+                            component="div"
+                            sx={{ 
+                              height: 200,
+                              cursor: 'pointer',
+                              '&:hover': {
+                                transform: 'scale(1.05)',
+                                transition: 'transform 0.3s ease'
+                              }
+                            }}
+                            onClick={() => {
+                              setSelectedCoral(coral);
+                              setShowImageModal(true);
+                            }}
+                          >
+                            <ImageGallery
+                              images={[coral.imageUrl]}
+                              alt={coral.speciesName}
+                              style={{ 
+                                width: '100%', 
+                                height: '100%', 
+                                objectFit: 'cover' 
+                              }}
+                            />
+                          </CardMedia>
+                        </Box>
+                        
+                        <MuiCardContent sx={{ flexGrow: 1 }}>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            mb: 1
+                          }}>
+                            <Box>
+                              <Typography variant="h6" component="div">
+                                {coral.speciesName}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                {coral.scientificName}
                               </Typography>
                             </Box>
-                            <Box sx={{ mb: 1 }}>
-                              <Typography component="span" variant="body2" fontWeight="bold">
-                                Growth Rate:
-                              </Typography>{' '}
-                              <Typography component="span" variant="body2">
-                                {coral.growthRate}
-                              </Typography>
-                            </Box>
-                          </>
-                        )}
-                        <Box sx={{ mb: 1 }}>
-                          <Typography component="span" variant="body2" fontWeight="bold">
-                            Category:
-                          </Typography>{' '}
-                          <Typography component="span" variant="body2">
-                            {category.name}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ mb: 1 }}>
-                          <Typography component="span" variant="body2" fontWeight="bold">
-                            Price:
-                          </Typography>{' '}
-                          <PriceTag variant="body1">
-                            {config.defaultCurrency}{coral.price}
-                          </PriceTag>
-                        </Box>
-                        <StockLevel status={getStockStatus(coral)} sx={{ mb: 1 }}>
-                          {coral.quantity} {
-                            getStockStatus(coral) === 'OUT_OF_STOCK' ? '(Out of Stock)' :
-                            getStockStatus(coral) === 'LOW_STOCK' ? '(Low Stock)' :
-                            'in stock'
-                          }
-                        </StockLevel>
-                        {hasAdminPrivileges && (
-                          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                            <ActionButton
-                              variant="contained"
-                              color="info"
-                              startIcon={<EditIcon />}
-                              onClick={() => navigate(`/corals/${coral.id}/edit`)}
-                              fullWidth
-                            >
-                              Edit
-                            </ActionButton>
-                            <ActionButton
-                              variant="contained"
-                              color="error"
-                              startIcon={<DeleteIcon />}
-                              onClick={() => handleDeleteCoral(coral.id)}
-                              fullWidth
-                            >
-                              Delete
-                            </ActionButton>
+                            <StockLevel status={stockStatus}>
+                              {stockStatus === 'OUT_OF_STOCK' ? 'Out of Stock' :
+                               stockStatus === 'LOW_STOCK' ? 'Low Stock' :
+                               'In Stock'}
+                            </StockLevel>
                           </Box>
-                        )}
-                      </CardContent>
-                    </CoralCard>
-                  </Grid>
-                ))}
+                          
+                          <Typography variant="body2" color="text.secondary" paragraph>
+                            {coral.description}
+                          </Typography>
+                          
+                          {showAdditionalDetails && (
+                            <Box sx={{ mb: 2 }}>
+                              <Box sx={{ mb: 1 }}>
+                                <Typography component="span" variant="body2" fontWeight="bold">
+                                  Care Level:
+                                </Typography>{' '}
+                                <Typography component="span" variant="body2">
+                                  {coral.careLevel}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ mb: 1 }}>
+                                <Typography component="span" variant="body2" fontWeight="bold">
+                                  Growth Rate:
+                                </Typography>{' '}
+                                <Typography component="span" variant="body2">
+                                  {coral.growthRate}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                          
+                          <Box sx={{ mb: 1 }}>
+                            <Typography component="span" variant="body2" fontWeight="bold">
+                              Category:
+                            </Typography>{' '}
+                            <Typography component="span" variant="body2">
+                              {category.name}
+                            </Typography>
+                          </Box>
+                          
+                          <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mt: 2
+                          }}>
+                            <PriceTag variant="h6" color="primary">
+                              {config.defaultCurrency}{coral.price}
+                            </PriceTag>
+                            
+                            <Typography variant="caption" color="text.secondary">
+                              {coral.quantity} in stock
+                            </Typography>
+                          </Box>
+                          
+                          {hasAdminPrivileges && (
+                            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                              <ActionButton
+                                variant="contained"
+                                color="info"
+                                startIcon={<EditIcon />}
+                                onClick={() => navigate(`/corals/${coral.id}/edit`)}
+                                fullWidth
+                              >
+                                Edit
+                              </ActionButton>
+                              <ActionButton
+                                variant="contained"
+                                color="error"
+                                startIcon={<DeleteIcon />}
+                                onClick={() => handleDeleteCoral(coral.id)}
+                                fullWidth
+                              >
+                                Delete
+                              </ActionButton>
+                            </Box>
+                          )}
+                        </MuiCardContent>
+                      </Card>
+                    </Grid>
+                  );
+                })}
               </Grid>
-            )}
+            </Collapse>
           </Box>
         );
       })}
@@ -621,7 +676,7 @@ const Corals = () => {
           }}
         />
       )}
-    </Box>
+    </Container>
   );
 };
 
