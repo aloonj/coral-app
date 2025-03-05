@@ -1,16 +1,54 @@
 import { useState, useEffect } from 'react';
-import styles from './Corals.module.css';
 import { useNavigate } from 'react-router-dom';
 import { coralService, categoryService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { config } from '../config';
-import api, { BASE_URL } from '../services/api';
+import { useTheme } from '@mui/material/styles';
+import { useColorMode } from '../theme/ThemeContext';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
 import ImageModal from '../components/ImageGallery/ImageModal';
+import {
+  Box,
+  Typography,
+  Button,
+  Chip,
+  Grid,
+  Checkbox,
+  FormControlLabel,
+  TextField,
+  Divider,
+  Alert,
+  IconButton,
+  Modal
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Restore as RestoreIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Category as CategoryIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
+import {
+  PageTitle,
+  ActionButton,
+  CoralCard,
+  CardContent,
+  SectionHeader,
+  FormField,
+  FormError,
+  PriceTag,
+  StockLevel,
+  ModalContainer
+} from '../components/StyledComponents';
 
 const Corals = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const { mode } = useColorMode();
   const isAdmin = user?.role === 'ADMIN';
   const isSuperAdmin = user?.role === 'SUPERADMIN';
   const hasAdminPrivileges = isAdmin || isSuperAdmin;
@@ -107,90 +145,10 @@ const Corals = () => {
     }
   };
 
-  // Styles
-  const containerStyle = {
-    background: 'white',
-    borderRadius: '8px',
-    padding: '2rem',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    maxWidth: '1400px',
-    margin: '0 auto',
-    boxSizing: 'border-box',
-  };
-
-  const headerStyle = {
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    marginBottom: '1.5rem',
-    color: '#2D3748',
-  };
-
-  const tableStyle = {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '1rem',
-    backgroundColor: 'white',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  };
-
-  const thStyle = {
-    padding: '1rem',
-    textAlign: 'left',
-    backgroundColor: '#F7FAFC',
-    borderBottom: '2px solid #E2E8F0',
-    color: '#4A5568',
-    fontWeight: 'bold',
-  };
-
-  const tdStyle = {
-    padding: '1rem',
-    borderBottom: '1px solid #E2E8F0',
-    verticalAlign: 'middle',
-  };
-
-  const categoryHeaderStyle = {
-    padding: '1rem',
-    background: 'linear-gradient(135deg, #2C5282 0%, #4299E1 100%)',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '1.2rem',
-    textAlign: 'left',
-    cursor: 'pointer',
-    userSelect: 'none',
-  };
-
   const getStockStatus = (coral) => {
     if (coral.quantity === 0) return 'OUT_OF_STOCK';
     if (coral.quantity <= coral.minimumStock) return 'LOW_STOCK';
     return 'AVAILABLE';
-  };
-
-  const cardStyle = (coral) => ({
-    backgroundColor: 
-      getStockStatus(coral) === 'OUT_OF_STOCK' ? '#FED7D7' :
-      getStockStatus(coral) === 'LOW_STOCK' ? '#FEEBC8' : 
-      'white'
-  });
-
-  const imageStyle = {
-    width: '100%',
-    height: '200px',
-    objectFit: 'cover',
-  };
-
-  const cardContentStyle = {
-    padding: '1rem',
-  };
-
-  const buttonStyle = {
-    padding: '0.5rem 1rem',
-    backgroundColor: '#319795',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    transition: 'background-color 0.2s',
   };
 
   const toggleCategory = (categoryId) => {
@@ -205,63 +163,19 @@ const Corals = () => {
     });
   };
 
-  const modalStyle = {
-    position: 'fixed',
-    top: '64px', // Start from header height
-    left: '50%',
-    transform: 'translate(-50%, 10vh)', // Move down by 10vh from the top
-    backgroundColor: 'white',
-    padding: '2rem',
-    borderRadius: '0.5rem',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    zIndex: 9999,
-    maxWidth: '600px',
-    width: '90%',
-    maxHeight: 'calc(90vh - 64px)', // Subtract header height from max height
-    overflowY: 'auto',
-    boxSizing: 'border-box',
-  };
-
-  const modalOverlayStyle = {
-    position: 'fixed',
-    top: '64px', // Start below header
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 9998,
-  };
-
-  const formStyle = {
-    display: 'grid',
-    gridTemplateColumns: '150px 1fr',
-    gap: '1rem',
-    alignItems: 'start',
-  };
-
-  const labelStyle = {
-    fontWeight: 'bold',
-    color: '#4A5568',
-    paddingTop: '0.5rem',
-  };
-
-  const inputStyle = {
-    padding: '0.5rem',
-    borderRadius: '0.375rem',
-    border: '1px solid #CBD5E0',
-  };
-
-  const loadingStyle = {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '50vh',
-    fontSize: '1.25rem',
-    color: '#4A5568',
-  };
-
   if (loading) {
-    return <div style={loadingStyle}>Loading...</div>;
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '50vh' 
+        }}
+      >
+        <Typography variant="h5" color="text.secondary">Loading...</Typography>
+      </Box>
+    );
   }
 
   // Filter out corals with invalid categories
@@ -277,61 +191,96 @@ const Corals = () => {
   const activeCategories = categories.filter(cat => cat.status !== 'INACTIVE');
 
   return (
-    <div className={styles.container}>
+    <Box sx={{ 
+      maxWidth: '1400px', 
+      mx: 'auto', 
+      p: { xs: 1, md: 2 },
+      position: 'relative'
+    }}>
       {categoryError && (
-        <div style={{
-          padding: '1rem',
-          marginBottom: '1rem',
-          backgroundColor: '#FED7D7',
-          color: '#C53030',
-          borderRadius: '0.375rem'
-        }}>
+        <FormError severity="error" sx={{ mb: 2 }}>
           {categoryError}
-        </div>
+        </FormError>
       )}
 
-      <div>
-        <h1 className={styles.header}>Coral Management</h1>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', md: 'center' },
+        flexDirection: { xs: 'column', md: 'row' },
+        mb: 3,
+        gap: { xs: 2, md: 0 }
+      }}>
+        <PageTitle variant="h1">Coral Management</PageTitle>
         {hasAdminPrivileges && (
-          <div>
-            <button
-              className={`${styles.button} ${styles.addButton}`}
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1,
+            flexDirection: { xs: 'column', sm: 'row' },
+            width: { xs: '100%', md: 'auto' }
+          }}>
+            <ActionButton
+              variant="contained"
+              color="success"
+              startIcon={<AddIcon />}
               onClick={() => navigate('/corals/add')}
+              fullWidth={false}
             >
               Add Coral
-            </button>
-            <button
-              className={`${styles.button} ${styles.addButton}`}
-              style={{marginLeft: '1rem', backgroundColor: '#805AD5'}}
+            </ActionButton>
+            <ActionButton
+              variant="contained"
+              color="secondary"
+              startIcon={<CategoryIcon />}
               onClick={() => {
                 setEditingCategory(null);
                 setCategoryForm({ name: '', description: '' });
                 setShowCategoryModal(true);
               }}
+              fullWidth={false}
             >
               Manage Categories
-            </button>
-          </div>
+            </ActionButton>
+          </Box>
         )}
-      </div>
+      </Box>
 
-      <div className={styles.categoryFilters}>
-        <button
-          className={`${styles.categoryFilterButton} ${selectedCategory === null ? styles.active : ''}`}
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 1, 
+        flexWrap: 'wrap', 
+        mb: 3 
+      }}>
+        <Chip
+          label="All Categories"
+          color={selectedCategory === null ? "primary" : "default"}
           onClick={() => setSelectedCategory(null)}
-        >
-          All Categories
-        </button>
+          sx={{ 
+            fontWeight: 'bold',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 1
+            },
+            transition: 'transform 0.2s, box-shadow 0.2s'
+          }}
+        />
         {activeCategories.map(category => (
-          <button
+          <Chip
             key={category.id}
-            className={`${styles.categoryFilterButton} ${selectedCategory === category.id ? styles.active : ''}`}
+            label={category.name}
+            color={selectedCategory === category.id ? "primary" : "default"}
             onClick={() => setSelectedCategory(category.id)}
-          >
-            {category.name}
-          </button>
+            sx={{ 
+              fontWeight: 'bold',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 1
+              },
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+          />
         ))}
-      </div>
+      </Box>
 
       {(selectedCategory ? activeCategories.filter(c => c.id === selectedCategory) : activeCategories).map(category => {
         // Get and sort corals for this category
@@ -343,235 +292,323 @@ const Corals = () => {
         if (categoryCorals.length === 0) return null;
 
         return (
-          <div key={category.id} style={{ marginBottom: '2rem' }}>
-            <div 
-              className={styles.categoryHeader}
+          <Box key={category.id} sx={{ mb: 4 }}>
+            <SectionHeader 
               onClick={() => toggleCategory(category.id)}
+              sx={{ 
+                cursor: 'pointer',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 2
+                }
+              }}
             >
-              <div>
-                {collapsedCategories.has(category.id) ? '▶' : '▼'} {category.name}
-              </div>
-            </div>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {collapsedCategories.has(category.id) ? <ExpandMoreIcon /> : <ExpandLessIcon />} 
+                <Typography variant="h6" component="span" sx={{ ml: 1 }}>
+                  {category.name}
+                </Typography>
+              </Box>
+            </SectionHeader>
 
             {!collapsedCategories.has(category.id) && (
-              <div className={styles.coralGrid}>
+              <Grid 
+                container 
+                spacing={3} 
+                sx={{ 
+                  p: { xs: 1, md: 2 },
+                  mt: 0 // Reset margin top
+                }}
+              >
                 {categoryCorals.map(coral => (
-                  <div key={coral.id} className={styles.card} style={cardStyle(coral)}>
-                    <div className={styles.imageContainer}>
-                      <ImageGallery
-                        images={[coral.imageUrl]}
-                        alt={coral.speciesName}
-                        className={styles.image}
-                        onImageClick={() => {
-                          setSelectedCoral(coral);
-                          setShowImageModal(true);
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={coral.id}>
+                    <CoralCard stockStatus={getStockStatus(coral)}>
+                      <Box 
+                        sx={{ 
+                          position: 'relative',
+                          height: 220,
+                          overflow: 'hidden',
+                          borderTopLeftRadius: theme.shape.borderRadius,
+                          borderTopRightRadius: theme.shape.borderRadius,
                         }}
-                      />
-                    </div>
-                    <div className={styles.cardContent}>
-                      <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem' }}>{coral.speciesName}</h3>
-                      <p style={{ margin: '0 0 0.5rem', color: '#718096', fontSize: '0.875rem' }}>
-                        {coral.scientificName}
-                      </p>
-                      <p style={{ margin: '0 0 1rem', fontSize: '0.875rem' }}>
-                        {coral.description}
-                      </p>
-                      {showAdditionalDetails && (
-                        <>
-                          <div style={{ marginBottom: '0.5rem' }}>
-                            <strong>Care Level:</strong> {coral.careLevel}
-                          </div>
-                          <div style={{ marginBottom: '0.5rem' }}>
-                            <strong>Growth Rate:</strong> {coral.growthRate}
-                          </div>
-                        </>
-                      )}
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <strong>Category:</strong> {category.name}
-                      </div>
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <strong>Price:</strong> {config.defaultCurrency}{coral.price}
-                      </div>
-                      <div style={{ 
-                        marginBottom: '0.5rem',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.25rem',
-                        fontSize: '0.875rem',
-                        fontWeight: 'bold',
-                        backgroundColor: 
-                          getStockStatus(coral) === 'OUT_OF_STOCK' ? '#FED7D7' :
-                          getStockStatus(coral) === 'LOW_STOCK' ? '#FEEBC8' : '#C6F6D5',
-                        color:
-                          getStockStatus(coral) === 'OUT_OF_STOCK' ? '#822727' :
-                          getStockStatus(coral) === 'LOW_STOCK' ? '#744210' : '#22543D',
-                      }}>
-                        {coral.quantity} {
-                          getStockStatus(coral) === 'OUT_OF_STOCK' ? '(Out of Stock)' :
-                          getStockStatus(coral) === 'LOW_STOCK' ? '(Low Stock)' :
-                          'in stock'
-                        }
-                      </div>
-                      {hasAdminPrivileges && (
-                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                          <button
-                            style={{...buttonStyle, backgroundColor: '#4299E1', flex: 1}}
-                            onClick={() => navigate(`/corals/${coral.id}/edit`)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            style={{...buttonStyle, backgroundColor: '#F56565', flex: 1}}
-                            onClick={() => handleDeleteCoral(coral.id)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                      >
+                        <ImageGallery
+                          images={[coral.imageUrl]}
+                          alt={coral.speciesName}
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            transform: 'scale(1.15)',
+                            transition: 'transform 0.3s ease',
+                            '&:hover': {
+                              transform: 'scale(1.2)',
+                            }
+                          }}
+                          onImageClick={() => {
+                            setSelectedCoral(coral);
+                            setShowImageModal(true);
+                          }}
+                        />
+                      </Box>
+                      <CardContent>
+                        <Typography variant="h5" component="h3" gutterBottom>
+                          {coral.speciesName}
+                        </Typography>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          {coral.scientificName}
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 2 }}>
+                          {coral.description}
+                        </Typography>
+                        {showAdditionalDetails && (
+                          <>
+                            <Box sx={{ mb: 1 }}>
+                              <Typography component="span" variant="body2" fontWeight="bold">
+                                Care Level:
+                              </Typography>{' '}
+                              <Typography component="span" variant="body2">
+                                {coral.careLevel}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ mb: 1 }}>
+                              <Typography component="span" variant="body2" fontWeight="bold">
+                                Growth Rate:
+                              </Typography>{' '}
+                              <Typography component="span" variant="body2">
+                                {coral.growthRate}
+                              </Typography>
+                            </Box>
+                          </>
+                        )}
+                        <Box sx={{ mb: 1 }}>
+                          <Typography component="span" variant="body2" fontWeight="bold">
+                            Category:
+                          </Typography>{' '}
+                          <Typography component="span" variant="body2">
+                            {category.name}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ mb: 1 }}>
+                          <Typography component="span" variant="body2" fontWeight="bold">
+                            Price:
+                          </Typography>{' '}
+                          <PriceTag variant="body1">
+                            {config.defaultCurrency}{coral.price}
+                          </PriceTag>
+                        </Box>
+                        <StockLevel status={getStockStatus(coral)} sx={{ mb: 1 }}>
+                          {coral.quantity} {
+                            getStockStatus(coral) === 'OUT_OF_STOCK' ? '(Out of Stock)' :
+                            getStockStatus(coral) === 'LOW_STOCK' ? '(Low Stock)' :
+                            'in stock'
+                          }
+                        </StockLevel>
+                        {hasAdminPrivileges && (
+                          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                            <ActionButton
+                              variant="contained"
+                              color="info"
+                              startIcon={<EditIcon />}
+                              onClick={() => navigate(`/corals/${coral.id}/edit`)}
+                              fullWidth
+                            >
+                              Edit
+                            </ActionButton>
+                            <ActionButton
+                              variant="contained"
+                              color="error"
+                              startIcon={<DeleteIcon />}
+                              onClick={() => handleDeleteCoral(coral.id)}
+                              fullWidth
+                            >
+                              Delete
+                            </ActionButton>
+                          </Box>
+                        )}
+                      </CardContent>
+                    </CoralCard>
+                  </Grid>
                 ))}
-              </div>
+              </Grid>
             )}
-          </div>
+          </Box>
         );
       })}
 
       {/* Category Modal */}
-      {showCategoryModal && (
-        <>
-          <div style={modalOverlayStyle} onClick={() => {
-            setShowCategoryModal(false);
-            setCategoryFormError('');
-          }} />
-          <div style={modalStyle}>
-            <h2 style={{...headerStyle, fontSize: '1.5rem', marginBottom: '1rem'}}>
+      <Modal
+        open={showCategoryModal}
+        onClose={() => {
+          setShowCategoryModal(false);
+          setCategoryFormError('');
+        }}
+        aria-labelledby="category-modal-title"
+      >
+        <ModalContainer>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h5" id="category-modal-title">
               Category Management
-            </h2>
-            
-            {/* Category List */}
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.2rem' }}>Categories</h3>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input
-                    type="checkbox"
+            </Typography>
+            <IconButton 
+              onClick={() => {
+                setShowCategoryModal(false);
+                setCategoryFormError('');
+              }}
+              size="small"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          
+          <Divider sx={{ mb: 3 }} />
+          
+          {/* Category List */}
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              mb: 2 
+            }}>
+              <Typography variant="h6">Categories</Typography>
+              <FormControlLabel
+                control={
+                  <Checkbox
                     checked={showInactiveCategories}
                     onChange={(e) => setShowInactiveCategories(e.target.checked)}
+                    color="primary"
                   />
-                  Show Inactive Categories
-                </label>
-              </div>
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                {categories.map(category => (
-                  <div key={category.id} style={{ 
+                }
+                label="Show Inactive Categories"
+              />
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {categories.map(category => (
+                <Box 
+                  key={category.id} 
+                  sx={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     alignItems: 'center',
-                    padding: '0.5rem',
-                    backgroundColor: '#F7FAFC',
-                    borderRadius: '0.375rem'
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: 'bold' }}>
+                    p: 1.5,
+                    bgcolor: 'background.paper',
+                    borderRadius: 1,
+                    boxShadow: 1
+                  }}
+                >
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Typography variant="subtitle1" fontWeight="bold">
                         {category.name}
-                        {category.status === 'INACTIVE' && (
-                          <span style={{ 
-                            marginLeft: '0.5rem',
-                            fontSize: '0.75rem',
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#FC8181',
-                            color: 'white',
-                            borderRadius: '0.25rem'
-                          }}>
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: '0.875rem', color: '#718096' }}>{category.description}</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button
-                        style={{...buttonStyle, backgroundColor: '#4299E1', padding: '0.25rem 0.5rem'}}
-                        onClick={() => {
-                          setEditingCategory(category);
-                          setCategoryForm({
-                            name: category.name,
-                            description: category.description
-                          });
-                        }}
-                      >
-                        Edit
-                      </button>
-                      {category.status === 'INACTIVE' ? (
-                        <button
-                          style={{...buttonStyle, backgroundColor: '#48BB78', padding: '0.25rem 0.5rem'}}
-                          onClick={() => handleRestoreCategory(category.id)}
-                        >
-                          Restore
-                        </button>
-                      ) : (
-                        <button
-                          style={{...buttonStyle, backgroundColor: '#F56565', padding: '0.25rem 0.5rem'}}
-                          onClick={() => handleDeleteCategory(category.id)}
-                        >
-                          Delete
-                        </button>
+                      </Typography>
+                      {category.status === 'INACTIVE' && (
+                        <Chip 
+                          label="Inactive" 
+                          size="small" 
+                          color="error" 
+                          sx={{ ml: 1 }}
+                        />
                       )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {category.description}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <ActionButton
+                      variant="contained"
+                      color="info"
+                      size="small"
+                      startIcon={<EditIcon />}
+                      onClick={() => {
+                        setEditingCategory(category);
+                        setCategoryForm({
+                          name: category.name,
+                          description: category.description
+                        });
+                      }}
+                    >
+                      Edit
+                    </ActionButton>
+                    {category.status === 'INACTIVE' ? (
+                      <ActionButton
+                        variant="contained"
+                        color="success"
+                        size="small"
+                        startIcon={<RestoreIcon />}
+                        onClick={() => handleRestoreCategory(category.id)}
+                      >
+                        Restore
+                      </ActionButton>
+                    ) : (
+                      <ActionButton
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDeleteCategory(category.id)}
+                      >
+                        Delete
+                      </ActionButton>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
 
-            {/* Category Form */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-              <button
-                style={{...buttonStyle, backgroundColor: '#718096'}}
+          <Divider sx={{ mb: 3 }} />
+
+          {/* Category Form */}
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            {editingCategory ? 'Edit Category' : 'Add New Category'}
+          </Typography>
+          
+          {categoryFormError && (
+            <FormError severity="error" sx={{ mb: 2 }}>
+              {categoryFormError}
+            </FormError>
+          )}
+          
+          <Box component="form" onSubmit={handleCategorySubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <FormField
+              label="Name"
+              fullWidth
+              value={categoryForm.name}
+              onChange={(e) => setCategoryForm({...categoryForm, name: e.target.value})}
+              required
+            />
+            <FormField
+              label="Description"
+              fullWidth
+              multiline
+              rows={4}
+              value={categoryForm.description}
+              onChange={(e) => setCategoryForm({...categoryForm, description: e.target.value})}
+              required
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+              <Button
+                variant="outlined"
                 onClick={() => {
                   setShowCategoryModal(false);
                   setCategoryFormError('');
                 }}
               >
-                Close
-              </button>
-            </div>
-            <form onSubmit={handleCategorySubmit} style={formStyle}>
-              {categoryFormError && (
-                <div style={{
-                  gridColumn: '1 / -1',
-                  padding: '0.75rem',
-                  backgroundColor: '#FED7D7',
-                  color: '#C53030',
-                  borderRadius: '0.375rem',
-                  marginBottom: '1rem'
-                }}>
-                  {categoryFormError}
-                </div>
-              )}
-              <label style={labelStyle}>Name</label>
-              <input
-                style={inputStyle}
-                type="text"
-                value={categoryForm.name}
-                onChange={(e) => setCategoryForm({...categoryForm, name: e.target.value})}
-                required
-              />
-              <label style={labelStyle}>Description</label>
-              <textarea
-                style={{...inputStyle, minHeight: '100px'}}
-                value={categoryForm.description}
-                onChange={(e) => setCategoryForm({...categoryForm, description: e.target.value})}
-                required
-              />
-              <div style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
-                <button style={buttonStyle} type="submit">
-                  {editingCategory ? 'Update Category' : 'Add Category'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </>
-      )}
+                Cancel
+              </Button>
+              <ActionButton
+                variant="contained"
+                color="primary"
+                type="submit"
+              >
+                {editingCategory ? 'Update Category' : 'Add Category'}
+              </ActionButton>
+            </Box>
+          </Box>
+        </ModalContainer>
+      </Modal>
 
       {/* Image Modal */}
       {showImageModal && selectedCoral && (
@@ -584,7 +621,7 @@ const Corals = () => {
           }}
         />
       )}
-    </div>
+    </Box>
   );
 };
 
