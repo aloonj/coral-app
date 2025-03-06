@@ -9,9 +9,9 @@ const colors = {
     contrastText: '#FFFFFF',
   },
   secondary: {
-    main: '#FF8C00', // Orange accent from Layout.jsx
-    light: '#FFA940',
-    dark: '#D97706',
+    main: '#9370DB', // Coral reef purple/lavender
+    light: '#B19CD9', // Lighter shade of the lavender
+    dark: '#7B68EE', // Darker shade of the lavender
     contrastText: '#FFFFFF',
   },
   error: {
