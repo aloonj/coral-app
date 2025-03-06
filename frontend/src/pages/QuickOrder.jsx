@@ -62,7 +62,7 @@ const QuickOrder = () => {
   const [layoutView, setLayoutView] = useState(() => {
     // Get saved layout preference from localStorage or default to 'list'
     const savedLayout = localStorage.getItem('quickOrderLayout');
-    return savedLayout || 'list';
+    return savedLayout || 'grid';
   });
 
   // Save layout preference to localStorage when it changes
