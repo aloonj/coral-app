@@ -1,5 +1,27 @@
 import { validationResult } from 'express-validator';
 import Coral from '../models/Coral.js';
+import Category from '../models/Category.js';
+import path from 'path';
+import { 
+  getUploadsBaseDir, 
+  sanitizeCategoryName
+} from '../utils/fileUtils.js';
+import { promises as fsPromises } from 'fs';
+
+// Helper function to move files
+const moveFile = async (sourcePath, targetPath) => {
+  try {
+    // Ensure target directory exists
+    await fsPromises.mkdir(path.dirname(targetPath), { recursive: true });
+    await fsPromises.rename(sourcePath, targetPath);
+  } catch (error) {
+    console.error('Error moving file:', error);
+    throw error;
+  }
+};
+
+const uploadsDir = getUploadsBaseDir();
+const coralsDir = path.join(uploadsDir, 'corals');
 
 export const createCoral = async (req, res) => {
   try {
@@ -8,10 +30,41 @@ export const createCoral = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
+    let imageUrl = req.file ? req.generatedFilePath : null;
+    
+    // Handle existing image selection
+    if (!req.file && req.body.imageUrl) {
+      const imagePath = req.body.imageUrl;
+      
+      // Check if image is from uncategorized folder
+      if (imagePath.startsWith('uncategorized/')) {
+        // Get category info
+        const category = await Category.findByPk(req.body.categoryId);
+        if (!category) {
+          return res.status(400).json({ message: 'Invalid category' });
+        }
+        
+        // Extract filename from path
+        const filename = path.basename(imagePath);
+        
+        // Move image to appropriate category folder
+        const sanitizedCategoryName = sanitizeCategoryName(category.name);
+        const sourcePath = path.join(uploadsDir, imagePath);
+        const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
+        const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
+        
+        await moveFile(sourcePath, targetPath);
+        imageUrl = newRelativePath;
+      } else {
+        // Use existing image path as-is
+        imageUrl = imagePath;
+      }
+    }
+
     const coralData = {
       ...req.body,
       createdBy: req.user.id,
-      imageUrl: req.file ? req.generatedFilePath : null // Store full relative path if image was uploaded
+      imageUrl: imageUrl
     };
 
     const coral = await Coral.create(coralData);
@@ -82,8 +135,31 @@ export const updateCoral = async (req, res) => {
       // If explicitly set to null (either string 'null' or actual null), remove the image
       updateData.imageUrl = null;
     } else if (req.body.imageUrl) {
-      // If an existing image is selected, use the path as-is
-      updateData.imageUrl = req.body.imageUrl;
+      const imagePath = req.body.imageUrl;
+      
+      // Check if image is from uncategorized folder
+      if (imagePath.startsWith('uncategorized/')) {
+        // Get category info
+        const category = await Category.findByPk(req.body.categoryId);
+        if (!category) {
+          return res.status(400).json({ message: 'Invalid category' });
+        }
+        
+        // Extract filename from path
+        const filename = path.basename(imagePath);
+        
+        // Move image to appropriate category folder
+        const sanitizedCategoryName = sanitizeCategoryName(category.name);
+        const sourcePath = path.join(uploadsDir, imagePath);
+        const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
+        const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
+        
+        await moveFile(sourcePath, targetPath);
+        updateData.imageUrl = newRelativePath;
+      } else {
+        // If an existing image is selected, use the path as-is
+        updateData.imageUrl = imagePath;
+      }
     }
 
     const updatedCoral = await coral.update(updateData);

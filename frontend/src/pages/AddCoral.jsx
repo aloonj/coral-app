@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { coralService, categoryService } from '../services/api';
+import { coralService, categoryService, imageService, BASE_URL } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { config } from '../config';
+import ImageSelector from '../components/ImageGallery/ImageSelector';
 import styles from './AddCoral.module.css';
 
 const AddCoral = () => {
@@ -11,6 +12,7 @@ const AddCoral = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formError, setFormError] = useState('');
+  const [showImageSelector, setShowImageSelector] = useState(false);
   const showAdditionalDetails = import.meta.env.VITE_SHOW_ADDITIONAL_CORAL_DETAILS === 'true';
   
   const [coralForm, setCoralForm] = useState({
@@ -22,6 +24,7 @@ const AddCoral = () => {
     quantity: '',
     minimumStock: '',
     image: null,
+    imageUrl: null,
     ...(showAdditionalDetails && {
       careLevel: 'EASY',
       growthRate: 'MODERATE',
@@ -56,13 +59,30 @@ const AddCoral = () => {
     setFormError('');
 
     try {
-      const coralData = {
-        ...coralForm,
-        price: parseFloat(coralForm.price),
-        categoryId: parseInt(coralForm.categoryId),
-        quantity: parseInt(coralForm.quantity),
-        minimumStock: parseInt(coralForm.minimumStock)
-      };
+      const coralData = new FormData();
+      
+      // Append all form fields
+      coralData.append('speciesName', coralForm.speciesName);
+      coralData.append('scientificName', coralForm.scientificName);
+      coralData.append('description', coralForm.description);
+      coralData.append('price', parseFloat(coralForm.price));
+      coralData.append('categoryId', parseInt(coralForm.categoryId));
+      coralData.append('quantity', parseInt(coralForm.quantity));
+      coralData.append('minimumStock', parseInt(coralForm.minimumStock));
+      
+      if (showAdditionalDetails) {
+        coralData.append('careLevel', coralForm.careLevel);
+        coralData.append('growthRate', coralForm.growthRate);
+        coralData.append('lightingRequirements', coralForm.lightingRequirements);
+        coralData.append('waterFlow', coralForm.waterFlow);
+      }
+      
+      // Handle image
+      if (coralForm.image) {
+        coralData.append('image', coralForm.image);
+      } else if (coralForm.imageUrl) {
+        coralData.append('imageUrl', coralForm.imageUrl);
+      }
 
       await coralService.createCoral(coralData);
       navigate('/corals');
@@ -186,29 +206,74 @@ const AddCoral = () => {
 
         <div className={styles.formGroup}>
           <label className={styles.label}>Image</label>
-          <div>
-            <input
-              className={styles.input}
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                setCoralForm(prev => ({...prev, image: file}));
-              }}
-            />
-            {coralForm.image && (
-              <div className={styles.imagePreview}>
-                <img
-                  src={URL.createObjectURL(coralForm.image)}
-                  alt="Coral preview"
-                  onError={(e) => {
-                    e.target.src = '/src/assets/images/image-coming-soon.svg';
+          <div className={styles.imageContainer}>
+            <div className={styles.imageInputGroup}>
+              <input
+                className={styles.imageInput}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  setCoralForm(prev => ({
+                    ...prev, 
+                    image: file,
+                    imageUrl: null
+                  }));
+                }}
+              />
+              <button
+                type="button"
+                className={styles.selectImageButton}
+                onClick={() => setShowImageSelector(true)}
+              >
+                Select Existing Image
+              </button>
+            </div>
+            {(coralForm.image || coralForm.imageUrl) && (
+              <div style={{ position: 'relative' }}>
+                <div className={styles.imagePreview}>
+                  <img
+                    src={coralForm.image 
+                      ? URL.createObjectURL(coralForm.image)
+                      : coralForm.imageUrl
+                        ? `${BASE_URL}/uploads/${coralForm.imageUrl}`
+                        : '/src/assets/images/image-coming-soon.svg'
+                    }
+                    alt="Coral preview"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoralForm(prev => ({
+                      ...prev,
+                      image: null,
+                      imageUrl: null
+                    }));
                   }}
-                />
+                  className={styles.removeImageButton}
+                >
+                  ×
+                </button>
               </div>
             )}
           </div>
         </div>
+
+        {showImageSelector && (
+          <ImageSelector
+            onSelect={(image) => {
+              setCoralForm(prev => ({
+                ...prev,
+                image: null,
+                imageUrl: image.relativePath
+              }));
+              setShowImageSelector(false);
+            }}
+            onClose={() => setShowImageSelector(false)}
+            currentImage={coralForm.imageUrl}
+          />
+        )}
 
         <div className={styles.formGroup}>
           <label className={styles.label}>Category</label>

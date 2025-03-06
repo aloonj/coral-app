@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { FaUserCircle, FaCog, FaShoppingCart, FaSignOutAlt, FaChartBar } from 'react-icons/fa';
 import styles from './Layout.module.css';
-import fraggleRockLogo from '../../assets/images/fraggle-rock-logo.png';
+import fraggleRockLogo from '../../assets/images/FR-Logo.svg';
 
 const Layout = ({ children }) => {
   const pageWrapperStyle = {
@@ -148,7 +148,7 @@ const Layout = ({ children }) => {
                 src={fraggleRockLogo} 
                 alt="FraggleRock Logo" 
                 style={{
-                  height: '75px',
+                  height: '50px',
                   filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))',
                   transition: 'transform 0.3s ease',
                   marginBottom: '-0.75rem'
@@ -160,30 +160,6 @@ const Layout = ({ children }) => {
                   e.target.style.transform = 'scale(1)';
                 }}
               />
-              <div style={{
-                marginLeft: '15px',
-                display: 'flex',
-                alignItems: 'center',
-                fontFamily: 'Quicksand, VAG Rounded, sans-serif'
-              }}>
-                <span style={{
-                  color: '#FF8C00', // Keep the original orange color for the fraggle text
-                  fontSize: '24px',
-                  fontWeight: '500'
-                }}>
-                  fraggle
-                </span>
-                <span style={{
-                  color: '#0066CC',
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  fontFamily: 'Raleway, "Source Sans Pro", "Work Sans", sans-serif',
-                  marginLeft: '2px',
-                  letterSpacing: '0.02em'
-                }}>
-                  ROCK
-                </span>
-              </div>
             </Link>
             <button 
               className={`${styles.burgerMenu} ${isMobileMenuOpen ? styles.open : ''}`} 
