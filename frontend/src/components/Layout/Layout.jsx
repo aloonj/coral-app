@@ -167,7 +167,7 @@ const Layout = ({ children }) => {
                 fontFamily: 'Quicksand, VAG Rounded, sans-serif'
               }}>
                 <span style={{
-                  color: '#FF8C00',
+                  color: '#FF8C00', // Keep the original orange color for the fraggle text
                   fontSize: '24px',
                   fontWeight: '500'
                 }}>
