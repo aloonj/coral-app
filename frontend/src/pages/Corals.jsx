@@ -249,7 +249,7 @@ const Corals = () => {
             </ActionButton>
             <ActionButton
               variant="contained"
-              color="secondary"
+              sx={{ backgroundColor: '#FF8C00', '&:hover': { backgroundColor: '#E67E00' } }}
               startIcon={<CategoryIcon />}
               onClick={() => {
                 setEditingCategory(null);
