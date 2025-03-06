@@ -39,7 +39,9 @@ import {
   Add as AddIcon,
   Remove as RemoveIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon
 } from '@mui/icons-material';
 import { PageTitle } from '../components/StyledComponents';
 
@@ -65,6 +67,7 @@ const QuickOrder = () => {
     return savedLayout || 'grid';
   });
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Save layout preference to localStorage when it changes
   useEffect(() => {
@@ -276,6 +279,58 @@ const QuickOrder = () => {
     }
   };
 
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    
+    // Auto-expand categories with matching results
+    if (event.target.value.trim() !== '') {
+      const matchingCategories = new Set();
+      
+      // Find categories with matching corals
+      categories.forEach(category => {
+        const categoryCorals = groupedCorals[category.id] || [];
+        const hasMatch = categoryCorals.some(coral => 
+          coral.speciesName.toLowerCase().includes(event.target.value.toLowerCase()) ||
+          coral.scientificName.toLowerCase().includes(event.target.value.toLowerCase()) ||
+          coral.description.toLowerCase().includes(event.target.value.toLowerCase())
+        );
+        
+        if (hasMatch) {
+          matchingCategories.add(category.id);
+        }
+      });
+      
+      // Expand matching categories
+      setCollapsedCategories(prev => {
+        const newSet = new Set(prev);
+        matchingCategories.forEach(id => {
+          newSet.delete(id); // Remove from collapsed set to expand
+        });
+        return newSet;
+      });
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+  };
+
+  // Filter corals based on search term
+  const filteredGroupedCorals = {};
+  categories.forEach(category => {
+    const categoryCorals = groupedCorals[category.id] || [];
+    
+    if (searchTerm.trim() === '') {
+      filteredGroupedCorals[category.id] = categoryCorals;
+    } else {
+      filteredGroupedCorals[category.id] = categoryCorals.filter(coral => 
+        coral.speciesName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        coral.scientificName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        coral.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+  });
+
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Box sx={{ 
@@ -299,6 +354,36 @@ const QuickOrder = () => {
             <ViewModuleIcon />
           </ToggleButton>
         </ToggleButtonGroup>
+      </Box>
+
+      {/* Search Box */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search corals by name or description..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <IconButton 
+                  onClick={clearSearch}
+                  edge="end"
+                  size="small"
+                  aria-label="clear search"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
       </Box>
 
       <Box sx={{ 
@@ -362,12 +447,35 @@ const QuickOrder = () => {
         </Box>
       )}
 
+      {/* No results message when searching */}
+      {searchTerm.trim() !== '' && 
+        Object.values(filteredGroupedCorals).every(corals => corals.length === 0) && (
+        <Box sx={{ 
+          py: 4, 
+          textAlign: 'center',
+          backgroundColor: theme.palette.background.paper,
+          borderRadius: 1,
+          boxShadow: 1
+        }}>
+          <Typography variant="h6" color="text.secondary">
+            No corals found matching "{searchTerm}"
+          </Typography>
+          <Button 
+            variant="outlined" 
+            startIcon={<ClearIcon />} 
+            onClick={clearSearch}
+            sx={{ mt: 2 }}
+          >
+            Clear Search
+          </Button>
+        </Box>
+      )}
+
       {categories
-        .filter(category => selectedCategory === null || category.id === selectedCategory)
+        .filter(category => (selectedCategory === null || category.id === selectedCategory) && 
+                           (filteredGroupedCorals[category.id]?.length > 0))
         .map(category => {
-          const categoryCorals = groupedCorals[category.id] || [];
-          
-          if (categoryCorals.length === 0) return null;
+          const categoryCorals = filteredGroupedCorals[category.id] || [];
         
         const categoryTotal = categoryCorals.reduce((total, coral) => 
           total + (orderQuantities[coral.id] || 0), 0);
