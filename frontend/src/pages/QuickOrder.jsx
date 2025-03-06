@@ -64,6 +64,7 @@ const QuickOrder = () => {
     const savedLayout = localStorage.getItem('quickOrderLayout');
     return savedLayout || 'grid';
   });
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   // Save layout preference to localStorage when it changes
   useEffect(() => {
@@ -300,6 +301,43 @@ const QuickOrder = () => {
         </ToggleButtonGroup>
       </Box>
 
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 1, 
+        flexWrap: 'wrap', 
+        mb: 3 
+      }}>
+        <Chip
+          label="All Categories"
+          color={selectedCategory === null ? "primary" : "default"}
+          onClick={() => setSelectedCategory(null)}
+          sx={{ 
+            fontWeight: 'bold',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 1
+            },
+            transition: 'transform 0.2s, box-shadow 0.2s'
+          }}
+        />
+        {categories.filter(cat => cat.status !== 'INACTIVE').map(category => (
+          <Chip
+            key={category.id}
+            label={category.name}
+            color={selectedCategory === category.id ? "primary" : "default"}
+            onClick={() => setSelectedCategory(category.id)}
+            sx={{ 
+              fontWeight: 'bold',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 1
+              },
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+          />
+        ))}
+      </Box>
+
       {isAdmin && (
         <Box sx={{ mb: 3 }}>
           <FormControl fullWidth variant="outlined">
@@ -324,10 +362,12 @@ const QuickOrder = () => {
         </Box>
       )}
 
-      {categories.map(category => {
-        const categoryCorals = groupedCorals[category.id] || [];
-        
-        if (categoryCorals.length === 0) return null;
+      {categories
+        .filter(category => selectedCategory === null || category.id === selectedCategory)
+        .map(category => {
+          const categoryCorals = groupedCorals[category.id] || [];
+          
+          if (categoryCorals.length === 0) return null;
         
         const categoryTotal = categoryCorals.reduce((total, coral) => 
           total + (orderQuantities[coral.id] || 0), 0);
