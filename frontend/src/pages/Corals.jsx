@@ -402,11 +402,16 @@ const Corals = () => {
                                 {coral.scientificName}
                               </Typography>
                             </Box>
-                            <StockLevel status={stockStatus}>
-                              {stockStatus === 'OUT_OF_STOCK' ? 'Out of Stock' :
-                               stockStatus === 'LOW_STOCK' ? 'Low Stock' :
-                               'In Stock'}
-                            </StockLevel>
+                            <Chip 
+                              label={stockStatus === 'OUT_OF_STOCK' ? 'Out of Stock' :
+                                    stockStatus === 'LOW_STOCK' ? 'Low Stock' :
+                                    'In Stock'}
+                              color={stockStatus === 'OUT_OF_STOCK' ? 'error' :
+                                    stockStatus === 'LOW_STOCK' ? 'warning' :
+                                    'success'}
+                              variant="filled"
+                              size="small"
+                            />
                           </Box>
                           
                           <Typography variant="body2" color="text.secondary" paragraph>
