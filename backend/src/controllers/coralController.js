@@ -13,7 +13,17 @@ const moveFile = async (sourcePath, targetPath) => {
   try {
     // Ensure target directory exists
     await fsPromises.mkdir(path.dirname(targetPath), { recursive: true });
-    await fsPromises.rename(sourcePath, targetPath);
+    
+    // Check if source and target are on the same filesystem
+    try {
+      await fsPromises.rename(sourcePath, targetPath);
+    } catch (renameError) {
+      // If rename fails, try copy + delete as fallback
+      console.log('Rename failed, trying copy + delete instead:', renameError.message);
+      const content = await fsPromises.readFile(sourcePath);
+      await fsPromises.writeFile(targetPath, content);
+      await fsPromises.unlink(sourcePath);
+    }
   } catch (error) {
     console.error('Error moving file:', error);
     throw error;
@@ -38,23 +48,42 @@ export const createCoral = async (req, res) => {
       
       // Check if image is from uncategorized folder
       if (imagePath.startsWith('uncategorized/')) {
-        // Get category info
-        const category = await Category.findByPk(req.body.categoryId);
-        if (!category) {
-          return res.status(400).json({ message: 'Invalid category' });
+        try {
+          // Get category info
+          const category = await Category.findByPk(req.body.categoryId);
+          if (!category) {
+            return res.status(400).json({ message: 'Invalid category' });
+          }
+          
+          // Extract filename from path
+          const filename = path.basename(imagePath);
+          
+          // Move image to appropriate category folder
+          const sanitizedCategoryName = sanitizeCategoryName(category.name);
+          const sourcePath = path.join(uploadsDir, imagePath);
+          
+          // Check if source file exists
+          try {
+            await fsPromises.access(sourcePath);
+          } catch (err) {
+            return res.status(400).json({ 
+              message: `Source image not found: ${imagePath}`,
+              details: err.message
+            });
+          }
+          
+          const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
+          const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
+          
+          await moveFile(sourcePath, targetPath);
+          imageUrl = newRelativePath;
+        } catch (error) {
+          console.error('Error moving image:', error);
+          return res.status(400).json({ 
+            message: 'Error moving image to category folder',
+            details: error.message
+          });
         }
-        
-        // Extract filename from path
-        const filename = path.basename(imagePath);
-        
-        // Move image to appropriate category folder
-        const sanitizedCategoryName = sanitizeCategoryName(category.name);
-        const sourcePath = path.join(uploadsDir, imagePath);
-        const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
-        const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
-        
-        await moveFile(sourcePath, targetPath);
-        imageUrl = newRelativePath;
       } else {
         // Use existing image path as-is
         imageUrl = imagePath;
@@ -139,23 +168,42 @@ export const updateCoral = async (req, res) => {
       
       // Check if image is from uncategorized folder
       if (imagePath.startsWith('uncategorized/')) {
-        // Get category info
-        const category = await Category.findByPk(req.body.categoryId);
-        if (!category) {
-          return res.status(400).json({ message: 'Invalid category' });
+        try {
+          // Get category info
+          const category = await Category.findByPk(req.body.categoryId);
+          if (!category) {
+            return res.status(400).json({ message: 'Invalid category' });
+          }
+          
+          // Extract filename from path
+          const filename = path.basename(imagePath);
+          
+          // Move image to appropriate category folder
+          const sanitizedCategoryName = sanitizeCategoryName(category.name);
+          const sourcePath = path.join(uploadsDir, imagePath);
+          
+          // Check if source file exists
+          try {
+            await fsPromises.access(sourcePath);
+          } catch (err) {
+            return res.status(400).json({ 
+              message: `Source image not found: ${imagePath}`,
+              details: err.message
+            });
+          }
+          
+          const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
+          const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
+          
+          await moveFile(sourcePath, targetPath);
+          updateData.imageUrl = newRelativePath;
+        } catch (error) {
+          console.error('Error moving image:', error);
+          return res.status(400).json({ 
+            message: 'Error moving image to category folder',
+            details: error.message
+          });
         }
-        
-        // Extract filename from path
-        const filename = path.basename(imagePath);
-        
-        // Move image to appropriate category folder
-        const sanitizedCategoryName = sanitizeCategoryName(category.name);
-        const sourcePath = path.join(uploadsDir, imagePath);
-        const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
-        const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
-        
-        await moveFile(sourcePath, targetPath);
-        updateData.imageUrl = newRelativePath;
       } else {
         // If an existing image is selected, use the path as-is
         updateData.imageUrl = imagePath;
