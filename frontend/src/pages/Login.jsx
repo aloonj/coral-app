@@ -18,13 +18,14 @@ const Login = () => {
     <Container maxWidth="sm">
       <Box
         sx={{
-          py: 6,
+          py: 2, // Reduced from 6 to 2
+          mt: 4, // Add a top margin to push it down just enough from the top
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           width: '100%',
-          minHeight: 'calc(100vh - 64px)', // Account for potential header
-          justifyContent: 'center',
+          // minHeight: 'calc(100vh - 64px)', // Removed to prevent full-height centering
+          justifyContent: 'flex-start', // Align to top instead of center
         }}
       >
         <Paper
