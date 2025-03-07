@@ -36,7 +36,7 @@ import {
   Receipt as ReceiptIcon
 } from '@mui/icons-material';
 import ThemeToggle from '../ThemeToggle';
-import fraggleRockLogo from '../../assets/images/fraggle-rock-logo.png';
+import fraggleRockLogo from '../../assets/images/FR-Logo.svg';
 
 /**
  * Enhanced Layout component with theme toggle functionality.
