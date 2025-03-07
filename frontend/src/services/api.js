@@ -112,7 +112,11 @@ export const imageService = {
     });
   },
   // TEMPORARY: Fix uncategorized images that are in use by corals
-  fixUncategorizedImages: () => api.post('/images/fix-uncategorized'),
+  fixUncategorizedImages: () => api.post('/images/fix-uncategorized', {}, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }),
 };
 
 export const categoryService = {
