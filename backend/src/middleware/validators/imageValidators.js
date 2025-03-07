@@ -1,14 +1,23 @@
 import { param, body } from 'express-validator';
 import path from 'path';
+import { sanitizeCategoryName } from '../../utils/fileUtils.js';
 
-const allowedCategories = ['uncategorized', 'lps', 'sps', 'softs', 'zoanthids', 'mushrooms'];
+// We'll use a more flexible approach for categories
 const allowedImageTypes = ['.jpg', '.jpeg', '.png', '.webp'];
 
 export const imagePathValidator = [
   param('category')
     .trim()
-    .isIn(allowedCategories)
-    .withMessage('Invalid category'),
+    .custom(value => {
+      // Always allow uncategorized
+      if (value === 'uncategorized') {
+        return true;
+      }
+      
+      // For other categories, we'll be more flexible
+      // This allows for new categories to be added to the database without updating this list
+      return true;
+    }),
   param('filename')
     .trim()
     .custom((value) => {
@@ -28,8 +37,16 @@ export const categorizeImageValidator = [
   ...imagePathValidator,
   body('targetCategory')
     .trim()
-    .isIn(allowedCategories)
-    .withMessage('Invalid target category')
+    .custom(value => {
+      // Always allow uncategorized
+      if (value === 'uncategorized') {
+        return true;
+      }
+      
+      // For other categories, we'll be more flexible
+      // This allows for new categories to be added to the database without updating this list
+      return true;
+    })
 ];
 
 export const uploadImagesValidator = [

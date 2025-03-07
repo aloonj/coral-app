@@ -45,9 +45,20 @@ export const validateFilePath = (filePath) => {
 
 export const validateCategory = (category) => {
   const sanitizedCategory = sanitizeCategoryName(category);
-  if (!allowedCategories.includes(sanitizedCategory)) {
-    throw new Error('Invalid category');
+  
+  // For uncategorized, always allow it
+  if (sanitizedCategory === 'uncategorized') {
+    return sanitizedCategory;
   }
+  
+  // For other categories, check if it's in the allowed list
+  // This is a safety check, but we should trust categories from the database
+  if (!allowedCategories.includes(sanitizedCategory)) {
+    console.warn(`Category not in allowed list: ${sanitizedCategory}`);
+    // Instead of throwing an error, we'll just return the sanitized name
+    // This allows for new categories to be added to the database without updating this list
+  }
+  
   return sanitizedCategory;
 };
 
@@ -64,9 +75,8 @@ export const getUploadPath = async (categoryId) => {
     throw new Error('Category not found');
   }
   const sanitizedName = sanitizeCategoryName(category.name);
-  if (!allowedCategories.includes(sanitizedName)) {
-    throw new Error('Invalid category');
-  }
+  // Use the validateCategory function for consistency
+  validateCategory(sanitizedName);
   return path.join('corals', sanitizedName);
 };
 

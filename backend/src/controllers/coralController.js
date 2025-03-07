@@ -42,52 +42,59 @@ export const createCoral = async (req, res) => {
 
     let imageUrl = req.file ? req.generatedFilePath : null;
     
-    // Handle existing image selection
-    if (!req.file && req.body.imageUrl) {
-      const imagePath = req.body.imageUrl;
-      
-      // Check if image is from uncategorized folder
-      if (imagePath.startsWith('uncategorized/')) {
+    // Get category info if we have an image to process
+    if ((req.file || (req.body.imageUrl && req.body.imageUrl.startsWith('uncategorized/'))) && req.body.categoryId) {
+      try {
+        const category = await Category.findByPk(req.body.categoryId);
+        if (!category) {
+          return res.status(400).json({ message: 'Invalid category' });
+        }
+        
+        // Determine the source path and filename
+        let sourcePath;
+        let filename;
+        
+        if (req.file) {
+          // For newly uploaded files
+          filename = req.originalFilename;
+          sourcePath = path.join(uploadsDir, 'uncategorized', filename);
+        } else if (req.body.imageUrl) {
+          // For existing image selection
+          const imagePath = req.body.imageUrl;
+          filename = path.basename(imagePath);
+          sourcePath = path.join(uploadsDir, imagePath);
+        }
+        
+        // Check if source file exists
         try {
-          // Get category info
-          const category = await Category.findByPk(req.body.categoryId);
-          if (!category) {
-            return res.status(400).json({ message: 'Invalid category' });
-          }
-          
-          // Extract filename from path
-          const filename = path.basename(imagePath);
-          
-          // Move image to appropriate category folder
-          const sanitizedCategoryName = sanitizeCategoryName(category.name);
-          const sourcePath = path.join(uploadsDir, imagePath);
-          
-          // Check if source file exists
-          try {
-            await fsPromises.access(sourcePath);
-          } catch (err) {
-            return res.status(400).json({ 
-              message: `Source image not found: ${imagePath}`,
-              details: err.message
-            });
-          }
-          
-          const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
-          const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
-          
-          await moveFile(sourcePath, targetPath);
-          imageUrl = newRelativePath;
-        } catch (error) {
-          console.error('Error moving image:', error);
+          await fsPromises.access(sourcePath);
+        } catch (err) {
           return res.status(400).json({ 
-            message: 'Error moving image to category folder',
-            details: error.message
+            message: `Source image not found: ${sourcePath}`,
+            details: err.message
           });
         }
-      } else {
-        // Use existing image path as-is
-        imageUrl = imagePath;
+        
+        // Move image to appropriate category folder
+        const sanitizedCategoryName = sanitizeCategoryName(category.name);
+        const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
+        const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
+        
+        // Ensure target directory exists
+        await fsPromises.mkdir(path.dirname(targetPath), { recursive: true });
+        
+        await moveFile(sourcePath, targetPath);
+        imageUrl = newRelativePath;
+      } catch (error) {
+        console.error('Error moving image:', error);
+        return res.status(400).json({ 
+          message: 'Error moving image to category folder',
+          details: error.message
+        });
       }
+    } else if (req.body.imageUrl && !req.body.imageUrl.startsWith('uncategorized/')) {
+      // Use existing image path as-is if it's not from uncategorized
+      imageUrl = req.body.imageUrl;
     }
 
     const coralData = {
@@ -157,57 +164,61 @@ export const updateCoral = async (req, res) => {
     const updateData = { ...req.body };
     
     // Handle image updates
-    if (req.file) {
-      // If a new image is uploaded, update the imageUrl with full relative path
-      updateData.imageUrl = req.generatedFilePath;
+    if ((req.file || (req.body.imageUrl && req.body.imageUrl.startsWith('uncategorized/'))) && req.body.categoryId) {
+      try {
+        const category = await Category.findByPk(req.body.categoryId);
+        if (!category) {
+          return res.status(400).json({ message: 'Invalid category' });
+        }
+        
+        // Determine the source path and filename
+        let sourcePath;
+        let filename;
+        
+        if (req.file) {
+          // For newly uploaded files
+          filename = req.originalFilename;
+          sourcePath = path.join(uploadsDir, 'uncategorized', filename);
+        } else if (req.body.imageUrl) {
+          // For existing image selection
+          const imagePath = req.body.imageUrl;
+          filename = path.basename(imagePath);
+          sourcePath = path.join(uploadsDir, imagePath);
+        }
+        
+        // Check if source file exists
+        try {
+          await fsPromises.access(sourcePath);
+        } catch (err) {
+          return res.status(400).json({ 
+            message: `Source image not found: ${sourcePath}`,
+            details: err.message
+          });
+        }
+        
+        // Move image to appropriate category folder
+        const sanitizedCategoryName = sanitizeCategoryName(category.name);
+        const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
+        const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
+        
+        // Ensure target directory exists
+        await fsPromises.mkdir(path.dirname(targetPath), { recursive: true });
+        
+        await moveFile(sourcePath, targetPath);
+        updateData.imageUrl = newRelativePath;
+      } catch (error) {
+        console.error('Error moving image:', error);
+        return res.status(400).json({ 
+          message: 'Error moving image to category folder',
+          details: error.message
+        });
+      }
     } else if (req.body.imageUrl === 'null' || req.body.imageUrl === null) {
       // If explicitly set to null (either string 'null' or actual null), remove the image
       updateData.imageUrl = null;
-    } else if (req.body.imageUrl) {
-      const imagePath = req.body.imageUrl;
-      
-      // Check if image is from uncategorized folder
-      if (imagePath.startsWith('uncategorized/')) {
-        try {
-          // Get category info
-          const category = await Category.findByPk(req.body.categoryId);
-          if (!category) {
-            return res.status(400).json({ message: 'Invalid category' });
-          }
-          
-          // Extract filename from path
-          const filename = path.basename(imagePath);
-          
-          // Move image to appropriate category folder
-          const sanitizedCategoryName = sanitizeCategoryName(category.name);
-          const sourcePath = path.join(uploadsDir, imagePath);
-          
-          // Check if source file exists
-          try {
-            await fsPromises.access(sourcePath);
-          } catch (err) {
-            return res.status(400).json({ 
-              message: `Source image not found: ${imagePath}`,
-              details: err.message
-            });
-          }
-          
-          const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
-          const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
-          
-          await moveFile(sourcePath, targetPath);
-          updateData.imageUrl = newRelativePath;
-        } catch (error) {
-          console.error('Error moving image:', error);
-          return res.status(400).json({ 
-            message: 'Error moving image to category folder',
-            details: error.message
-          });
-        }
-      } else {
-        // If an existing image is selected, use the path as-is
-        updateData.imageUrl = imagePath;
-      }
+    } else if (req.body.imageUrl && !req.body.imageUrl.startsWith('uncategorized/')) {
+      // If an existing image is selected and not from uncategorized, use the path as-is
+      updateData.imageUrl = req.body.imageUrl;
     }
 
     const updatedCoral = await coral.update(updateData);

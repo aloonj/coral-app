@@ -6,16 +6,9 @@ import { getUploadPath, ensureUploadPath, getGeneralUploadPath } from '../utils/
 const storage = multer.diskStorage({
   destination: async function (req, file, cb) {
     try {
-      let uploadPath;
-      if (req.body.categoryId) {
-        // Coral image upload
-        uploadPath = await getUploadPath(req.body.categoryId);
-      } else if (req.body.category) {
-        // General image upload
-        uploadPath = await getGeneralUploadPath(req.body.category);
-      } else {
-        uploadPath = 'uncategorized';
-      }
+      // Always upload to uncategorized first for new files
+      // They will be moved to the correct category folder after form processing
+      const uploadPath = 'uncategorized';
       const fullPath = await ensureUploadPath(uploadPath);
       cb(null, fullPath);
     } catch (error) {
@@ -26,26 +19,10 @@ const storage = multer.diskStorage({
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const filename = uniqueSuffix + path.extname(file.originalname);
     // Store the relative path for later use
-    try {
-      let categoryPath;
-      if (req.body.categoryId) {
-        // Coral image upload
-        const uploadPath = await getUploadPath(req.body.categoryId);
-        categoryPath = path.join(uploadPath, filename);
-      } else if (req.body.category) {
-        // General image upload
-        const uploadPath = await getGeneralUploadPath(req.body.category);
-        categoryPath = path.join(uploadPath, filename);
-      } else {
-        categoryPath = path.join('uncategorized', filename);
-      }
-      req.generatedFilePath = categoryPath;
-      cb(null, filename);
-    } catch (error) {
-      console.error('Error generating file path:', error);
-      req.generatedFilePath = path.join('uncategorized', filename);
-      cb(null, filename);
-    }
+    const categoryPath = path.join('uncategorized', filename);
+    req.generatedFilePath = categoryPath;
+    req.originalFilename = filename; // Store the filename for later use
+    cb(null, filename);
   }
 });
 
