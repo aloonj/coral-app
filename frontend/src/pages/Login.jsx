@@ -1,8 +1,8 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AuthForm from '../components/Auth/AuthForm';
-import { Container, Box, Paper, Typography, useTheme } from '@mui/material';
-import { PageTitle } from '../components/StyledComponents';
+import { Container, Box, Paper, Typography, useTheme, Divider } from '@mui/material';
+import { PageTitle, ActionButton } from '../components/StyledComponents';
 import { useColorMode } from '../theme/ThemeContext';
 
 const Login = () => {
@@ -61,6 +61,37 @@ const Login = () => {
           </PageTitle>
           
           <AuthForm mode="login" />
+          
+          <Divider sx={{ my: 3 }} />
+          
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center',
+            gap: theme.spacing(2)
+          }}>
+            <Typography variant="body1" color="text.secondary">
+              Don't have an account yet?
+            </Typography>
+            <ActionButton
+              component={RouterLink}
+              to="/register"
+              variant="outlined"
+              color="primary"
+              sx={{
+                width: '100%',
+                py: 1,
+                fontWeight: 500,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme.shadows[2],
+                },
+              }}
+            >
+              Register as a Client
+            </ActionButton>
+          </Box>
         </Paper>
       </Box>
     </Container>

@@ -10,7 +10,8 @@ import {
   regenerateAdminPassword,
   removeAdminUser,
   updateAdminUser,
-  updateAdminRole
+  updateAdminRole,
+  clientRegister
 } from '../controllers/authController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
@@ -32,6 +33,7 @@ const loginValidation = [
 
 // Routes
 router.post('/register', authenticate, authorize('ADMIN', 'SUPERADMIN'), registerValidation, register);
+router.post('/client-register', registerValidation, clientRegister);
 router.post('/login', loginValidation, login);
 router.get('/profile', authenticate, getProfile);
 

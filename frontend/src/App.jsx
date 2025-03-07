@@ -5,7 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Corals from './pages/Corals';
 import QuickOrder from './pages/QuickOrder';
 import Login from './pages/Login';
-// Register import removed as external registration is not needed
+import Register from './pages/Register';
 import EditCoral from './pages/EditCoral';
 import AddCoral from './pages/AddCoral';
 import Orders from './pages/Orders';
@@ -74,7 +74,7 @@ function App() {
               } 
             />
             <Route path="/login" element={<Login />} />
-            {/* Register route removed as external registration is not needed */}
+            <Route path="/register" element={<Register />} />
             <Route 
               path="/corals/add" 
               element={

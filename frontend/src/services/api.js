@@ -145,7 +145,7 @@ export const authService = {
     }
     return response;
   },
-  register: (userData) => api.post('/auth/register', userData),
+  register: (userData) => api.post('/auth/client-register', userData),
   logout: () => {
     tokenStorage.removeToken();
   },
