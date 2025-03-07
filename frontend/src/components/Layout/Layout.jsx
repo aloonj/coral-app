@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { FaUserCircle, FaCog, FaShoppingCart, FaSignOutAlt, FaChartBar } from 'react-icons/fa';
 import styles from './Layout.module.css';
-import fraggleRockLogo from '../../assets/images/FR-Logo.svg';
+import fraggleRockLogo from '../../assets/images/fr-logo.svg';
 
 const Layout = ({ children }) => {
   const pageWrapperStyle = {
