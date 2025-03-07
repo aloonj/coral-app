@@ -111,6 +111,8 @@ export const imageService = {
       },
     });
   },
+  // TEMPORARY: Fix uncategorized images that are in use by corals
+  fixUncategorizedImages: () => api.post('/images/fix-uncategorized'),
 };
 
 export const categoryService = {

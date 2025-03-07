@@ -320,3 +320,54 @@
   border-radius: 8px;
   margin-top: 2rem;
 }
+
+/* TEMPORARY STYLES: For the fix uncategorized images feature */
+.fixButton {
+  margin-left: 10px;
+  background-color: #ff9800; /* Orange color to make it stand out as temporary */
+}
+
+.fixButton:hover {
+  background-color: #f57c00;
+}
+
+.fixResults {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  border-left: 4px solid #4caf50;
+}
+
+.fixResults h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.fixResults p {
+  margin: 5px 0;
+  font-size: 0.95rem;
+}
+
+.fixResults details {
+  margin-top: 10px;
+}
+
+.fixResults summary {
+  cursor: pointer;
+  color: #0066cc;
+  font-weight: 500;
+}
+
+.fixResults ul {
+  margin-top: 10px;
+  padding-left: 20px;
+}
+
+.fixResults li {
+  margin-bottom: 5px;
+  color: #d32f2f;
+  font-size: 0.9rem;
+}

@@ -5,6 +5,7 @@ import { promises as fsPromises } from 'fs';
 import { validationResult } from 'express-validator';
 import Coral from '../models/Coral.js';
 import Category from '../models/Category.js';
+import { Op } from 'sequelize';
 import { 
   getUploadsBaseDir, 
   validateFilePath, 
@@ -324,5 +325,86 @@ export const deleteImage = async (req, res) => {
       console.error('Error deleting image:', error);
       res.status(500).json({ message: 'Error deleting image' });
     }
+  }
+};
+
+/**
+ * TEMPORARY FUNCTION: Fix uncategorized images that are in use by corals
+ * This function finds all corals with images in the uncategorized folder,
+ * moves the images to the appropriate category folder, and updates the coral records.
+ * This will be removed once all existing images are properly categorized.
+ */
+export const fixUncategorizedImages = async (req, res) => {
+  try {
+    // Get all corals with images in the uncategorized folder
+    const corals = await Coral.findAll({
+      where: {
+        imageUrl: {
+          [Op.like]: 'uncategorized/%'
+        }
+      },
+      include: [{
+        model: Category,
+        as: 'category'
+      }]
+    });
+
+    if (corals.length === 0) {
+      return res.json({ message: 'No uncategorized images found in use by corals' });
+    }
+
+    const results = {
+      total: corals.length,
+      success: 0,
+      failed: 0,
+      details: []
+    };
+
+    // Process each coral
+    for (const coral of corals) {
+      try {
+        const filename = path.basename(coral.imageUrl);
+        const sourcePath = path.join(uploadsDir, coral.imageUrl);
+        const sanitizedCategoryName = sanitizeCategoryName(coral.category.name);
+        const targetPath = path.join(coralsDir, sanitizedCategoryName, filename);
+        const newRelativePath = path.join('corals', sanitizedCategoryName, filename);
+
+        // Check if source file exists
+        try {
+          await stat(sourcePath);
+        } catch (err) {
+          throw new Error(`Source image not found: ${sourcePath}`);
+        }
+
+        // Move the file
+        await moveFile(sourcePath, targetPath);
+        
+        // Update the coral's imageUrl
+        await coral.update({ imageUrl: newRelativePath });
+        
+        results.success++;
+        results.details.push({
+          coralId: coral.id,
+          coralName: coral.speciesName,
+          oldPath: coral.imageUrl,
+          newPath: newRelativePath,
+          status: 'success'
+        });
+      } catch (error) {
+        results.failed++;
+        results.details.push({
+          coralId: coral.id,
+          coralName: coral.speciesName,
+          oldPath: coral.imageUrl,
+          error: error.message,
+          status: 'failed'
+        });
+      }
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error fixing uncategorized images:', error);
+    res.status(500).json({ message: 'Error fixing uncategorized images' });
   }
 };

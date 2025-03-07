@@ -1,6 +1,13 @@
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth.js';
-import { getAllImages, deleteImage, uncategorizeImage, categorizeImage, uploadImages as uploadImagesController } from '../controllers/imageController.js';
+import { 
+  getAllImages, 
+  deleteImage, 
+  uncategorizeImage, 
+  categorizeImage, 
+  uploadImages as uploadImagesController,
+  fixUncategorizedImages 
+} from '../controllers/imageController.js';
 import { uploadImages, handleUploadError } from '../middleware/upload.js';
 import { imagePathValidator, categorizeImageValidator, uploadImagesValidator } from '../middleware/validators/imageValidators.js';
 
@@ -45,6 +52,16 @@ router.post('/:category/:filename/categorize',
   authorize('ADMIN', 'SUPERADMIN'),
   categorizeImageValidator,
   categorizeImage
+);
+
+/**
+ * TEMPORARY ROUTE: Fix uncategorized images that are in use by corals
+ * This route will be removed once all existing images are properly categorized.
+ */
+router.post('/fix-uncategorized',
+  authenticate,
+  authorize('ADMIN', 'SUPERADMIN'),
+  fixUncategorizedImages
 );
 
 export default router;

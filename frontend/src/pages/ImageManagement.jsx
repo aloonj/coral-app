@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { imageService } from '../services/api';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
 import styles from './ImageManagement.module.css';
-import { FaFolder, FaFolderOpen, FaLevelUpAlt, FaUpload } from 'react-icons/fa';
+import { FaFolder, FaFolderOpen, FaLevelUpAlt, FaUpload, FaWrench } from 'react-icons/fa';
 
 const ImageManagement = () => {
   const [images, setImages] = useState([]);
@@ -11,6 +11,8 @@ const ImageManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [fixing, setFixing] = useState(false);
+  const [fixResults, setFixResults] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -113,6 +115,29 @@ const ImageManagement = () => {
     }
   };
 
+  /**
+   * TEMPORARY FUNCTION: Handle fixing uncategorized images that are in use by corals
+   * This function will be removed once all existing images are properly categorized.
+   */
+  const handleFixUncategorizedImages = async () => {
+    if (window.confirm('This will move all uncategorized images that are in use by corals to their appropriate category folders. Continue?')) {
+      setFixing(true);
+      setError(null);
+      setFixResults(null);
+      
+      try {
+        const response = await imageService.fixUncategorizedImages();
+        setFixResults(response.data);
+        // Refresh images to show updated state
+        await fetchImages();
+      } catch (err) {
+        setError('Failed to fix uncategorized images: ' + (err.response?.data?.message || err.message));
+      } finally {
+        setFixing(false);
+      }
+    }
+  };
+
   const getCurrentLevel = () => {
     if (currentPath.length === 1) return 'root';
     if (currentPath.length === 2 && currentPath[1] === 'corals') return 'categories';
@@ -168,6 +193,37 @@ const ImageManagement = () => {
             >
               <FaUpload /> {uploading ? 'Uploading...' : 'bulk upload images'}
             </button>
+            
+            {/* TEMPORARY BUTTON: For fixing uncategorized images that are in use by corals */}
+            <button 
+              onClick={handleFixUncategorizedImages} 
+              className={`${styles.uploadButton} ${styles.fixButton}`}
+              disabled={fixing}
+            >
+              <FaWrench /> {fixing ? 'Fixing...' : 'Fix Uncategorized Images'}
+            </button>
+          </div>
+        )}
+        
+        {/* TEMPORARY SECTION: Display results of the fix operation */}
+        {fixResults && (
+          <div className={styles.fixResults}>
+            <h3>Fix Results</h3>
+            <p>Total images processed: {fixResults.total}</p>
+            <p>Successfully moved: {fixResults.success}</p>
+            <p>Failed: {fixResults.failed}</p>
+            {fixResults.failed > 0 && (
+              <details>
+                <summary>View Details</summary>
+                <ul>
+                  {fixResults.details.filter(d => d.status === 'failed').map((detail, idx) => (
+                    <li key={idx}>
+                      Failed to move image for coral "{detail.coralName}" (ID: {detail.coralId}): {detail.error}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
           </div>
         )}
       </div>
