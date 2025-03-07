@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import LayoutWithThemeToggle from './components/Layout/LayoutWithThemeToggle';
+import LayoutWithThemeToggle from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Corals from './pages/Corals';
 import QuickOrder from './pages/QuickOrder';
