@@ -266,32 +266,6 @@ const LayoutWithThemeToggle = ({ children }) => {
                 transition: 'transform 0.3s ease',
               }}
             />
-            <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', ml: 2 }}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: theme.palette.secondary.main,
-                  fontWeight: 500,
-                  fontFamily: 'Quicksand, VAG Rounded, sans-serif',
-                  textShadow: theme.palette.mode === 'dark' ? '0px 0px 4px rgba(255,255,255,0.3)' : 'none'
-                }}
-              >
-                fraggle
-              </Typography>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#4D94FF' : '#0066CC', // Brighter blue in dark mode
-                  fontWeight: 700,
-                  fontFamily: 'Raleway, "Source Sans Pro", "Work Sans", sans-serif',
-                  marginLeft: '2px',
-                  letterSpacing: '0.02em',
-                  textShadow: theme.palette.mode === 'dark' ? '0px 0px 4px rgba(255,255,255,0.3)' : 'none'
-                }}
-              >
-                ROCK
-              </Typography>
-            </Box>
           </Box>
           
           <Box sx={{ flexGrow: 1 }} />
