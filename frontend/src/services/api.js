@@ -36,6 +36,16 @@ export const coralService = {
   getAllCorals: () => api.get('/corals'),
   getCoral: (id) => api.get(`/corals/${id}`),
   createCoral: (data) => {
+    // If data is already FormData, use it directly
+    if (data instanceof FormData) {
+      return api.post('/corals', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }
+    
+    // Otherwise, create FormData from object
     const formData = new FormData();
     // Handle file upload if present
     if (data.image) {
