@@ -1,73 +1,74 @@
 import React from 'react';
-
-const styles = {
-  itemDetails: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-    gap: '1rem',
-    padding: '1rem 0',
-  },
-  itemCard: {
-    padding: '1rem',
-    backgroundColor: 'white',
-    borderRadius: '0.375rem',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-    border: '1px solid #E2E8F0'
-  },
-  itemTitle: {
-    fontWeight: 'bold',
-    color: '#2D3748',
-    fontSize: '1rem',
-    marginBottom: '0.5rem'
-  },
-  itemInfo: {
-    color: '#4A5568',
-    fontSize: '0.875rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.25rem'
-  },
-  notes: {
-    marginTop: '1rem',
-    padding: '1rem',
-    backgroundColor: '#EBF8FF',
-    borderRadius: '0.375rem',
-    border: '1px solid #BEE3F8',
-    color: '#2C5282'
-  }
-};
+import { 
+  Box, 
+  Typography, 
+  Grid, 
+  Paper, 
+  Alert,
+  Divider
+} from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 const OrderDetails = ({ order }) => {
+  const theme = useTheme();
+  
   return (
-    <div style={{ padding: '1.5rem' }}>
-      <h3 style={{ 
-        fontSize: '1.25rem', 
-        fontWeight: 'bold', 
-        marginBottom: '1.5rem',
-        color: '#2D3748'
-      }}>
+    <Box sx={{ py: 2 }}>
+      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
         Order Details
-      </h3>
-      <div style={styles.itemDetails}>
+      </Typography>
+      
+      <Grid container spacing={2} sx={{ mb: 2 }}>
         {order.items?.map((item) => (
-          <div key={item.id} style={styles.itemCard}>
-            <div style={styles.itemTitle}>
-              {item?.speciesName || 'Unknown Species'}
-            </div>
-            <div style={styles.itemInfo}>
-              <div>Quantity: {item?.OrderItem?.quantity || 0}</div>
-              <div>Price per unit: {import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(item?.OrderItem?.priceAtOrder || 0).toFixed(2)}</div>
-              <div>Subtotal: {import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(item?.OrderItem?.subtotal || 0).toFixed(2)}</div>
-            </div>
-          </div>
+          <Grid item xs={12} sm={6} md={4} key={item.id}>
+            <Paper 
+              sx={{ 
+                p: 2, 
+                height: '100%',
+                borderRadius: 1,
+                boxShadow: 1,
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                {item?.speciesName || 'Unknown Species'}
+              </Typography>
+              <Box sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                <Box sx={{ mb: 0.5 }}>
+                  Quantity: {item?.OrderItem?.quantity || 0}
+                </Box>
+                <Box sx={{ mb: 0.5 }}>
+                  Price per unit: {import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(item?.OrderItem?.priceAtOrder || 0).toFixed(2)}
+                </Box>
+                <Box sx={{ fontWeight: 'medium' }}>
+                  Subtotal: {import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(item?.OrderItem?.subtotal || 0).toFixed(2)}
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
         ))}
-      </div>
+      </Grid>
+      
       {order.notes && (
-        <div style={styles.notes}>
-          <strong style={{ color: '#2C5282' }}>Notes:</strong> {order.notes}
-        </div>
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mt: 2,
+            '& .MuiAlert-message': {
+              width: '100%'
+            }
+          }}
+        >
+          <Typography variant="subtitle2" component="div" sx={{ mb: 0.5 }}>
+            Notes:
+          </Typography>
+          <Typography variant="body2">
+            {order.notes}
+          </Typography>
+        </Alert>
       )}
-    </div>
+    </Box>
   );
 };
 

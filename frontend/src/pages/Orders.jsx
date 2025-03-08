@@ -3,12 +3,34 @@
 import React, { useState, useEffect } from 'react';
 import { formatDate } from '../utils/dateUtils';
 import { orderService } from '../services/api';
-import StatusBadge from '../components/Orders/StatusBadge';
-import PaymentBadge from '../components/Orders/PaymentBadge';
+import { useTheme } from '@mui/material/styles';
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Button,
+  Grid,
+  Chip,
+  Collapse,
+  CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  Divider,
+  Alert,
+  IconButton
+} from '@mui/material';
+import {
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Delete as DeleteIcon
+} from '@mui/icons-material';
+import { StatusBadge } from '../components/StyledComponents';
 import OrderDetails from '../components/Orders/OrderDetails';
-import styles from './Orders.module.css';
 
 const Orders = () => {
+  const theme = useTheme();
   const [orders, setOrders] = useState({
     active: [],
     completed: [],
@@ -255,163 +277,442 @@ const Orders = () => {
     return statusFlow[currentStatus] || [];
   };
 
-  if (loading) return <div className={styles.container} style={{textAlign: 'center', padding: '2rem'}}>Loading orders...</div>;
-  if (error) return <div className={styles.container} style={{textAlign: 'center', padding: '2rem', color: '#E53E3E'}}>{error}</div>;
+  if (loading) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '50vh' 
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 3 }}>
+        <Alert severity="error" sx={{ my: 2 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  // Function to get color for status-based buttons
+  const getStatusButtonColor = (status) => {
+    const statusColors = {
+      PENDING: {
+        backgroundColor: '#FEFCE8',
+        borderColor: '#CA8A04',
+        color: '#854D0E'
+      },
+      CONFIRMED: {
+        backgroundColor: '#EBF8FF',
+        borderColor: '#3182CE',
+        color: '#2C5282'
+      },
+      PROCESSING: {
+        backgroundColor: '#E9D8FD',
+        borderColor: '#805AD5',
+        color: '#553C9A'
+      },
+      READY_FOR_PICKUP: {
+        backgroundColor: '#C6F6D5',
+        borderColor: '#48BB78',
+        color: '#276749'
+      },
+      COMPLETED: {
+        backgroundColor: '#E2E8F0',
+        borderColor: '#4A5568',
+        color: '#2D3748'
+      },
+      CANCELLED: {
+        backgroundColor: '#FED7D7',
+        borderColor: '#E53E3E',
+        color: '#C53030'
+      },
+      PAID: {
+        backgroundColor: '#F0FDF4',
+        borderColor: '#166534',
+        color: '#166534'
+      },
+      UNPAID: {
+        backgroundColor: '#FEF2F2',
+        borderColor: '#991B1B',
+        color: '#991B1B'
+      },
+      ARCHIVE: {
+        backgroundColor: '#e0f2fe',
+        borderColor: '#0369a1',
+        color: '#0369a1'
+      }
+    };
+    
+    return statusColors[status] || statusColors.COMPLETED;
+  };
 
   const renderOrderCard = (order, showActions = true) => (
-    <div key={order.id} className={styles.orderCard}>
-      <div className={styles.orderHeader}>
-        <div>
-          <div className={styles.orderNumber}>Order #{order.id}</div>
-          <div className={styles.orderDate}>{formatDate(order.createdAt)}</div>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <PaymentBadge paid={order.paid} />
+    <Paper 
+      key={order.id} 
+      sx={{ 
+        p: 2, 
+        mb: 2, 
+        borderRadius: 2,
+        boxShadow: 1
+      }}
+    >
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'flex-start',
+        mb: 2,
+        flexWrap: 'wrap',
+        gap: 1
+      }}>
+        <Box>
+          <Typography variant="h6" component="div">
+            Order #{order.id}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {formatDate(order.createdAt)}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Chip 
+            label={order.paid ? 'Paid' : 'Unpaid'}
+            color={order.paid ? 'success' : 'error'}
+            variant="outlined"
+            size="small"
+          />
           <StatusBadge status={order.status} />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      <div className={styles.orderInfo}>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Client</span>
-          <span className={styles.infoValue}>{order.client?.name || 'Unknown Client'}</span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Pickup Date</span>
-          <span className={styles.infoValue}>{formatDate(order.preferredPickupDate)}</span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Items</span>
-          <span className={styles.infoValue}>
-            <button
-              className={styles.expandButton}
-              onClick={() => toggleOrderExpansion(order.id)}
-            >
-              {expandedOrders.has(order.id) ? '▼' : '▶'}
-              {order.items?.reduce((total, item) => total + (item?.OrderItem?.quantity || 0), 0)} items
-            </button>
-          </span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Total Amount</span>
-          <span className={styles.infoValue}>{import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}</span>
-        </div>
-      </div>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Typography variant="body2" color="text.secondary">
+            Client
+          </Typography>
+          <Typography variant="body1" fontWeight="medium">
+            {order.client?.name || 'Unknown Client'}
+          </Typography>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Typography variant="body2" color="text.secondary">
+            Pickup Date
+          </Typography>
+          <Typography variant="body1" fontWeight="medium">
+            {formatDate(order.preferredPickupDate)}
+          </Typography>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Typography variant="body2" color="text.secondary">
+            Items
+          </Typography>
+          <Button
+            variant="text"
+            color="primary"
+            onClick={() => toggleOrderExpansion(order.id)}
+            startIcon={expandedOrders.has(order.id) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            sx={{ p: 0 }}
+          >
+            {order.items?.reduce((total, item) => total + (item?.OrderItem?.quantity || 0), 0)} items
+          </Button>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Typography variant="body2" color="text.secondary">
+            Total Amount
+          </Typography>
+          <Typography variant="body1" fontWeight="medium">
+            {import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}
+          </Typography>
+        </Grid>
+      </Grid>
 
-      {expandedOrders.has(order.id) && (
+      <Collapse in={expandedOrders.has(order.id)}>
+        <Divider sx={{ mb: 2 }} />
         <OrderDetails order={order} />
-      )}
+      </Collapse>
 
       {showActions && !order.archived && (
-        <div className={styles.orderActions}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: 1, 
+          mt: 2,
+          '& > button': {
+            minWidth: { xs: '100%', sm: 'auto' }
+          }
+        }}>
           {getPreviousStatus(order.status) && (
-            <button
+            <Button
+              variant="outlined"
               onClick={() => handleStatusUpdate(order.id, order.status, getPreviousStatus(order.status))}
-              className={`${styles.actionButton} ${styles.previous}`}
+              sx={{
+                ...getStatusButtonColor(getPreviousStatus(order.status)),
+                '&:hover': {
+                  opacity: 0.9,
+                  transform: 'translateY(-1px)'
+                }
+              }}
             >
               ← Back to {getPreviousStatus(order.status).replace(/_/g, ' ').split(' ').map(word => 
                 word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
               ).join(' ')}
-            </button>
+            </Button>
           )}
+          
           {getNextStatuses(order.status).map(nextStatus => (
-            <button
+            <Button
               key={nextStatus}
+              variant="outlined"
               onClick={() => handleStatusUpdate(order.id, order.status, nextStatus)}
-              className={`${styles.actionButton} ${styles[nextStatus.toLowerCase()]}`}
+              sx={{
+                ...getStatusButtonColor(nextStatus),
+                '&:hover': {
+                  opacity: 0.9,
+                  transform: 'translateY(-1px)'
+                }
+              }}
             >
               {nextStatus === 'CANCELLED' ? 'Cancel Order' : 
                'Mark as ' + (nextStatus === 'READY_FOR_PICKUP' ? 'Ready for Pickup/Delivery' :
                  nextStatus.replace(/_/g, ' ').split(' ').map(word => 
                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
                  ).join(' ')) + ' →'}
-            </button>
+            </Button>
           ))}
 
           {order.status === 'CANCELLED' && (
-            <button
+            <Button
+              variant="outlined"
+              startIcon={<DeleteIcon />}
               onClick={() => handleDelete(order.id)}
-              className={`${styles.actionButton} ${styles.cancelled}`}
+              sx={{
+                ...getStatusButtonColor('CANCELLED'),
+                '&:hover': {
+                  opacity: 0.9,
+                  transform: 'translateY(-1px)'
+                }
+              }}
             >
               Delete
-            </button>
+            </Button>
           )}
 
           {order.status !== 'CANCELLED' && !order.archived && (
             order.paid ? (
-              <button
+              <Button
+                variant="outlined"
                 onClick={() => handleMarkPaid(order.id, false)}
-                className={`${styles.actionButton} ${styles.unpaid}`}
+                sx={{
+                  ...getStatusButtonColor('UNPAID'),
+                  '&:hover': {
+                    opacity: 0.9,
+                    transform: 'translateY(-1px)'
+                  }
+                }}
               >
                 Mark as Unpaid
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
+                variant="outlined"
                 onClick={() => handleMarkPaid(order.id, true)}
-                className={`${styles.actionButton} ${styles.paid}`}
+                sx={{
+                  ...getStatusButtonColor('PAID'),
+                  '&:hover': {
+                    opacity: 0.9,
+                    transform: 'translateY(-1px)'
+                  }
+                }}
               >
                 Mark as Paid
-              </button>
+              </Button>
             )
           )}
 
           {order.status === 'COMPLETED' && order.paid && (
-            <button
+            <Button
+              variant="outlined"
               onClick={() => handleArchive(order.id)}
-              className={`${styles.actionButton} ${styles.archive}`}
+              sx={{
+                ...getStatusButtonColor('ARCHIVE'),
+                '&:hover': {
+                  opacity: 0.9,
+                  transform: 'translateY(-1px)'
+                }
+              }}
             >
               Move to Archived
-            </button>
+            </Button>
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Paper>
   );
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.header}>Order Management</h1>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
+      <Typography variant="h4" component="h1" fontWeight="bold" sx={{ mb: 3 }}>
+        Order Management
+      </Typography>
 
-      <div>
-        <div className={styles.sectionHeader} onClick={() => toggleSection('active')}>
-          <div>
-            {collapsedSections.has('active') ? '▶' : '▼'} Active Orders ({orders.active.length})
-          </div>
-        </div>
-        {!collapsedSections.has('active') && (
-          <div className={styles.orderGrid}>
+      <Box sx={{ mb: 4 }}>
+        <Paper 
+          sx={{ 
+            p: 2, 
+            mb: 2, 
+            background: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderRadius: 1,
+            '&:hover': {
+              boxShadow: 3
+            }
+          }}
+          onClick={() => toggleSection('active')}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {collapsedSections.has('active') ? 
+              <ExpandMoreIcon sx={{ mr: 1 }} /> : 
+              <ExpandLessIcon sx={{ mr: 1 }} />
+            }
+            <Typography variant="h6">
+              Active Orders ({orders.active.length})
+            </Typography>
+          </Box>
+        </Paper>
+        
+        <Collapse in={!collapsedSections.has('active')}>
+          <Box sx={{ px: 1 }}>
             {orders.active.map(order => renderOrderCard(order, true))}
-          </div>
-        )}
+            {orders.active.length === 0 && (
+              <Typography variant="body1" sx={{ textAlign: 'center', py: 2, color: 'text.secondary' }}>
+                No active orders
+              </Typography>
+            )}
+          </Box>
+        </Collapse>
 
-        <div className={styles.sectionHeader} onClick={() => toggleSection('completed')}>
-          <div>
-            {collapsedSections.has('completed') ? '▶' : '▼'} Completed Orders ({orders.completed.length})
-          </div>
-        </div>
-        {!collapsedSections.has('completed') && (
-          <div className={styles.orderGrid}>
+        <Paper 
+          sx={{ 
+            p: 2, 
+            mb: 2, 
+            background: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderRadius: 1,
+            '&:hover': {
+              boxShadow: 3
+            }
+          }}
+          onClick={() => toggleSection('completed')}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {collapsedSections.has('completed') ? 
+              <ExpandMoreIcon sx={{ mr: 1 }} /> : 
+              <ExpandLessIcon sx={{ mr: 1 }} />
+            }
+            <Typography variant="h6">
+              Completed Orders ({orders.completed.length})
+            </Typography>
+          </Box>
+        </Paper>
+        
+        <Collapse in={!collapsedSections.has('completed')}>
+          <Box sx={{ px: 1 }}>
             {orders.completed.map(order => renderOrderCard(order, true))}
-          </div>
-        )}
+            {orders.completed.length === 0 && (
+              <Typography variant="body1" sx={{ textAlign: 'center', py: 2, color: 'text.secondary' }}>
+                No completed orders
+              </Typography>
+            )}
+          </Box>
+        </Collapse>
 
-        <div className={styles.sectionHeader} onClick={() => toggleSection('cancelled')}>
-          <div>
-            {collapsedSections.has('cancelled') ? '▶' : '▼'} Cancelled Orders ({orders.cancelled.length})
-          </div>
-        </div>
-        {!collapsedSections.has('cancelled') && (
-          <div className={styles.orderGrid}>
+        <Paper 
+          sx={{ 
+            p: 2, 
+            mb: 2, 
+            background: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderRadius: 1,
+            '&:hover': {
+              boxShadow: 3
+            }
+          }}
+          onClick={() => toggleSection('cancelled')}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {collapsedSections.has('cancelled') ? 
+              <ExpandMoreIcon sx={{ mr: 1 }} /> : 
+              <ExpandLessIcon sx={{ mr: 1 }} />
+            }
+            <Typography variant="h6">
+              Cancelled Orders ({orders.cancelled.length})
+            </Typography>
+          </Box>
+        </Paper>
+        
+        <Collapse in={!collapsedSections.has('cancelled')}>
+          <Box sx={{ px: 1 }}>
             {orders.cancelled.map(order => renderOrderCard(order, true))}
-          </div>
-        )}
+            {orders.cancelled.length === 0 && (
+              <Typography variant="body1" sx={{ textAlign: 'center', py: 2, color: 'text.secondary' }}>
+                No cancelled orders
+              </Typography>
+            )}
+          </Box>
+        </Collapse>
 
-        <div className={styles.sectionHeader} onClick={() => toggleSection('archived')}>
-          <div>
-            {collapsedSections.has('archived') ? '▶' : '▼'} Archived Orders ({getFilteredArchivedOrders().length})
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
+        <Paper 
+          sx={{ 
+            p: 2, 
+            mb: 2, 
+            background: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderRadius: 1,
+            '&:hover': {
+              boxShadow: 3
+            }
+          }}
+          onClick={() => toggleSection('archived')}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {collapsedSections.has('archived') ? 
+              <ExpandMoreIcon sx={{ mr: 1 }} /> : 
+              <ExpandLessIcon sx={{ mr: 1 }} />
+            }
+            <Typography variant="h6">
+              Archived Orders ({getFilteredArchivedOrders().length})
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button
+              variant="contained"
+              color="error"
+              size="small"
+              startIcon={<DeleteIcon />}
               onClick={(e) => {
                 e.stopPropagation();
                 if (window.confirm('Are you sure you want to purge all archived orders? This action cannot be undone.')) {
@@ -428,30 +729,62 @@ const Orders = () => {
                     });
                 }
               }}
-              className={`${styles.actionButton} ${styles.cancelled}`}
             >
               Purge All
-            </button>
-            <select
-              value={timeFilter}
-              onChange={(e) => setTimeFilter(e.target.value)}
-              className={styles.filterSelect}
+            </Button>
+            
+            <FormControl 
+              size="small" 
+              sx={{ 
+                minWidth: 120,
+                '& .MuiOutlinedInput-root': {
+                  color: 'white',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.7)',
+                  },
+                },
+                '& .MuiSelect-icon': {
+                  color: 'white',
+                }
+              }}
               onClick={(e) => e.stopPropagation()}
             >
-              <option value="all">All Time</option>
-              <option value="week">Past Week</option>
-              <option value="month">Past Month</option>
-              <option value="year">Past Year</option>
-            </select>
-          </div>
-        </div>
-        {!collapsedSections.has('archived') && (
-          <div className={styles.orderGrid}>
+              <Select
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value)}
+                variant="outlined"
+                sx={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white'
+                }}
+              >
+                <MenuItem value="all">All Time</MenuItem>
+                <MenuItem value="week">Past Week</MenuItem>
+                <MenuItem value="month">Past Month</MenuItem>
+                <MenuItem value="year">Past Year</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </Paper>
+        
+        <Collapse in={!collapsedSections.has('archived')}>
+          <Box sx={{ px: 1 }}>
             {getFilteredArchivedOrders().map(order => renderOrderCard(order, false))}
-          </div>
-        )}
-      </div>
-    </div>
+            {getFilteredArchivedOrders().length === 0 && (
+              <Typography variant="body1" sx={{ textAlign: 'center', py: 2, color: 'text.secondary' }}>
+                No archived orders for the selected time period
+              </Typography>
+            )}
+          </Box>
+        </Collapse>
+      </Box>
+    </Container>
   );
 };
 

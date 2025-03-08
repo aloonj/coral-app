@@ -1,16 +1,6 @@
 import React from 'react';
-
-const getStatusColor = (status) => {
-  const colors = {
-    PENDING: { bg: '#FEFCE8', text: '#854D0E', border: '#FEF08A' },
-    CONFIRMED: { bg: '#EBF8FF', text: '#2C5282', border: '#BEE3F8' },
-    PROCESSING: { bg: '#F3E8FF', text: '#553C9A', border: '#E9D8FD' },
-    READY_FOR_PICKUP: { bg: '#F0FDF4', text: '#276749', border: '#C6F6D5' },
-    COMPLETED: { bg: '#F8FAFC', text: '#2D3748', border: '#E2E8F0' },
-    CANCELLED: { bg: '#FEF2F2', text: '#991B1B', border: '#FEE2E2' }
-  };
-  return colors[status] || { bg: '#F8FAFC', text: '#2D3748', border: '#E2E8F0' };
-};
+import { Chip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 const formatStatus = (status) => {
   if (status === 'READY_FOR_PICKUP') {
@@ -22,25 +12,32 @@ const formatStatus = (status) => {
     .join(' ');
 };
 
+const getStatusColor = (status) => {
+  switch(status) {
+    case 'PENDING': return 'warning';
+    case 'CONFIRMED': return 'info';
+    case 'PROCESSING': return 'primary';
+    case 'READY_FOR_PICKUP': return 'success';
+    case 'COMPLETED': return 'default';
+    case 'CANCELLED': return 'error';
+    default: return 'default';
+  }
+};
+
 const StatusBadge = ({ status }) => {
-  const { bg, text, border } = getStatusColor(status);
+  const theme = useTheme();
   
   return (
-    <span style={{
-      backgroundColor: bg,
-      color: text,
-      padding: '0.375rem 0.75rem',
-      borderRadius: '0.375rem',
-      fontSize: '0.875rem',
-      fontWeight: '500',
-      display: 'inline-block',
-      minWidth: '120px',
-      textAlign: 'center',
-      border: `1px solid ${border}`,
-      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-    }}>
-      {formatStatus(status)}
-    </span>
+    <Chip
+      label={formatStatus(status)}
+      color={getStatusColor(status)}
+      variant="outlined"
+      size="small"
+      sx={{
+        fontWeight: 500,
+        minWidth: 120
+      }}
+    />
   );
 };
 
