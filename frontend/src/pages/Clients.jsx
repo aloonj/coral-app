@@ -15,11 +15,14 @@ import {
   SubmitButton,
   Typography
 } from '../components/StyledComponents';
+import { Modal, IconButton } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -61,10 +64,12 @@ const Clients = () => {
       address: client.address || '',
       phone: client.phone || ''
     });
+    setShowEditModal(true);
   };
 
   const handleCancelEdit = () => {
     setEditingClient(null);
+    setShowEditModal(false);
     setFormData({
       name: '',
       email: '',
@@ -97,12 +102,22 @@ const Clients = () => {
       const response = await api.post('/clients', formData);
       const { temporaryPassword } = response.data;
       setSuccess(`Client added successfully. Temporary password: ${temporaryPassword}`);
-      setShowAddForm(false);
+      setShowAddModal(false);
       setFormData({ name: '', email: '', address: '', phone: '' });
       fetchClients();
     } catch (error) {
       setError(error.response?.data?.message || 'Error adding client');
     }
+  };
+
+  const handleCancelAdd = () => {
+    setShowAddModal(false);
+    setFormData({
+      name: '',
+      email: '',
+      address: '',
+      phone: ''
+    });
   };
 
   const handleRegeneratePassword = async (id) => {
@@ -158,107 +173,153 @@ const Clients = () => {
         <PageTitle>Clients</PageTitle>
         <ActionButton 
           variant="contained" 
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => setShowAddModal(true)}
         >
-          {showAddForm ? 'Cancel' : 'Add Client'}
+          Add Client
         </ActionButton>
       </Box>
 
-      {showAddForm && !editingClient && (
-        <FormContainer component="form" onSubmit={handleAddClient}>
-          <FormField
-            label="Name"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-            fullWidth
-          />
-          <FormField
-            label="Email"
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-            fullWidth
-          />
-          <FormField
-            label="Phone"
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-            placeholder="Enter phone number"
-            fullWidth
-          />
-          <FormField
-            label="Address"
-            name="address"
-            value={formData.address}
-            onChange={handleInputChange}
-            placeholder="Enter full address"
-            multiline
-            rows={4}
-            fullWidth
-          />
-          <SubmitButton type="submit" variant="contained">
-            Add Client
-          </SubmitButton>
-        </FormContainer>
-      )}
-
-      {editingClient && (
-        <ModalContainer component="form" onSubmit={handleEditClient}>
-          <FormField
-            label="Name"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-            fullWidth
-          />
-          <FormField
-            label="Email"
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-            fullWidth
-          />
-          <FormField
-            label="Phone"
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-            placeholder="Enter phone number"
-            fullWidth
-          />
-          <FormField
-            label="Address"
-            name="address"
-            value={formData.address}
-            onChange={handleInputChange}
-            placeholder="Enter full address"
-            multiline
-            rows={4}
-            fullWidth
-          />
-          <Box display="flex" gap={2} mt={2}>
-            <SubmitButton type="submit" variant="contained">
-              Save Changes
-            </SubmitButton>
-            <ActionButton 
-              variant="outlined" 
-              onClick={handleCancelEdit}
+      {/* Add Client Modal */}
+      <Modal
+        open={showAddModal}
+        onClose={handleCancelAdd}
+        aria-labelledby="add-client-modal-title"
+      >
+        <ModalContainer>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h5" id="add-client-modal-title">
+              Add New Client
+            </Typography>
+            <IconButton 
+              onClick={handleCancelAdd}
+              size="small"
             >
-              Cancel
-            </ActionButton>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          
+          <Box component="form" onSubmit={handleAddClient}>
+            <FormField
+              label="Name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              fullWidth
+            />
+            <FormField
+              label="Email"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+              fullWidth
+            />
+            <FormField
+              label="Phone"
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              placeholder="Enter phone number"
+              fullWidth
+            />
+            <FormField
+              label="Address"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              placeholder="Enter full address"
+              multiline
+              rows={4}
+              fullWidth
+            />
+            <Box display="flex" gap={2} mt={2}>
+              <SubmitButton type="submit" variant="contained">
+                Add Client
+              </SubmitButton>
+              <ActionButton 
+                variant="outlined" 
+                onClick={handleCancelAdd}
+              >
+                Cancel
+              </ActionButton>
+            </Box>
           </Box>
         </ModalContainer>
-      )}
+      </Modal>
+
+      {/* Edit Client Modal */}
+      <Modal
+        open={showEditModal && editingClient !== null}
+        onClose={handleCancelEdit}
+        aria-labelledby="edit-client-modal-title"
+      >
+        <ModalContainer>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h5" id="edit-client-modal-title">
+              Edit Client
+            </Typography>
+            <IconButton 
+              onClick={handleCancelEdit}
+              size="small"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          
+          <Box component="form" onSubmit={handleEditClient}>
+            <FormField
+              label="Name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              fullWidth
+            />
+            <FormField
+              label="Email"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+              fullWidth
+            />
+            <FormField
+              label="Phone"
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              placeholder="Enter phone number"
+              fullWidth
+            />
+            <FormField
+              label="Address"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              placeholder="Enter full address"
+              multiline
+              rows={4}
+              fullWidth
+            />
+            <Box display="flex" gap={2} mt={2}>
+              <SubmitButton type="submit" variant="contained">
+                Save Changes
+              </SubmitButton>
+              <ActionButton 
+                variant="outlined" 
+                onClick={handleCancelEdit}
+              >
+                Cancel
+              </ActionButton>
+            </Box>
+          </Box>
+        </ModalContainer>
+      </Modal>
 
       <Box display="grid" gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={3}>
         {clients.map((client) => (
