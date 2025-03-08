@@ -15,7 +15,7 @@ import {
   SubmitButton,
   Typography
 } from '../components/StyledComponents';
-import { Modal, IconButton } from '@mui/material';
+import { Modal, IconButton, Stack } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 
 const Clients = () => {
@@ -169,14 +169,22 @@ const Clients = () => {
       {error && <FormError severity="error">{error}</FormError>}
       {success && <FormError severity="success">{success}</FormError>}
 
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <PageTitle>Clients</PageTitle>
-        <ActionButton 
-          variant="contained" 
-          onClick={() => setShowAddModal(true)}
-        >
-          Add Client
-        </ActionButton>
+      <Box sx={{ mb: 3 }}>
+        <PageTitle variant="h1" sx={{ mb: 2 }}>Clients</PageTitle>
+        <Stack spacing={2} sx={{ width: { xs: '100%', sm: '50%', md: '30%' } }}>
+          <ActionButton 
+            variant="contained"
+            color="success"
+            onClick={() => setShowAddModal(true)}
+            fullWidth
+            sx={{ 
+              py: 1.5,
+              fontSize: '1rem'
+            }}
+          >
+            Add Client
+          </ActionButton>
+        </Stack>
       </Box>
 
       {/* Add Client Modal */}
