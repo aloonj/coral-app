@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 
 // Define your brand colors based on existing app styling
 const colors = {
@@ -46,24 +46,33 @@ const colors = {
 };
 
 // Create a theme instance
-const theme = createTheme({
+let theme = createTheme({
   palette: colors,
   typography: {
     fontFamily: '"Raleway", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontSize: '2rem',
+      '@media (max-width:600px)': {
+        fontSize: '1.5rem'
+      },
       fontWeight: 700,
       marginBottom: '1.5rem',
       color: colors.text.primary,
     },
     h2: {
       fontSize: '1.5rem',
+      '@media (max-width:600px)': {
+        fontSize: '1.25rem'
+      },
       fontWeight: 600,
       marginBottom: '1rem',
       color: colors.text.primary,
     },
     h3: {
       fontSize: '1.25rem',
+      '@media (max-width:600px)': {
+        fontSize: '1rem'
+      },
       fontWeight: 600,
       marginBottom: '0.75rem',
       color: colors.text.primary,
@@ -138,4 +147,4 @@ const theme = createTheme({
   },
 });
 
-export default theme;
+export default responsiveFontSizes(theme);
