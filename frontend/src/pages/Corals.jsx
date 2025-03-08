@@ -224,43 +224,42 @@ const Corals = () => {
         </FormError>
       )}
 
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        mb: 3
-      }}>
-        <PageTitle variant="h1">Coral Management</PageTitle>
+      <Box sx={{ mb: 3 }}>
+        <PageTitle variant="h1" sx={{ mb: 2 }}>Coral Management</PageTitle>
         {hasAdminPrivileges && (
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 1,
-            flexDirection: { xs: 'column', sm: 'row' },
-            width: { xs: '100%', md: 'auto' }
-          }}>
+          <Stack spacing={2} sx={{ width: { xs: '100%', sm: '50%', md: '30%' } }}>
             <ActionButton
               variant="contained"
               color="success"
               startIcon={<AddIcon />}
               onClick={() => navigate('/corals/add')}
-              fullWidth={false}
+              fullWidth
+              sx={{ 
+                py: 1.5,
+                fontSize: '1rem'
+              }}
             >
               Add Coral
             </ActionButton>
             <ActionButton
               variant="contained"
-              sx={{ backgroundColor: '#FF8C00', '&:hover': { backgroundColor: '#E67E00' } }}
+              sx={{ 
+                backgroundColor: '#FF8C00', 
+                '&:hover': { backgroundColor: '#E67E00' },
+                py: 1.5,
+                fontSize: '1rem'
+              }}
               startIcon={<CategoryIcon />}
               onClick={() => {
                 setEditingCategory(null);
                 setCategoryForm({ name: '', description: '' });
                 setShowCategoryModal(true);
               }}
-              fullWidth={false}
+              fullWidth
             >
               Manage Categories
             </ActionButton>
-          </Box>
+          </Stack>
         )}
       </Box>
 
