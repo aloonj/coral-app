@@ -1,7 +1,20 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
-import styles from './Clients.module.css';
+import {
+  CoralCard,
+  ActionButton,
+  Box,
+  FormContainer,
+  FormField,
+  FormError,
+  ModalContainer,
+  PageTitle,
+  CardContent,
+  LoadingSpinner,
+  SubmitButton,
+  Typography
+} from '../components/StyledComponents';
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
@@ -16,22 +29,6 @@ const Clients = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const response = await api.get('/clients');
-        setClients(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching clients:', error);
-        setLoading(false);
-      }
-    };
-
-    fetchClients();
-  }, []);
-
 
   const fetchClients = async () => {
     try {
@@ -82,12 +79,7 @@ const Clients = () => {
     setSuccess('');
 
     try {
-      await api.put(`/clients/${editingClient.id}`, {
-        name: formData.name,
-        email: formData.email,
-        address: formData.address,
-        phone: formData.phone
-      });
+      await api.put(`/clients/${editingClient.id}`, formData);
       setSuccess('Client updated successfully');
       handleCancelEdit();
       fetchClients();
@@ -117,11 +109,8 @@ const Clients = () => {
     setError('');
     setSuccess('');
 
-    // Show confirmation dialog before proceeding
-    const confirmed = window.confirm('Are you sure you want to reset this client\'s password? They will need to use the new temporary password to log in.');
-    if (!confirmed) {
-      return;
-    }
+    const confirmed = window.confirm('Are you sure you want to reset this client\'s password?');
+    if (!confirmed) return;
 
     try {
       const response = await api.post(`/clients/${id}/regenerate-password`);
@@ -135,17 +124,13 @@ const Clients = () => {
     setError('');
     setSuccess('');
 
-    // If client has orders, show error message and return
     if (orderCount > 0) {
-      setError(`Cannot remove client with ${orderCount} outstanding order${orderCount > 1 ? 's' : ''}. Please ensure all orders are completed or cancelled first.`);
+      setError(`Cannot remove client with ${orderCount} outstanding order${orderCount > 1 ? 's' : ''}`);
       return;
     }
 
-    // Show confirmation dialog before proceeding
-    const confirmed = window.confirm('Are you sure you want to remove this client? This action cannot be undone.');
-    if (!confirmed) {
-      return;
-    }
+    const confirmed = window.confirm('Are you sure you want to remove this client?');
+    if (!confirmed) return;
 
     try {
       await api.delete(`/clients/${id}`);
@@ -157,210 +142,175 @@ const Clients = () => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <Box display="flex" justifyContent="center" mt={4}>
+        <LoadingSpinner />
+      </Box>
+    );
   }
 
   return (
-    <div className={styles.container}>
-      {error && <div className={styles.error}>{error}</div>}
-      {success && <div className={styles.success}>{success}</div>}
+    <Box p={3}>
+      {error && <FormError severity="error">{error}</FormError>}
+      {success && <FormError severity="success">{success}</FormError>}
 
-      <div className={styles.headerContainer}>
-        <h1 className={styles.header}>Clients</h1>
-        <button
-          className={`${styles.button} ${styles.addButton}`}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <PageTitle>Clients</PageTitle>
+        <ActionButton 
+          variant="contained" 
           onClick={() => setShowAddForm(!showAddForm)}
         >
           {showAddForm ? 'Cancel' : 'Add Client'}
-        </button>
-      </div>
+        </ActionButton>
+      </Box>
 
       {showAddForm && !editingClient && (
-        <form className={styles.addForm} onSubmit={handleAddClient}>
-          <div className={styles.formGroup}>
-            <label>
-              Name:
-              <input
-                type="text"
-                name="name"
-                className={styles.input}
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-              />
-            </label>
-          </div>
-          <div className={styles.formGroup}>
-            <label>
-              Email:
-              <input
-                type="email"
-                name="email"
-                className={styles.input}
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-              />
-            </label>
-          </div>
-          <div className={styles.formGroup}>
-            <label>
-              Phone:
-              <input
-                type="tel"
-                name="phone"
-                className={styles.input}
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="Enter phone number"
-              />
-            </label>
-          </div>
-          <div className={styles.formGroup}>
-            <label>
-              Address:
-              <textarea
-                name="address"
-                className={`${styles.input} ${styles.textarea}`}
-                value={formData.address}
-                onChange={handleInputChange}
-                placeholder="Enter full address"
-              />
-            </label>
-          </div>
-          <button 
-            className={`${styles.button} ${styles.addButton}`}
-            type="submit"
-          >
+        <FormContainer component="form" onSubmit={handleAddClient}>
+          <FormField
+            label="Name"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            required
+            fullWidth
+          />
+          <FormField
+            label="Email"
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            required
+            fullWidth
+          />
+          <FormField
+            label="Phone"
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            placeholder="Enter phone number"
+            fullWidth
+          />
+          <FormField
+            label="Address"
+            name="address"
+            value={formData.address}
+            onChange={handleInputChange}
+            placeholder="Enter full address"
+            multiline
+            rows={4}
+            fullWidth
+          />
+          <SubmitButton type="submit" variant="contained">
             Add Client
-          </button>
-        </form>
+          </SubmitButton>
+        </FormContainer>
       )}
 
       {editingClient && (
-        <form className={styles.addForm} onSubmit={handleEditClient}>
-          <div className={styles.formGroup}>
-            <label>
-              Name:
-              <input
-                type="text"
-                name="name"
-                className={styles.input}
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-              />
-            </label>
-          </div>
-          <div className={styles.formGroup}>
-            <label>
-              Email:
-              <input
-                type="email"
-                name="email"
-                className={styles.input}
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-              />
-            </label>
-          </div>
-          <div className={styles.formGroup}>
-            <label>
-              Phone:
-              <input
-                type="tel"
-                name="phone"
-                className={styles.input}
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="Enter phone number"
-              />
-            </label>
-          </div>
-          <div className={styles.formGroup}>
-            <label>
-              Address:
-              <textarea
-                name="address"
-                className={`${styles.input} ${styles.textarea}`}
-                value={formData.address}
-                onChange={handleInputChange}
-                placeholder="Enter full address"
-              />
-            </label>
-          </div>
-          <div className={styles.buttonGroup}>
-            <button 
-              className={`${styles.button} ${styles.saveButton}`}
-              type="submit"
-            >
+        <ModalContainer component="form" onSubmit={handleEditClient}>
+          <FormField
+            label="Name"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            required
+            fullWidth
+          />
+          <FormField
+            label="Email"
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            required
+            fullWidth
+          />
+          <FormField
+            label="Phone"
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            placeholder="Enter phone number"
+            fullWidth
+          />
+          <FormField
+            label="Address"
+            name="address"
+            value={formData.address}
+            onChange={handleInputChange}
+            placeholder="Enter full address"
+            multiline
+            rows={4}
+            fullWidth
+          />
+          <Box display="flex" gap={2} mt={2}>
+            <SubmitButton type="submit" variant="contained">
               Save Changes
-            </button>
-            <button 
-              className={`${styles.button} ${styles.cancelButton}`}
-              type="button"
+            </SubmitButton>
+            <ActionButton 
+              variant="outlined" 
               onClick={handleCancelEdit}
             >
               Cancel
-            </button>
-          </div>
-        </form>
+            </ActionButton>
+          </Box>
+        </ModalContainer>
       )}
 
-      <div className={styles.clientGrid}>
+      <Box display="grid" gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={3}>
         {clients.map((client) => (
-          <div key={client.id} className={styles.clientCard}>
-            <div className={styles.cardHeader}>
-              <div>
-                <div className={styles.clientName}>{client.name}</div>
-                <div className={styles.clientEmail}>{client.email}</div>
-              </div>
-            </div>
-            
-            <div className={styles.clientInfo}>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Orders</span>
-                <span className={styles.infoValue}>{client.orderCount || 0}</span>
-              </div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Address</span>
-                <span className={styles.infoValue}>{client.address || 'N/A'}</span>
-              </div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Join Date</span>
-                <span className={styles.infoValue}>
-                  {formatDate(client.createdAt)}
-                </span>
-              </div>
-            </div>
+          <CoralCard key={client.id}>
+            <CardContent>
+              <Typography variant="h6">{client.name}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {client.email}
+              </Typography>
 
-            <div className={styles.clientActions}>
-              <button
-                onClick={() => handleStartEdit(client)}
-                className={`${styles.button} ${styles.editButton}`}
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleRegeneratePassword(client.id)}
-                className={`${styles.button} ${styles.regenerateButton}`}
-              >
-                Reset Password
-              </button>
-              <button
-                onClick={() => handleRemoveClient(client.id, client.orderCount)}
-                disabled={client.orderCount > 0}
-                className={`${styles.button} ${styles.removeButton} ${client.orderCount > 0 ? styles.disabledButton : ''}`}
-                title={client.orderCount > 0 ? `Cannot remove client with ${client.orderCount} outstanding order${client.orderCount > 1 ? 's' : ''}` : ''}
-              >
-                Remove
-              </button>
-            </div>
-          </div>
+              <Box mt={2}>
+                <Typography variant="body2">
+                  <strong>Orders:</strong> {client.orderCount || 0}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Address:</strong> {client.address || 'N/A'}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Join Date:</strong> {formatDate(client.createdAt)}
+                </Typography>
+              </Box>
+
+              <Box display="flex" gap={1} mt={2}>
+                <ActionButton
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleStartEdit(client)}
+                >
+                  Edit
+                </ActionButton>
+                <ActionButton
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleRegeneratePassword(client.id)}
+                >
+                  Reset Password
+                </ActionButton>
+                <ActionButton
+                  variant="outlined"
+                  size="small"
+                  color="error"
+                  onClick={() => handleRemoveClient(client.id, client.orderCount)}
+                  disabled={client.orderCount > 0}
+                >
+                  Remove
+                </ActionButton>
+              </Box>
+            </CardContent>
+          </CoralCard>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 
