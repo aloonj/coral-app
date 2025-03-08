@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 
 // Card for coral items with stock status styling
-export { Box };
+export { Box, Typography };
 export const CoralCard = styled(Card)(({ theme, stockStatus }) => ({
   height: '100%',
   display: 'flex',
