@@ -15,7 +15,7 @@ import {
   SubmitButton,
   Typography
 } from '../components/StyledComponents';
-import { Modal, IconButton, Stack } from '@mui/material';
+import { Modal, IconButton, Stack, Container } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 
 const Clients = () => {
@@ -165,7 +165,7 @@ const Clients = () => {
   }
 
   return (
-    <Box p={3}>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
       {error && <FormError severity="error">{error}</FormError>}
       {success && <FormError severity="success">{success}</FormError>}
 
@@ -379,7 +379,7 @@ const Clients = () => {
           </CoralCard>
         ))}
       </Box>
-    </Box>
+    </Container>
   );
 };
 
