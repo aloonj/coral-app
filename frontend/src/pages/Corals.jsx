@@ -26,7 +26,8 @@ import {
   CardContent as MuiCardContent,
   CardMedia,
   Collapse,
-  CircularProgress
+  CircularProgress,
+  Stack
 } from '@mui/material';
 import {
   Add as AddIcon,
