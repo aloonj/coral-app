@@ -3,13 +3,41 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api, { coralService, categoryService, imageService, BASE_URL } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { config } from '../config';
+import { useTheme } from '@mui/material/styles';
 import ImageSelector from '../components/ImageGallery/ImageSelector';
-import styles from './EditCoral.module.css';
+import {
+  Container,
+  Typography,
+  Box,
+  TextField,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper,
+  Grid,
+  IconButton,
+  CircularProgress,
+  Alert
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Remove as RemoveIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
+import {
+  PageTitle,
+  FormField,
+  FormError,
+  ActionButton
+} from '../components/StyledComponents';
 
 const EditCoral = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const theme = useTheme();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formError, setFormError] = useState('');
@@ -125,337 +153,455 @@ const EditCoral = () => {
   };
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '50vh' 
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.header}>Edit Coral</h1>
+    <Container maxWidth="md" sx={{ py: 3 }}>
+      <PageTitle variant="h1">Edit Coral</PageTitle>
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        {formError && (
-          <div className={styles.error}>
-            {formError}
-          </div>
-        )}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box component="form" onSubmit={handleSubmit}>
+          {formError && (
+            <FormError severity="error" sx={{ mb: 2 }}>
+              {formError}
+            </FormError>
+          )}
 
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Species Name</label>
-          <input
-            className={styles.input}
-            type="text"
-            value={coralForm.speciesName}
-            onChange={(e) => setCoralForm({...coralForm, speciesName: e.target.value})}
-            required
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Scientific Name</label>
-          <input
-            className={styles.input}
-            type="text"
-            value={coralForm.scientificName}
-            onChange={(e) => setCoralForm({...coralForm, scientificName: e.target.value})}
-            required
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Description</label>
-          <textarea
-            className={styles.textarea}
-            value={coralForm.description}
-            onChange={(e) => setCoralForm({...coralForm, description: e.target.value})}
-            required
-          />
-        </div>
-
-        {showAdditionalDetails && (
-          <>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Care Level</label>
-              <select
-                className={styles.select}
-                value={coralForm.careLevel}
-                onChange={(e) => setCoralForm({...coralForm, careLevel: e.target.value})}
-              >
-                <option value="EASY">Easy Care</option>
-                <option value="MODERATE">Moderate Care</option>
-                <option value="EXPERT">Expert Care</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Growth Rate</label>
-              <select
-                className={styles.select}
-                value={coralForm.growthRate}
-                onChange={(e) => setCoralForm({...coralForm, growthRate: e.target.value})}
-              >
-                <option value="SLOW">Slow Growth</option>
-                <option value="MODERATE">Moderate Growth</option>
-                <option value="FAST">Fast Growth</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Lighting</label>
-              <input
-                className={styles.input}
-                type="text"
-                value={coralForm.lightingRequirements}
-                onChange={(e) => setCoralForm({...coralForm, lightingRequirements: e.target.value})}
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                Species Name
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={8}>
+              <FormField
+                fullWidth
+                variant="outlined"
+                size="small"
+                value={coralForm.speciesName}
+                onChange={(e) => setCoralForm({...coralForm, speciesName: e.target.value})}
+                required
               />
-            </div>
+            </Grid>
 
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Water Flow</label>
-              <select
-                className={styles.select}
-                value={coralForm.waterFlow}
-                onChange={(e) => setCoralForm({...coralForm, waterFlow: e.target.value})}
-              >
-                <option value="LOW">Low Flow</option>
-                <option value="MEDIUM">Medium Flow</option>
-                <option value="HIGH">High Flow</option>
-              </select>
-            </div>
-          </>
-        )}
-
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Price ({config.defaultCurrency})</label>
-          <input
-            className={styles.input}
-            type="number"
-            step="0.01"
-            value={coralForm.price}
-            onChange={(e) => setCoralForm({...coralForm, price: e.target.value})}
-            required
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Image</label>
-          <div className={styles.imageContainer}>
-            <div className={styles.imageInputGroup}>
-              <input
-                className={styles.imageInput}
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  setCoralForm(prev => ({
-                    ...prev, 
-                    image: file,
-                    imageUrl: null
-                  }));
-                }}
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                Scientific Name
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={8}>
+              <FormField
+                fullWidth
+                variant="outlined"
+                size="small"
+                value={coralForm.scientificName}
+                onChange={(e) => setCoralForm({...coralForm, scientificName: e.target.value})}
+                required
               />
-              <button
-                type="button"
-                className={styles.selectImageButton}
-                onClick={() => setShowImageSelector(true)}
-              >
-                Select Existing Image
-              </button>
-            </div>
-            {(coralForm.image || coralForm.imageUrl) && (
-              <div style={{ position: 'relative' }}>
-                <div className={styles.imagePreview}>
-                  <img
-                    src={coralForm.image 
-                      ? URL.createObjectURL(coralForm.image)
-                      : coralForm.imageUrl
-                        ? `${BASE_URL}/uploads/${coralForm.imageUrl}`
-                        : '/src/assets/images/image-coming-soon.svg'
-                    }
-                    alt="Coral preview"
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                Description
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={8}>
+              <FormField
+                fullWidth
+                variant="outlined"
+                multiline
+                rows={4}
+                value={coralForm.description}
+                onChange={(e) => setCoralForm({...coralForm, description: e.target.value})}
+                required
+              />
+            </Grid>
+
+            {showAdditionalDetails && (
+              <>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                    Care Level
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={8}>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={coralForm.careLevel}
+                      onChange={(e) => setCoralForm({...coralForm, careLevel: e.target.value})}
+                    >
+                      <MenuItem value="EASY">Easy Care</MenuItem>
+                      <MenuItem value="MODERATE">Moderate Care</MenuItem>
+                      <MenuItem value="EXPERT">Expert Care</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                    Growth Rate
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={8}>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={coralForm.growthRate}
+                      onChange={(e) => setCoralForm({...coralForm, growthRate: e.target.value})}
+                    >
+                      <MenuItem value="SLOW">Slow Growth</MenuItem>
+                      <MenuItem value="MODERATE">Moderate Growth</MenuItem>
+                      <MenuItem value="FAST">Fast Growth</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                    Lighting
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={8}>
+                  <FormField
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    value={coralForm.lightingRequirements}
+                    onChange={(e) => setCoralForm({...coralForm, lightingRequirements: e.target.value})}
                   />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCoralForm(prev => ({
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                    Water Flow
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={8}>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={coralForm.waterFlow}
+                      onChange={(e) => setCoralForm({...coralForm, waterFlow: e.target.value})}
+                    >
+                      <MenuItem value="LOW">Low Flow</MenuItem>
+                      <MenuItem value="MEDIUM">Medium Flow</MenuItem>
+                      <MenuItem value="HIGH">High Flow</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </>
+            )}
+
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                Price ({config.defaultCurrency})
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={8}>
+              <FormField
+                fullWidth
+                variant="outlined"
+                size="small"
+                type="number"
+                step="0.01"
+                value={coralForm.price}
+                onChange={(e) => setCoralForm({...coralForm, price: e.target.value})}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                Image
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={8}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    sx={{ flexGrow: 1 }}
+                  >
+                    Upload Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        setCoralForm(prev => ({
+                          ...prev, 
+                          image: file,
+                          imageUrl: null
+                        }));
+                      }}
+                    />
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="info"
+                    onClick={() => setShowImageSelector(true)}
+                  >
+                    Select Existing Image
+                  </Button>
+                </Box>
+                
+                {(coralForm.image || coralForm.imageUrl) && (
+                  <Box sx={{ position: 'relative', width: 200, height: 200 }}>
+                    <Box 
+                      sx={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: 1,
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <img
+                        src={coralForm.image 
+                          ? URL.createObjectURL(coralForm.image)
+                          : coralForm.imageUrl
+                            ? `${BASE_URL}/uploads/${coralForm.imageUrl}`
+                            : '/src/assets/images/image-coming-soon.svg'
+                        }
+                        alt="Coral preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </Box>
+                    <IconButton
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        top: -10,
+                        right: -10,
+                        backgroundColor: theme.palette.error.main,
+                        color: theme.palette.error.contrastText,
+                        '&:hover': {
+                          backgroundColor: theme.palette.error.dark,
+                        }
+                      }}
+                      onClick={() => {
+                        setCoralForm(prev => ({
+                          ...prev,
+                          image: null,
+                          imageUrl: null
+                        }));
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                )}
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                Category
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={8}>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={coralForm.categoryId}
+                  onChange={(e) => setCoralForm({...coralForm, categoryId: e.target.value})}
+                  required
+                  displayEmpty
+                >
+                  <MenuItem value="">Select Category</MenuItem>
+                  {categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                Quantity
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={8}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <IconButton
+                  color="error"
+                  size="small"
+                  onClick={() => setCoralForm(prev => ({
+                    ...prev,
+                    quantity: Math.max(0, parseInt(prev.quantity || 0) - 1).toString()
+                  }))}
+                >
+                  <RemoveIcon />
+                </IconButton>
+                <TextField
+                  variant="outlined"
+                  size="small"
+                  value={coralForm.quantity}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || /^\d+$/.test(value)) {
+                      setCoralForm({...coralForm, quantity: value});
+                    }
+                  }}
+                  required
+                  sx={{ width: 80, textAlign: 'center' }}
+                  inputProps={{ 
+                    style: { textAlign: 'center' },
+                    min: 0
+                  }}
+                />
+                <IconButton
+                  color="success"
+                  size="small"
+                  onClick={() => setCoralForm(prev => ({
+                    ...prev,
+                    quantity: (parseInt(prev.quantity || 0) + 1).toString()
+                  }))}
+                >
+                  <AddIcon />
+                </IconButton>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1 }}>
+                Min Stock
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={8}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <IconButton
+                  color="error"
+                  size="small"
+                  onClick={() => setCoralForm(prev => ({
+                    ...prev,
+                    minimumStock: Math.max(0, parseInt(prev.minimumStock || 0) - 1).toString()
+                  }))}
+                >
+                  <RemoveIcon />
+                </IconButton>
+                <TextField
+                  variant="outlined"
+                  size="small"
+                  value={coralForm.minimumStock}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || /^\d+$/.test(value)) {
+                      setCoralForm({...coralForm, minimumStock: value});
+                    }
+                  }}
+                  required
+                  sx={{ width: 80, textAlign: 'center' }}
+                  inputProps={{ 
+                    style: { textAlign: 'center' },
+                    min: 0
+                  }}
+                />
+                <IconButton
+                  color="success"
+                  size="small"
+                  onClick={() => setCoralForm(prev => ({
+                    ...prev,
+                    minimumStock: (parseInt(prev.minimumStock || 0) + 1).toString()
+                  }))}
+                >
+                  <AddIcon />
+                </IconButton>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => navigate('/corals')}
+                >
+                  Cancel
+                </Button>
+                <ActionButton
+                  variant="contained"
+                  color="primary"
+                  type="submit"
+                >
+                  Update Coral
+                </ActionButton>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
+
+      {showImageSelector && (
+        <ImageSelector
+          onSelect={async (image) => {
+            try {
+              setIsProcessingImage(true);
+              
+              if (image.category === 'uncategorized') {
+                const categoryName = categories.find(cat => cat.id === parseInt(coralForm.categoryId))?.name;
+                if (!categoryName) {
+                  setFormError('Please select a category before choosing an uncategorized image');
+                  return;
+                }
+                const targetCategory = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                const response = await imageService.categorizeImage(
+                  image.category,
+                  image.filename,
+                  targetCategory
+                );
+                
+                await new Promise(resolve => {
+                  setCoralForm(prev => {
+                    const newState = {
                       ...prev,
                       image: null,
-                      imageUrl: null
-                    }));
-                  }}
-                  className={styles.removeImageButton}
-                >
-                  ×
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {showImageSelector && (
-          <ImageSelector
-            onSelect={async (image) => {
-              try {
-                setIsProcessingImage(true);
-                
-                if (image.category === 'uncategorized') {
-                  const categoryName = categories.find(cat => cat.id === parseInt(coralForm.categoryId))?.name;
-                  if (!categoryName) {
-                    setFormError('Please select a category before choosing an uncategorized image');
-                    return;
-                  }
-                  const targetCategory = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-                  const response = await imageService.categorizeImage(
-                    image.category,
-                    image.filename,
-                    targetCategory
-                  );
-                  
-                  await new Promise(resolve => {
-                    setCoralForm(prev => {
-                      const newState = {
-                        ...prev,
-                        image: null,
-                        imageUrl: response.data.newPath
-                      };
-                      resolve(newState);
-                      return newState;
-                    });
+                      imageUrl: response.data.newPath
+                    };
+                    resolve(newState);
+                    return newState;
                   });
-                } else {
-                  await new Promise(resolve => {
-                    setCoralForm(prev => {
-                      const newState = {
-                        ...prev,
-                        image: null,
-                        imageUrl: image.relativePath
-                      };
-                      resolve(newState);
-                      return newState;
-                    });
+                });
+              } else {
+                await new Promise(resolve => {
+                  setCoralForm(prev => {
+                    const newState = {
+                      ...prev,
+                      image: null,
+                      imageUrl: image.relativePath
+                    };
+                    resolve(newState);
+                    return newState;
                   });
-                }
-                
-                setShowImageSelector(false);
-              } catch (error) {
-                console.error('Error categorizing image:', error);
-                setFormError(error.response?.data?.message || 'Error selecting image');
-              } finally {
-                setIsProcessingImage(false);
+                });
               }
-            }}
-            onClose={() => setShowImageSelector(false)}
-            currentImage={coralForm.imageUrl}
-          />
-        )}
-
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Category</label>
-          <select
-            className={styles.select}
-            value={coralForm.categoryId}
-            onChange={(e) => setCoralForm({...coralForm, categoryId: e.target.value})}
-            required
-          >
-            <option value="">Select Category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Quantity</label>
-          <div className={styles.quantityControl}>
-            <button
-              type="button"
-              className={styles.decrementButton}
-              onClick={() => setCoralForm(prev => ({
-                ...prev,
-                quantity: Math.max(0, parseInt(prev.quantity || 0) - 1).toString()
-              }))}
-            >
-              -
-            </button>
-            <input
-              className={styles.quantityInput}
-              type="text"
-              value={coralForm.quantity}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === '' || /^\d+$/.test(value)) {
-                  setCoralForm({...coralForm, quantity: value});
-                }
-              }}
-              required
-            />
-            <button
-              type="button"
-              className={styles.incrementButton}
-              onClick={() => setCoralForm(prev => ({
-                ...prev,
-                quantity: (parseInt(prev.quantity || 0) + 1).toString()
-              }))}
-            >
-              +
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Min Stock</label>
-          <div className={styles.quantityControl}>
-            <button
-              type="button"
-              className={styles.decrementButton}
-              onClick={() => setCoralForm(prev => ({
-                ...prev,
-                minimumStock: Math.max(0, parseInt(prev.minimumStock || 0) - 1).toString()
-              }))}
-            >
-              -
-            </button>
-            <input
-              className={styles.quantityInput}
-              type="text"
-              value={coralForm.minimumStock}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === '' || /^\d+$/.test(value)) {
-                  setCoralForm({...coralForm, minimumStock: value});
-                }
-              }}
-              required
-            />
-            <button
-              type="button"
-              className={styles.incrementButton}
-              onClick={() => setCoralForm(prev => ({
-                ...prev,
-                minimumStock: (parseInt(prev.minimumStock || 0) + 1).toString()
-              }))}
-            >
-              +
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.buttonGroup}>
-          <button className={styles.submitButton} type="submit">
-            Update Coral
-          </button>
-          <button 
-            className={styles.cancelButton}
-            type="button"
-            onClick={() => navigate('/corals')}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
+              
+              setShowImageSelector(false);
+            } catch (error) {
+              console.error('Error categorizing image:', error);
+              setFormError(error.response?.data?.message || 'Error selecting image');
+            } finally {
+              setIsProcessingImage(false);
+            }
+          }}
+          onClose={() => setShowImageSelector(false)}
+          currentImage={coralForm.imageUrl}
+        />
+      )}
+    </Container>
   );
 };
 
