@@ -22,7 +22,7 @@ import {
   CheckCircle as CheckCircleIcon,
   CloudDownload as DownloadIcon,
   Delete as DeleteIcon,
-  Database as DatabaseIcon,
+  Storage as DatabaseIcon,
   Image as ImageIcon,
   Error as ErrorIcon
 } from '@mui/icons-material';
