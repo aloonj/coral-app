@@ -1,13 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { notificationService } from '../services/api';
-import styles from './Notifications.module.css';
+import {
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  TextField,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  useTheme
+} from '@mui/material';
+import {
+  Notifications as NotificationsIcon,
+  Pending as PendingIcon,
+  Sync as SyncIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Refresh as RefreshIcon,
+  Delete as DeleteIcon,
+  CleaningServices as CleanupIcon,
+  Send as SendIcon
+} from '@mui/icons-material';
+import ConfirmationDialog from '../components/ConfirmationDialog';
+import StatusMessage from '../components/StatusMessage';
+import ActionButtonGroup from '../components/ActionButtonGroup';
 
 const Notifications = () => {
+  const theme = useTheme();
   const [queueStatus, setQueueStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cleanupDays, setCleanupDays] = useState(30);
   const [testLoading, setTestLoading] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
 
   const fetchQueueStatus = async () => {
     try {
@@ -57,26 +97,36 @@ const Notifications = () => {
   };
 
   const handleDeleteAll = async () => {
-    if (window.confirm('Are you sure you want to delete ALL notifications, including pending ones? This action cannot be undone.')) {
-      try {
-        await notificationService.deleteAllNotifications();
-        // Reset queue status immediately to show empty state
-        setQueueStatus({
-          status: {
-            pending: 0,
-            processing: 0,
-            completed_24h: 0,
-            failed: 0
-          },
-          recentFailures: []
-        });
-        // Then fetch latest status
-        await fetchQueueStatus();
-      } catch (err) {
-        setError('Failed to delete all notifications');
-        console.error('Error:', err);
+    setConfirmDialog({
+      open: true,
+      title: 'Delete All Notifications',
+      message: 'Are you sure you want to delete ALL notifications, including pending ones? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await notificationService.deleteAllNotifications();
+          // Reset queue status immediately to show empty state
+          setQueueStatus({
+            status: {
+              pending: 0,
+              processing: 0,
+              completed_24h: 0,
+              failed: 0
+            },
+            recentFailures: []
+          });
+          // Then fetch latest status
+          await fetchQueueStatus();
+        } catch (err) {
+          setError('Failed to delete all notifications');
+          console.error('Error:', err);
+        }
+        setConfirmDialog({ ...confirmDialog, open: false });
       }
-    }
+    });
+  };
+
+  const handleCloseDialog = () => {
+    setConfirmDialog({ ...confirmDialog, open: false });
   };
 
   useEffect(() => {
@@ -87,119 +137,186 @@ const Notifications = () => {
   }, []);
 
   if (loading && !queueStatus) {
-    return <div className={styles.loading}>Loading...</div>;
-  }
-
-  if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <div className={styles.container}>
-      <h1>Notification Queue</h1>
+    <Box sx={{ p: { xs: 2, md: 3 } }}>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+        <NotificationsIcon sx={{ mr: 1 }} /> Notification Queue
+      </Typography>
+      
+      <StatusMessage error={error} />
       
       {/* Status Overview */}
-      <div className={styles.statusGrid}>
-        <div className={styles.statusCard}>
-          <h3>Pending</h3>
-          <p className={styles.count}>{queueStatus?.status.pending || 0}</p>
-        </div>
-        <div className={styles.statusCard}>
-          <h3>Processing</h3>
-          <p className={styles.count}>{queueStatus?.status.processing || 0}</p>
-        </div>
-        <div className={styles.statusCard}>
-          <h3>Completed (24h)</h3>
-          <p className={styles.count}>{queueStatus?.status.completed_24h || 0}</p>
-        </div>
-        <div className={styles.statusCard}>
-          <h3>Failed</h3>
-          <p className={`${styles.count} ${styles.failed}`}>
-            {queueStatus?.status.failed || 0}
-          </p>
-        </div>
-      </div>
+      <Grid container spacing={2} sx={{ my: 3 }}>
+        <Grid item xs={6} md={3}>
+          <Paper elevation={2} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+            <PendingIcon sx={{ color: theme.palette.warning.main, fontSize: 40 }} />
+            <Typography variant="h6" component="h3" color="text.secondary">
+              Pending
+            </Typography>
+            <Typography variant="h4" component="p" fontWeight="bold">
+              {queueStatus?.status.pending || 0}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <Paper elevation={2} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+            <SyncIcon sx={{ color: theme.palette.info.main, fontSize: 40 }} />
+            <Typography variant="h6" component="h3" color="text.secondary">
+              Processing
+            </Typography>
+            <Typography variant="h4" component="p" fontWeight="bold">
+              {queueStatus?.status.processing || 0}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <Paper elevation={2} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+            <CheckCircleIcon sx={{ color: theme.palette.success.main, fontSize: 40 }} />
+            <Typography variant="h6" component="h3" color="text.secondary">
+              Completed (24h)
+            </Typography>
+            <Typography variant="h4" component="p" fontWeight="bold">
+              {queueStatus?.status.completed_24h || 0}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <Paper elevation={2} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+            <ErrorIcon sx={{ color: theme.palette.error.main, fontSize: 40 }} />
+            <Typography variant="h6" component="h3" color="text.secondary">
+              Failed
+            </Typography>
+            <Typography variant="h4" component="p" fontWeight="bold" color="error">
+              {queueStatus?.status.failed || 0}
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Recent Failures */}
       {queueStatus?.recentFailures?.length > 0 && (
-        <div className={styles.section}>
-          <h2>Recent Failures</h2>
-          <div className={styles.tableContainer}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Error</th>
-                  <th>Attempts</th>
-                  <th>Last Attempt</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+        <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h5" component="h2" gutterBottom>
+            Recent Failures
+          </Typography>
+          <TableContainer>
+            <Table size="medium">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Error</TableCell>
+                  <TableCell>Attempts</TableCell>
+                  <TableCell>Last Attempt</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {queueStatus.recentFailures.map((failure) => (
-                  <tr key={failure.id}>
-                    <td>{failure.type}</td>
-                    <td>{failure.error}</td>
-                    <td>{failure.attempts}</td>
-                    <td>{new Date(failure.lastAttempt).toLocaleString()}</td>
-                    <td>
-                      <button
+                  <TableRow key={failure.id} hover>
+                    <TableCell>{failure.type}</TableCell>
+                    <TableCell>{failure.error}</TableCell>
+                    <TableCell>{failure.attempts}</TableCell>
+                    <TableCell>{new Date(failure.lastAttempt).toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        color="info"
+                        size="small"
+                        startIcon={<RefreshIcon />}
                         onClick={() => handleRetry(failure.id)}
-                        className={styles.retryButton}
                       >
                         Retry
-                      </button>
-                    </td>
-                  </tr>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          <button
-            onClick={() => handleRetry(queueStatus.recentFailures.map(f => f.id))}
-            className={styles.retryAllButton}
-          >
-            Retry All Failed
-          </button>
-        </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <ActionButtonGroup sx={{ mt: 2 }}>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<RefreshIcon />}
+              onClick={() => handleRetry(queueStatus.recentFailures.map(f => f.id))}
+            >
+              Retry All Failed
+            </Button>
+          </ActionButtonGroup>
+        </Paper>
       )}
 
       {/* Cleanup Section */}
-      <div className={styles.section}>
-        <h2>Cleanup</h2>
-        <div className={styles.cleanupControls}>
-          <input
+      <Paper elevation={2} sx={{ p: 3 }}>
+        <Typography variant="h5" component="h2" gutterBottom>
+          Cleanup
+        </Typography>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', md: 'row' }, 
+          alignItems: { xs: 'stretch', md: 'center' },
+          gap: 2,
+          mb: 2
+        }}>
+          <TextField
             type="number"
-            min="1"
-            max="365"
+            label="Days"
+            variant="outlined"
+            size="small"
+            inputProps={{ min: 1, max: 365 }}
             value={cleanupDays}
             onChange={(e) => setCleanupDays(Number(e.target.value))}
-            className={styles.daysInput}
+            sx={{ width: { xs: '100%', md: 100 } }}
           />
-          <button onClick={handleCleanup} className={styles.cleanupButton}>
+          <Button
+            variant="contained"
+            color="warning"
+            startIcon={<CleanupIcon />}
+            onClick={handleCleanup}
+          >
             Clean Up Completed Notifications
-          </button>
-          <button 
-            onClick={handleDeleteAll} 
-            className={`${styles.cleanupButton} ${styles.deleteAllButton}`}
-            style={{ backgroundColor: '#dc3545', marginLeft: '10px' }}
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleDeleteAll}
           >
             Delete All Notifications
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<SendIcon />}
             onClick={handleTestNotification}
-            className={styles.cleanupButton}
-            style={{ backgroundColor: '#28a745', marginLeft: '10px' }}
             disabled={testLoading}
           >
             {testLoading ? 'Sending...' : 'Send Test Notification'}
-          </button>
-        </div>
-        <p className={styles.cleanupNote}>
+          </Button>
+        </Box>
+        <Typography variant="body2" color="text.secondary">
           This will remove completed notifications older than {cleanupDays} days
-        </p>
-      </div>
-    </div>
+        </Typography>
+      </Paper>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={handleCloseDialog}
+        confirmText="Delete All"
+        confirmColor="error"
+      />
+    </Box>
   );
 };
 
