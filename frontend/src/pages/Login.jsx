@@ -1,7 +1,8 @@
 import { Navigate, Link as RouterLink } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import AuthForm from '../components/Auth/AuthForm';
-import { Container, Box, Paper, Typography, useTheme, Divider } from '@mui/material';
+import { Container, Box, Paper, Typography, useTheme, Divider, Alert, Fade } from '@mui/material';
 import { PageTitle, ActionButton } from '../components/StyledComponents';
 import { useColorMode } from '../theme/ThemeContext';
 
@@ -9,6 +10,17 @@ const Login = () => {
   const { user } = useAuth();
   const theme = useTheme();
   const { mode } = useColorMode();
+  const [successMessage, setSuccessMessage] = useState('');
+  
+  useEffect(() => {
+    // Check for registration success message in localStorage
+    const message = localStorage.getItem('registrationSuccess');
+    if (message) {
+      setSuccessMessage(message);
+      // Remove the message from localStorage to prevent it from showing again
+      localStorage.removeItem('registrationSuccess');
+    }
+  }, []);
   
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -59,6 +71,25 @@ const Login = () => {
           >
             Login to Your Account
           </PageTitle>
+          
+          {/* Registration success message */}
+          <Fade in={!!successMessage} timeout={500}>
+            <Box sx={{ mb: successMessage ? 3 : 0 }}>
+              {successMessage && (
+                <Alert 
+                  severity="success" 
+                  sx={{ 
+                    mb: 2,
+                    '& .MuiAlert-message': {
+                      fontWeight: 500
+                    }
+                  }}
+                >
+                  {successMessage}
+                </Alert>
+              )}
+            </Box>
+          </Fade>
           
           <AuthForm mode="login" />
           

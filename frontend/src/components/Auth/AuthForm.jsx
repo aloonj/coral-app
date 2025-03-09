@@ -48,13 +48,21 @@ const AuthForm = ({ mode = 'login' }) => {
         login(response.data.user, response.data.token);
         navigate('/dashboard');
       } else {
-        await authService.register({
+        const response = await authService.register({
           name: formData.name,
           email: formData.email,
           password: formData.password,
           phone: formData.phone,
           address: formData.address,
         });
+        
+        // Store registration success message in localStorage
+        if (response && response.data && response.data.message) {
+          localStorage.setItem('registrationSuccess', response.data.message);
+        } else {
+          localStorage.setItem('registrationSuccess', 'Registration successful! You can now log in.');
+        }
+        
         navigate('/login');
       }
     } catch (error) {
