@@ -125,6 +125,18 @@ const QuickOrder = () => {
     fetchData();
   }, [user, isAdmin]);
 
+  // Function to get client discount rate when admin selects a client
+  useEffect(() => {
+    if (isAdmin && selectedClient) {
+      const client = clients.find(c => c.id === parseInt(selectedClient));
+      if (client) {
+        setClientDiscountRate(parseFloat(client.discountRate) || 0);
+      } else {
+        setClientDiscountRate(0);
+      }
+    }
+  }, [isAdmin, selectedClient, clients]);
+
   // Early return for loading and error states
   if (!user) {
     return (
@@ -190,18 +202,6 @@ const QuickOrder = () => {
     });
     setOrderQuantities(resetQuantities);
   };
-
-  // Function to get client discount rate when admin selects a client
-  useEffect(() => {
-    if (isAdmin && selectedClient) {
-      const client = clients.find(c => c.id === parseInt(selectedClient));
-      if (client) {
-        setClientDiscountRate(parseFloat(client.discountRate) || 0);
-      } else {
-        setClientDiscountRate(0);
-      }
-    }
-  }, [isAdmin, selectedClient, clients]);
 
   // Function to calculate discounted price
   const getDiscountedPrice = (originalPrice) => {
