@@ -334,9 +334,9 @@ const Dashboard = () => {
 
   return (
     <Container maxWidth="lg" disableGutters sx={{ py: 3 }}>
-      <PageTitle variant="h1">
+      <Typography variant="h4" component="h1" gutterBottom>
         {isAdmin ? 'Admin Dashboard' : 'My Dashboard'}
-      </PageTitle>
+      </Typography>
       
       {/* Hero Gallery */}
       <HeroGallery images={coralsWithImages} interval={10000} />

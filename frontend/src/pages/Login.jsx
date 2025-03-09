@@ -43,13 +43,14 @@ const Login = () => {
         }}
       >
         <FormContainer sx={{ width: '100%', maxWidth: '100%' }}>
-          <PageTitle 
-            variant="h1" 
+          <Typography 
+            variant="h4" 
+            component="h1" 
             align="center" 
             gutterBottom
           >
             Login to Your Account
-          </PageTitle>
+          </Typography>
           
           {/* Registration success message */}
           <Fade in={!!successMessage} timeout={500}>

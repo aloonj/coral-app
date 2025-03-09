@@ -245,7 +245,7 @@ const Clients = () => {
 
       <Box sx={{ mb: 3 }}>
         <Box sx={{ mb: 2 }}>
-          <PageTitle variant="h1">Clients</PageTitle>
+          <Typography variant="h4" component="h1" gutterBottom>Clients</Typography>
         </Box>
         
         <Stack spacing={2} sx={{ width: { xs: '100%', sm: '50%', md: '30%' } }}>

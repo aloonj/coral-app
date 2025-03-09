@@ -31,13 +31,14 @@ const Register = () => {
         }}
       >
         <FormContainer sx={{ width: '100%', maxWidth: '100%' }}>
-          <PageTitle 
-            variant="h1" 
+          <Typography 
+            variant="h4" 
+            component="h1" 
             align="center" 
             gutterBottom
           >
             Create a Client Account
-          </PageTitle>
+          </Typography>
           
           <Typography 
             variant="body1" 

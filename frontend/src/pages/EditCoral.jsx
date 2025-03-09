@@ -169,7 +169,7 @@ const EditCoral = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
-      <PageTitle variant="h1">Edit Coral</PageTitle>
+      <Typography variant="h4" component="h1" gutterBottom>Edit Coral</Typography>
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box component="form" onSubmit={handleSubmit}>

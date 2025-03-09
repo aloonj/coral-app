@@ -226,7 +226,7 @@ const Corals = () => {
       )}
 
       <Box sx={{ mb: 3 }}>
-        <PageTitle variant="h1" sx={{ mb: 2 }}>Coral Management</PageTitle>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 2 }}>Coral Management</Typography>
         {hasAdminPrivileges && (
           <Stack spacing={2} sx={{ width: { xs: '100%', sm: '50%', md: '30%' } }}>
             <ActionButton

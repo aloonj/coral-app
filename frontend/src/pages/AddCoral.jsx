@@ -137,7 +137,7 @@ const AddCoral = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
-      <PageTitle variant="h1">Add New Coral</PageTitle>
+      <Typography variant="h4" component="h1" gutterBottom>Add New Coral</Typography>
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box component="form" onSubmit={handleSubmit}>

@@ -339,7 +339,7 @@ const QuickOrder = () => {
         alignItems: 'center',
         mb: 3
       }}>
-        <PageTitle variant="h1">Order Corals</PageTitle>
+        <Typography variant="h4" component="h1" gutterBottom>Order Corals</Typography>
         <ToggleButtonGroup
           value={layoutView}
           exclusive
