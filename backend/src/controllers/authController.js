@@ -270,6 +270,25 @@ export const clientRegister = async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    // Queue a notification to all admins about the new client registration
+    try {
+      console.log('Attempting to queue client registration notification from clientRegister');
+      const notification = await NotificationService.queueClientRegistrationNotification({
+        name,
+        email,
+        phone
+      });
+      
+      if (notification) {
+        console.log(`Successfully queued client registration notification with ID: ${notification.id}`);
+      } else {
+        console.warn('Failed to queue client registration notification - returned null');
+      }
+    } catch (notificationError) {
+      console.error('Error queueing admin notifications:', notificationError);
+      // Continue even if notification fails
+    }
+
     res.status(201).json({
       message: 'Registration successful! Your account is pending approval. You will be able to log in once an administrator approves your account.',
       user: {
