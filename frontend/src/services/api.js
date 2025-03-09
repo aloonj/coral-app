@@ -94,7 +94,7 @@ export const coralService = {
 export const imageService = {
   getAllImages: () => api.get('/images'),
   deleteImage: (category, filename) => api.delete(`/images/${category}/${filename}`),
-  uncategorizeImage: (category, filename) => api.post(`/images/${category}/${filename}/uncategorize`),
+  uncategorizeImage: (category, filename) => api.post(`/images/${category}/${filename}/uncategorize`, {}),
   categorizeImage: (category, filename, targetCategory) => 
     api.post(`/images/${category}/${filename}/categorize`, { targetCategory }),
   uploadImages: (files, category) => {
@@ -126,7 +126,7 @@ export const categoryService = {
   createCategory: (data) => api.post('/categories', data),
   updateCategory: (id, data) => api.put(`/categories/${id}`, data),
   deleteCategory: (id) => api.delete(`/categories/${id}`),
-  restoreCategory: (id) => api.post(`/categories/${id}/restore`),
+  restoreCategory: (id) => api.post(`/categories/${id}/restore`, {}),
 };
 
 export const authService = {
@@ -183,7 +183,7 @@ export const clientService = {
   createClient: (data) => api.post('/clients', data),
   updateClient: (id, data) => api.put(`/clients/${id}`, data),
   deleteClient: (id) => api.delete(`/clients/${id}`),
-  approveClient: (id) => api.post(`/clients/${id}/approve`),
+  approveClient: (id) => api.post(`/clients/${id}/approve`, {}),
 };
 
 export const notificationService = {

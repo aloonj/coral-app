@@ -128,7 +128,7 @@ const Clients = () => {
     if (!confirmed) return;
 
     try {
-      const response = await api.post(`/clients/${id}/regenerate-password`);
+      const response = await api.post(`/clients/${id}/regenerate-password`, {});
       setSuccess(`New temporary password: ${response.data.temporaryPassword}`);
     } catch (error) {
       setError(error.response?.data?.message || 'Error regenerating password');
