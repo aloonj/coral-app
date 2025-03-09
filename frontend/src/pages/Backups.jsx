@@ -1,7 +1,34 @@
 import { useState, useEffect } from 'react';
 import { backupService } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
-import styles from './Backups.module.css';
+import {
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  Button,
+  CircularProgress,
+  Chip,
+  Card,
+  CardHeader,
+  CardContent,
+  CardActions,
+  Divider,
+  useTheme
+} from '@mui/material';
+import {
+  Backup as BackupIcon,
+  Schedule as ScheduleIcon,
+  CheckCircle as CheckCircleIcon,
+  CloudDownload as DownloadIcon,
+  Delete as DeleteIcon,
+  Database as DatabaseIcon,
+  Image as ImageIcon,
+  Error as ErrorIcon
+} from '@mui/icons-material';
+import ConfirmationDialog from '../components/ConfirmationDialog';
+import StatusMessage from '../components/StatusMessage';
+import ActionButtonGroup from '../components/ActionButtonGroup';
 
 const formatCronTime = (cronExpression) => {
   if (!cronExpression) return 'Not configured';
@@ -15,12 +42,19 @@ const formatCronTime = (cronExpression) => {
 };
 
 const Backups = () => {
+  const theme = useTheme();
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [creating, setCreating] = useState(false);
   const [pollingInterval, setPollingInterval] = useState(null);
   const [config, setConfig] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -124,15 +158,25 @@ const Backups = () => {
   };
 
   const handleDelete = async (backup) => {
-    if (!window.confirm('Are you sure you want to delete this backup?')) return;
-    
-    try {
-      await backupService.deleteBackup(backup.id);
-      await loadBackups();
-    } catch (err) {
-      setError('Failed to delete backup');
-      console.error(err);
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Delete Backup',
+      message: 'Are you sure you want to delete this backup?',
+      onConfirm: async () => {
+        try {
+          await backupService.deleteBackup(backup.id);
+          await loadBackups();
+        } catch (err) {
+          setError('Failed to delete backup');
+          console.error(err);
+        }
+        setConfirmDialog({ ...confirmDialog, open: false });
+      }
+    });
+  };
+
+  const handleCloseDialog = () => {
+    setConfirmDialog({ ...confirmDialog, open: false });
   };
 
   const formatSize = (bytes) => {
@@ -142,107 +186,198 @@ const Backups = () => {
     return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending':
+        return theme.palette.warning.main;
+      case 'in_progress':
+        return theme.palette.info.main;
+      case 'success':
+        return theme.palette.success.main;
+      case 'failed':
+        return theme.palette.error.main;
+      default:
+        return theme.palette.grey[500];
+    }
+  };
+
+  const getBackupIcon = (type) => {
+    return type === 'database' ? <DatabaseIcon /> : <ImageIcon />;
+  };
+
   if (loading) {
-    return <div className={styles.loading}>Loading backups...</div>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.headerContainer}>
-        <h1 className={styles.header}>System Backups</h1>
+    <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center' }}>
+          <BackupIcon sx={{ mr: 1 }} /> System Backups
+        </Typography>
+        
         {config && (
-          <div className={styles.configInfo}>
-            <div className={styles.configItem}>✓ Automatic backups are configured to run daily at {formatCronTime(config.scheduleTime)}</div>
-            <div className={styles.configItem}>✓ Backup health is monitored daily at {formatCronTime(config.monitorSchedule)}</div>
-            <div className={styles.configItem}>✓ Backups are retained for {config.retentionDays} days</div>
-            <div className={styles.configItem}>✓ System alerts if successful backups are older than {config.maxAgeHours} hours</div>
-          </div>
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              bgcolor: 'background.paper', 
+              borderRadius: 2, 
+              p: 3, 
+              borderLeft: `4px solid ${theme.palette.success.main}` 
+            }}
+          >
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                <CheckCircleIcon sx={{ color: theme.palette.success.main, mr: 1 }} />
+                Automatic backups are configured to run daily at {formatCronTime(config.scheduleTime)}
+              </Typography>
+              <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                <CheckCircleIcon sx={{ color: theme.palette.success.main, mr: 1 }} />
+                Backup health is monitored daily at {formatCronTime(config.monitorSchedule)}
+              </Typography>
+              <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                <CheckCircleIcon sx={{ color: theme.palette.success.main, mr: 1 }} />
+                Backups are retained for {config.retentionDays} days
+              </Typography>
+              <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                <CheckCircleIcon sx={{ color: theme.palette.success.main, mr: 1 }} />
+                System alerts if successful backups are older than {config.maxAgeHours} hours
+              </Typography>
+            </Box>
+          </Paper>
         )}
-        <div className={styles.actions}>
-          <button 
+        
+        <ActionButtonGroup justifyContent="flex-end">
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<DatabaseIcon />}
             onClick={() => handleCreateBackup('database')}
             disabled={creating}
-            className={styles.actionButton}
           >
             Database Backup
-          </button>
-          <button 
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<ImageIcon />}
             onClick={() => handleCreateBackup('images')}
             disabled={creating}
-            className={styles.actionButton}
           >
             Images Backup
-          </button>
-        </div>
-      </div>
+          </Button>
+        </ActionButtonGroup>
+      </Box>
 
-      {error && (
-        <div className={styles.error}>
-          {error}
-        </div>
-      )}
+      <StatusMessage error={error} />
 
-      <div className={styles.backupGrid}>
+      <Grid container spacing={3}>
         {backups.map((backup) => (
-          <div key={backup.id} className={styles.backupCard}>
-            <div className={styles.cardHeader}>
-              <div className={styles.backupType}>{backup.type}</div>
-              <div className={`${styles.statusBadge} ${styles[backup.status]}`}>
-                {backup.status.toUpperCase()}
-              </div>
-            </div>
-            
-            <div className={styles.backupInfo}>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Created</span>
-                <span className={styles.infoValue}>
-                  {formatDate(backup.createdAt)}
-                </span>
-              </div>
-              {backup.completedAt && (
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>Completed</span>
-                  <span className={styles.infoValue}>
-                    {formatDate(backup.completedAt)}
-                  </span>
-                </div>
-              )}
-              {backup.size && (
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>Size</span>
-                  <span className={styles.infoValue}>{formatSize(backup.size)}</span>
-                </div>
-              )}
-              {backup.error && (
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>Error</span>
-                  <span className={`${styles.infoValue} ${styles.error}`}>
-                    {backup.error}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className={styles.cardActions}>
-              {backup.status === 'success' && (
-                <button
-                  onClick={() => handleDownload(backup)}
-                  className={styles.downloadButton}
+          <Grid item xs={12} sm={6} md={4} key={backup.id}>
+            <Card elevation={2}>
+              <CardHeader
+                title={
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    {getBackupIcon(backup.type)}
+                    <Typography variant="h6" sx={{ ml: 1, textTransform: 'capitalize' }}>
+                      {backup.type}
+                    </Typography>
+                  </Box>
+                }
+                action={
+                  <Chip
+                    label={backup.status.toUpperCase()}
+                    sx={{
+                      bgcolor: getStatusColor(backup.status),
+                      color: 'white',
+                      fontWeight: 'bold'
+                    }}
+                  />
+                }
+              />
+              <CardContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">Created</Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      {formatDate(backup.createdAt)}
+                    </Typography>
+                  </Box>
+                  
+                  {backup.completedAt && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Completed</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {formatDate(backup.completedAt)}
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {backup.size && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Size</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {formatSize(backup.size)}
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {backup.error && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Error</Typography>
+                      <Typography variant="body2" fontWeight="medium" color="error.main">
+                        {backup.error}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </CardContent>
+              
+              <Divider />
+              
+              <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
+                {backup.status === 'success' && (
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<DownloadIcon />}
+                    onClick={() => handleDownload(backup)}
+                    fullWidth
+                  >
+                    Download
+                  </Button>
+                )}
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => handleDelete(backup)}
+                  fullWidth={backup.status !== 'success'}
+                  sx={{ ml: backup.status === 'success' ? 1 : 0 }}
                 >
-                  Download
-                </button>
-              )}
-              <button
-                onClick={() => handleDelete(backup)}
-                className={styles.deleteButton}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+                  Delete
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
         ))}
-      </div>
-    </div>
+      </Grid>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={handleCloseDialog}
+        confirmText="Delete"
+        confirmColor="error"
+      />
+    </Box>
   );
 };
 
