@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import User from '../models/User.js';
 import Client from '../models/Client.js';
-import sequelize from '../config/database.js';
+import { sequelize } from '../config/database.js';
 import NotificationService from '../services/notificationService.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
