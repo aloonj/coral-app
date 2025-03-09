@@ -194,12 +194,16 @@ const Clients = () => {
       await clientService.approveClient(id);
       setSuccess('Client approved successfully');
       fetchClients();
+      
+      // Dispatch a custom event to notify other components about the approval
+      const event = new CustomEvent('client-approval-changed');
+      window.dispatchEvent(event);
     } catch (error) {
       setError(error.response?.data?.message || 'Error approving client');
     }
   };
 
-  const handleRemoveClient = async (id, orderCount) => {
+  const handleRemoveClient = async (id, orderCount, status) => {
     setError('');
     setSuccess('');
 
@@ -215,6 +219,12 @@ const Clients = () => {
       await api.delete(`/clients/${id}`);
       setSuccess('Client removed successfully');
       fetchClients();
+      
+      // If the removed client had pending approval status, dispatch the event to update counters
+      if (status === 'INACTIVE') {
+        const event = new CustomEvent('client-approval-changed');
+        window.dispatchEvent(event);
+      }
     } catch (error) {
       setError(error.response?.data?.message || 'Error removing client');
     }
@@ -508,7 +518,7 @@ const Clients = () => {
                   variant="outlined"
                   size="small"
                   color="error"
-                  onClick={() => handleRemoveClient(client.id, client.orderCount)}
+                  onClick={() => handleRemoveClient(client.id, client.orderCount, client.status)}
                   disabled={client.orderCount > 0}
                 >
                   Remove

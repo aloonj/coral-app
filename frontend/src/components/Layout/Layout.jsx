@@ -1,6 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   AppBar,
   Toolbar,
@@ -69,42 +69,58 @@ const LayoutWithThemeToggle = ({ children }) => {
     }
   }, [isMobile, isAdmin]);
 
-  // Fetch pending approvals count
+  // Create a reusable function for fetching pending counts
+  const fetchPendingCounts = useCallback(async () => {
+    if (!isAdmin) return;
+    
+    try {
+      const [approvalsRes, registrationsRes] = await Promise.all([
+        clientService.getPendingApprovalsCount(),
+        clientService.getPendingRegistrationsCount()
+      ]);
+      
+      const newApprovalsCount = approvalsRes.data.count;
+      const newRegistrationsCount = registrationsRes.data.count;
+      
+      // Show toast notification if there are new pending approvals
+      if (pendingApprovals > 0 && newApprovalsCount > pendingApprovals) {
+        setToast({
+          open: true,
+          message: 'New client registration pending approval',
+          severity: 'info'
+        });
+      }
+      
+      setPendingApprovals(newApprovalsCount);
+      setPendingRegistrations(newRegistrationsCount);
+    } catch (error) {
+      console.error('Error fetching pending counts:', error);
+    }
+  }, [isAdmin, pendingApprovals]);
+
+  // Fetch pending approvals count on component mount and when admin status changes
   useEffect(() => {
     if (isAdmin) {
-      const fetchPendingCounts = async () => {
-        try {
-          const [approvalsRes, registrationsRes] = await Promise.all([
-            clientService.getPendingApprovalsCount(),
-            clientService.getPendingRegistrationsCount()
-          ]);
-          
-          const newApprovalsCount = approvalsRes.data.count;
-          const newRegistrationsCount = registrationsRes.data.count;
-          
-          // Show toast notification if there are new pending approvals
-          if (pendingApprovals > 0 && newApprovalsCount > pendingApprovals) {
-            setToast({
-              open: true,
-              message: 'New client registration pending approval',
-              severity: 'info'
-            });
-          }
-          
-          setPendingApprovals(newApprovalsCount);
-          setPendingRegistrations(newRegistrationsCount);
-        } catch (error) {
-          console.error('Error fetching pending counts:', error);
-        }
-      };
-
       fetchPendingCounts();
       
       // Poll for updates every 5 minutes
       const interval = setInterval(fetchPendingCounts, 5 * 60 * 1000);
       return () => clearInterval(interval);
     }
-  }, [isAdmin, pendingApprovals]);
+  }, [isAdmin, fetchPendingCounts]);
+  
+  // Listen for client approval changes
+  useEffect(() => {
+    const handleClientApprovalChange = () => {
+      fetchPendingCounts();
+    };
+    
+    window.addEventListener('client-approval-changed', handleClientApprovalChange);
+    
+    return () => {
+      window.removeEventListener('client-approval-changed', handleClientApprovalChange);
+    };
+  }, [fetchPendingCounts]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
