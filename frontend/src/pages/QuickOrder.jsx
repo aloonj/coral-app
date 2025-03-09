@@ -75,6 +75,18 @@ const QuickOrder = () => {
     localStorage.setItem('quickOrderLayout', layoutView);
   }, [layoutView]);
 
+  // Function to get client discount rate when admin selects a client
+  useEffect(() => {
+    if (isAdmin && selectedClient && clients.length > 0) {
+      const client = clients.find(c => c.id === parseInt(selectedClient));
+      if (client) {
+        setClientDiscountRate(parseFloat(client.discountRate) || 0);
+      } else {
+        setClientDiscountRate(0);
+      }
+    }
+  }, [isAdmin, selectedClient, clients]);
+
   useEffect(() => {
     if (!user) {
       window.location.href = '/login';
@@ -83,30 +95,17 @@ const QuickOrder = () => {
 
     const fetchData = async () => {
       try {
-        const promises = [coralService.getAllCorals(), categoryService.getAllCategories()];
+        // Fetch corals and categories
+        const [coralsResponse, categoriesResponse] = await Promise.all([
+          coralService.getAllCorals(),
+          categoryService.getAllCategories()
+        ]);
         
-        // Only fetch clients if user is admin/superadmin
-        if (isAdmin) {
-          promises.push(clientService.getAllClients());
-        } else {
-          // For regular clients, fetch their own client record to get discount rate
-          promises.push(clientService.getClientProfile());
-        }
-        
-        const responses = await Promise.all(promises);
-        const coralData = responses[0].data;
-        const categoryData = responses[1].data;
+        const coralData = coralsResponse.data;
+        const categoryData = categoriesResponse.data;
         
         setCorals(coralData);
         setCategories(categoryData);
-        
-        if (isAdmin && responses[2]) {
-          setClients(responses[2].data);
-        } else if (responses[2]) {
-          // Set client discount rate for non-admin users
-          const clientData = responses[2].data;
-          setClientDiscountRate(parseFloat(clientData.discountRate) || 0);
-        }
         
         // Initialize order quantities
         const initialQuantities = {};
@@ -114,6 +113,26 @@ const QuickOrder = () => {
           initialQuantities[coral.id] = 0;
         });
         setOrderQuantities(initialQuantities);
+        
+        // Fetch clients or client profile separately
+        if (isAdmin) {
+          try {
+            const clientsResponse = await clientService.getAllClients();
+            setClients(clientsResponse.data);
+          } catch (error) {
+            console.error('Error fetching clients:', error);
+          }
+        } else {
+          try {
+            // For regular clients, fetch their own client record to get discount rate
+            const profileResponse = await api.get('/clients/profile');
+            if (profileResponse.data) {
+              setClientDiscountRate(parseFloat(profileResponse.data.discountRate) || 0);
+            }
+          } catch (error) {
+            console.error('Error fetching client profile:', error);
+          }
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Error loading data. Please try again later.');
@@ -124,18 +143,6 @@ const QuickOrder = () => {
 
     fetchData();
   }, [user, isAdmin]);
-
-  // Function to get client discount rate when admin selects a client
-  useEffect(() => {
-    if (isAdmin && selectedClient) {
-      const client = clients.find(c => c.id === parseInt(selectedClient));
-      if (client) {
-        setClientDiscountRate(parseFloat(client.discountRate) || 0);
-      } else {
-        setClientDiscountRate(0);
-      }
-    }
-  }, [isAdmin, selectedClient, clients]);
 
   // Early return for loading and error states
   if (!user) {
