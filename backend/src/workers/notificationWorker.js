@@ -4,6 +4,7 @@ import NotificationQueueService from '../services/notificationQueueService.js';
 import NotificationService from '../services/notificationService.js';
 import { Order, User, Client, Coral } from '../models/associations.js';
 import { Bulletin } from '../models/Bulletin.js';
+import { Op } from 'sequelize';
 
 console.log('Notification worker started');
 
@@ -119,7 +120,7 @@ async function processNotification(notification) {
       console.log(`Processing client registration notification for client: ${notification.payload.clientData.name}`);
       const adminUsers = await User.findAll({
         where: { 
-          role: ['ADMIN', 'SUPERADMIN'],
+          role: { [Op.in]: ['ADMIN', 'SUPERADMIN'] },
           status: 'ACTIVE'
         }
       });
