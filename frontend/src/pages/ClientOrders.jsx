@@ -143,7 +143,7 @@ const ClientOrders = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h1">Your Orders</Typography>
+        <Typography variant="h4" component="h1" gutterBottom>Your Orders</Typography>
         <FormControl sx={{ minWidth: 200 }}>
           <InputLabel id="status-filter-label">Filter by status</InputLabel>
           <Select

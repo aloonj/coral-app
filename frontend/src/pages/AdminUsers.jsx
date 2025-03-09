@@ -221,7 +221,7 @@ const AdminUsers = () => {
       <StatusMessage error={error} success={success} />
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h1">Admin User Management</Typography>
+        <Typography variant="h4" component="h1" gutterBottom>Admin User Management</Typography>
         <Button
           variant="contained"
           color={showAddForm ? "inherit" : "success"}
