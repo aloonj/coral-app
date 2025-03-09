@@ -44,7 +44,8 @@ const Clients = () => {
     name: '',
     email: '',
     address: '',
-    phone: ''
+    phone: '',
+    discountRate: '0'
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -113,7 +114,8 @@ const Clients = () => {
       name: client.name,
       email: client.email,
       address: client.address || '',
-      phone: client.phone || ''
+      phone: client.phone || '',
+      discountRate: client.discountRate || '0'
     });
     setShowEditModal(true);
   };
@@ -125,7 +127,8 @@ const Clients = () => {
       name: '',
       email: '',
       address: '',
-      phone: ''
+      phone: '',
+      discountRate: '0'
     });
   };
 
@@ -154,7 +157,7 @@ const Clients = () => {
       const { temporaryPassword } = response.data;
       setSuccess(`Client added successfully. Temporary password: ${temporaryPassword}`);
       setShowAddModal(false);
-      setFormData({ name: '', email: '', address: '', phone: '' });
+      setFormData({ name: '', email: '', address: '', phone: '', discountRate: '0' });
       fetchClients();
     } catch (error) {
       setError(error.response?.data?.message || 'Error adding client');
@@ -167,7 +170,8 @@ const Clients = () => {
       name: '',
       email: '',
       address: '',
-      phone: ''
+      phone: '',
+      discountRate: '0'
     });
   };
 
@@ -350,6 +354,17 @@ const Clients = () => {
               rows={4}
               fullWidth
             />
+            <FormField
+              label="Discount Rate (%)"
+              type="number"
+              name="discountRate"
+              value={formData.discountRate}
+              onChange={handleInputChange}
+              placeholder="Enter discount rate (0-100)"
+              inputProps={{ min: 0, max: 100, step: 0.01 }}
+              helperText="Percentage discount applied to all prices (0-100)"
+              fullWidth
+            />
             <Box display="flex" gap={2} mt={2}>
               <SubmitButton type="submit" variant="contained">
                 Add Client
@@ -421,6 +436,17 @@ const Clients = () => {
               rows={4}
               fullWidth
             />
+            <FormField
+              label="Discount Rate (%)"
+              type="number"
+              name="discountRate"
+              value={formData.discountRate}
+              onChange={handleInputChange}
+              placeholder="Enter discount rate (0-100)"
+              inputProps={{ min: 0, max: 100, step: 0.01 }}
+              helperText="Percentage discount applied to all prices (0-100)"
+              fullWidth
+            />
             <Box display="flex" gap={2} mt={2}>
               <SubmitButton type="submit" variant="contained">
                 Save Changes
@@ -469,24 +495,27 @@ const Clients = () => {
                 <Typography variant="body2">
                   <strong>Join Date:</strong> {formatDate(client.createdAt)}
                 </Typography>
-              <Typography variant="body2">
-                <strong>Status:</strong> {client.status === 'INACTIVE' ? 
-                  <Chip 
-                    size="small"
-                    label="Pending Approval" 
-                    color="warning"
-                    icon={<HourglassEmptyIcon />}
-                    sx={{ ml: 1 }}
-                  /> : 
-                  <Chip 
-                    size="small"
-                    label="Active" 
-                    color="success"
-                    icon={<CheckCircleIcon />}
-                    sx={{ ml: 1 }}
-                  />
-                }
-              </Typography>
+                <Typography variant="body2">
+                  <strong>Status:</strong> {client.status === 'INACTIVE' ? 
+                    <Chip 
+                      size="small"
+                      label="Pending Approval" 
+                      color="warning"
+                      icon={<HourglassEmptyIcon />}
+                      sx={{ ml: 1 }}
+                    /> : 
+                    <Chip 
+                      size="small"
+                      label="Active" 
+                      color="success"
+                      icon={<CheckCircleIcon />}
+                      sx={{ ml: 1 }}
+                    />
+                  }
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Discount Rate:</strong> {client.discountRate ? `${client.discountRate}%` : '0%'}
+                </Typography>
               </Box>
 
               <Box display="flex" flexWrap="wrap" gap={1} mt={2}>

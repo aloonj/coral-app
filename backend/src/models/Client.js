@@ -9,6 +9,16 @@ Client.init({
     primaryKey: true,
     autoIncrement: true
   },
+  discountRate: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: false,
+    defaultValue: 0.00,
+    validate: {
+      min: 0,
+      max: 100
+    },
+    comment: 'Percentage discount rate for client (e.g., 2.00, 5.00, 10.00)'
+  },
   userId: {
     type: DataTypes.INTEGER,
     allowNull: true,

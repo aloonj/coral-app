@@ -14,6 +14,10 @@ export const createOrder = async (req, res) => {
 
     const { items, preferredPickupDate, notes, clientId } = req.body;
 
+    // Get client information for discount rate
+    let clientRecord;
+    let clientDiscountRate = 0;
+
     // For admin/superadmin users, validate client exists
     if (['ADMIN', 'SUPERADMIN'].includes(req.user.role)) {
       if (!clientId) {
@@ -21,12 +25,22 @@ export const createOrder = async (req, res) => {
           message: 'Client ID is required for admin orders'
         });
       }
-      const client = await Client.findByPk(clientId);
-      if (!client) {
+      clientRecord = await Client.findByPk(clientId);
+      if (!clientRecord) {
         return res.status(404).json({
           message: 'Client not found'
         });
       }
+      clientDiscountRate = parseFloat(clientRecord.discountRate) || 0;
+    } else {
+      // For client users, find their client record
+      clientRecord = await Client.findOne({ where: { email: req.user.email } });
+      if (!clientRecord) {
+        return res.status(404).json({
+          message: 'Client record not found'
+        });
+      }
+      clientDiscountRate = parseFloat(clientRecord.discountRate) || 0;
     }
 
     // Pre-fetch all corals to validate availability
@@ -55,12 +69,29 @@ export const createOrder = async (req, res) => {
         });
       }
 
-      const subtotal = parseFloat(coral.price) * item.quantity;
+      // Calculate price with discount
+      const originalPrice = parseFloat(coral.price);
+      const discountedPrice = clientDiscountRate > 0 
+        ? originalPrice * (1 - (clientDiscountRate / 100))
+        : originalPrice;
+      
+      // Round to 2 decimal places
+      const finalPrice = Math.round(discountedPrice * 100) / 100;
+      
+      // Verify submitted price if provided
+      if (item.priceAtOrder !== undefined && 
+          Math.abs(parseFloat(item.priceAtOrder) - finalPrice) > 0.01) {
+        return res.status(400).json({
+          message: `Invalid price submitted for ${coral.speciesName}`
+        });
+      }
+
+      const subtotal = finalPrice * item.quantity;
       totalAmount += subtotal;
 
       orderItems.push({
         quantity: item.quantity,
-        priceAtOrder: coral.price,
+        priceAtOrder: finalPrice,
         subtotal,
         CoralId: item.coralId
       });
@@ -79,11 +110,8 @@ export const createOrder = async (req, res) => {
       if (['ADMIN', 'SUPERADMIN'].includes(req.user.role)) {
         orderClientId = clientId;
       } else {
-        const client = await Client.findOne({ where: { email: req.user.email } });
-        if (!client) {
-          throw new Error('Client record not found');
-        }
-        orderClientId = client.id;
+        // We already have the client record from above, no need to query again
+        orderClientId = clientRecord.id;
       }
       
       const newOrder = await Order.create({

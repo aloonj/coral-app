@@ -23,7 +23,7 @@ export const updateClient = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { name, phone, address, email } = req.body;
+    const { name, phone, address, email, discountRate } = req.body;
 
     // Find the client using findByPk which is safe from SQL injection
     const client = await Client.findByPk(id, { transaction: t });
@@ -48,7 +48,13 @@ export const updateClient = async (req, res) => {
     }
 
     // Update client details
-    await client.update({ name, phone, address, email }, { transaction: t });
+    await client.update({ 
+      name, 
+      phone, 
+      address, 
+      email,
+      ...(discountRate !== undefined && { discountRate })
+    }, { transaction: t });
 
     await t.commit();
     
@@ -232,7 +238,7 @@ export const createClient = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, name, phone, address } = req.body;
+    const { email, name, phone, address, discountRate } = req.body;
 
     // Check if client or user already exists using Promise.all for parallel queries
     const [existingClient, existingUser] = await Promise.all([
@@ -289,6 +295,7 @@ export const createClient = async (req, res) => {
         name,
         phone,
         address,
+        discountRate: discountRate || 0,
         userId: user.id // Link to the user account
       }, { transaction: t });
 
@@ -476,5 +483,25 @@ export const getPendingApprovalsCount = async (req, res) => {
   } catch (error) {
     console.error('Error fetching pending approvals count:', error);
     res.status(500).json({ message: 'Error fetching pending approvals count' });
+  }
+};
+
+// Get client profile for the authenticated user
+export const getClientProfile = async (req, res) => {
+  try {
+    // Find client by email from the authenticated user
+    const client = await Client.findOne({
+      where: { email: req.user.email },
+      attributes: ['id', 'name', 'email', 'phone', 'address', 'discountRate', 'createdAt', 'updatedAt']
+    });
+
+    if (!client) {
+      return res.status(404).json({ message: 'Client profile not found' });
+    }
+
+    res.json(client);
+  } catch (error) {
+    console.error('Error fetching client profile:', error);
+    res.status(500).json({ message: 'Error fetching client profile' });
   }
 };

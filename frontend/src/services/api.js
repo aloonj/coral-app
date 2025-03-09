@@ -182,6 +182,7 @@ export const bulletinService = {
 export const clientService = {
   getAllClients: () => api.get('/clients'),
   getClient: (id) => api.get(`/clients/${id}`),
+  getClientProfile: () => api.get('/clients/profile'),
   createClient: (data) => api.post('/clients', data),
   updateClient: (id, data) => api.put(`/clients/${id}`, data),
   deleteClient: (id) => api.delete(`/clients/${id}`),

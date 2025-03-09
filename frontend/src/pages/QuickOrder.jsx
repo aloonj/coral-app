@@ -53,6 +53,7 @@ const QuickOrder = () => {
   const [categories, setCategories] = useState([]);
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState('');
+  const [clientDiscountRate, setClientDiscountRate] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
@@ -87,6 +88,9 @@ const QuickOrder = () => {
         // Only fetch clients if user is admin/superadmin
         if (isAdmin) {
           promises.push(clientService.getAllClients());
+        } else {
+          // For regular clients, fetch their own client record to get discount rate
+          promises.push(clientService.getClientProfile());
         }
         
         const responses = await Promise.all(promises);
@@ -98,6 +102,10 @@ const QuickOrder = () => {
         
         if (isAdmin && responses[2]) {
           setClients(responses[2].data);
+        } else if (responses[2]) {
+          // Set client discount rate for non-admin users
+          const clientData = responses[2].data;
+          setClientDiscountRate(parseFloat(clientData.discountRate) || 0);
         }
         
         // Initialize order quantities
@@ -183,13 +191,39 @@ const QuickOrder = () => {
     setOrderQuantities(resetQuantities);
   };
 
+  // Function to get client discount rate when admin selects a client
+  useEffect(() => {
+    if (isAdmin && selectedClient) {
+      const client = clients.find(c => c.id === parseInt(selectedClient));
+      if (client) {
+        setClientDiscountRate(parseFloat(client.discountRate) || 0);
+      } else {
+        setClientDiscountRate(0);
+      }
+    }
+  }, [isAdmin, selectedClient, clients]);
+
+  // Function to calculate discounted price
+  const getDiscountedPrice = (originalPrice) => {
+    if (!clientDiscountRate) return originalPrice;
+    
+    const discountedPrice = originalPrice * (1 - (clientDiscountRate / 100));
+    return Math.round(discountedPrice * 100) / 100; // Round to 2 decimal places
+  };
+
   const handleBulkOrder = async () => {
     const orderItems = Object.entries(orderQuantities)
       .filter(([_, quantity]) => quantity > 0)
-      .map(([coralId, quantity]) => ({
-        coralId: parseInt(coralId),
-        quantity
-      }));
+      .map(([coralId, quantity]) => {
+        const coral = corals.find(c => c.id === parseInt(coralId));
+        const discountedPrice = getDiscountedPrice(coral.price);
+        
+        return {
+          coralId: parseInt(coralId),
+          quantity,
+          priceAtOrder: discountedPrice
+        };
+      });
 
     if (orderItems.length === 0) {
       alert('Please add items to your order');
@@ -197,9 +231,13 @@ const QuickOrder = () => {
     }
 
     try {
-      // Calculate total amount
+      // Calculate total amount with discounts
       const totalAmount = corals.reduce((total, coral) => {
-        return total + (coral.price * (orderQuantities[coral.id] || 0));
+        const quantity = orderQuantities[coral.id] || 0;
+        if (quantity === 0) return total;
+        
+        const discountedPrice = getDiscountedPrice(coral.price);
+        return total + (discountedPrice * quantity);
       }, 0);
 
       const orderData = {
@@ -609,9 +647,26 @@ const QuickOrder = () => {
                               alignItems: 'center',
                               mt: 2
                             }}>
-                              <Typography variant="h6" color="primary">
-                                {config.defaultCurrency}{coral.price}
-                              </Typography>
+                              {clientDiscountRate > 0 ? (
+                                <Box>
+                                  <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                                    {config.defaultCurrency}{coral.price}
+                                  </Typography>
+                                  <Typography variant="h6" color="primary">
+                                    {config.defaultCurrency}{getDiscountedPrice(coral.price)}
+                                    <Chip 
+                                      size="small" 
+                                      label={`-${clientDiscountRate}%`} 
+                                      color="secondary"
+                                      sx={{ ml: 1, height: 20 }}
+                                    />
+                                  </Typography>
+                                </Box>
+                              ) : (
+                                <Typography variant="h6" color="primary">
+                                  {config.defaultCurrency}{coral.price}
+                                </Typography>
+                              )}
                               
                               <Box sx={{ 
                                 display: 'flex', 
@@ -698,7 +753,11 @@ const QuickOrder = () => {
                 <Typography variant="body1">
                   <strong>Total Price:</strong> {config.defaultCurrency}
                   {corals.reduce((total, coral) => {
-                    return total + (coral.price * (orderQuantities[coral.id] || 0));
+                    const quantity = orderQuantities[coral.id] || 0;
+                    if (quantity === 0) return total;
+                    
+                    const discountedPrice = getDiscountedPrice(coral.price);
+                    return total + (discountedPrice * quantity);
                   }, 0).toFixed(2)}
                 </Typography>
               </Box>

@@ -24,7 +24,11 @@ export const createClientValidator = [
     .withMessage('Address is required')
     .trim()
     .isLength({ max: 1000 })
-    .withMessage('Address must be less than 1000 characters')
+    .withMessage('Address must be less than 1000 characters'),
+  body('discountRate')
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('Discount rate must be between 0 and 100')
 ];
 
 export const updateClientValidator = [
@@ -55,7 +59,11 @@ export const updateClientValidator = [
     .optional()
     .trim()
     .isLength({ max: 1000 })
-    .withMessage('Address must be less than 1000 characters')
+    .withMessage('Address must be less than 1000 characters'),
+  body('discountRate')
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('Discount rate must be between 0 and 100')
 ];
 
 export const clientIdValidator = [

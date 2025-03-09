@@ -8,15 +8,21 @@ import {
   updateClient, 
   approveClient,
   getPendingApprovalsCount,
-  getPendingRegistrationsCount
+  getPendingRegistrationsCount,
+  getClientProfile
 } from '../controllers/clientController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { createClientValidator, updateClientValidator, clientIdValidator } from '../middleware/validators/clientValidators.js';
 
 const router = express.Router();
 
-// Protect all client routes with authentication and admin role check
+// Protect all routes with authentication
 router.use(authenticate);
+
+// Client profile route - accessible by any authenticated user
+router.get('/profile', getClientProfile);
+
+// All other routes require admin role
 router.use(authorize('ADMIN', 'SUPERADMIN'));
 
 // Get all clients
