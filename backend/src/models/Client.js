@@ -9,6 +9,15 @@ Client.init({
     primaryKey: true,
     autoIncrement: true
   },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    },
+    unique: true
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

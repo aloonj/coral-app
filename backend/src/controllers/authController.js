@@ -252,7 +252,7 @@ export const clientRegister = async (req, res) => {
       const client = await Client.create({
         email,
         name,
-        id: user.id  // Use same ID as user for consistency
+        userId: user.id  // Link to user via foreign key
       }, { transaction: t });
 
       return { user, client };
@@ -313,7 +313,7 @@ export const register = async (req, res) => {
       const client = await Client.create({
         email,
         name,
-        id: user.id  // Use same ID as user for consistency
+        userId: user.id  // Link to user via foreign key
       }, { transaction: t });
 
       return { user, client };

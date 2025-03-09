@@ -22,6 +22,18 @@ Category.hasMany(Coral, {
   hooks: true
 });
 
+// User-Client association
+User.hasOne(Client, {
+  foreignKey: 'userId',
+  as: 'client',
+  onDelete: 'CASCADE'
+});
+
+Client.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
 // Client-Order association
 Client.hasMany(Order, {
   foreignKey: 'clientId',
