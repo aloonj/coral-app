@@ -295,15 +295,15 @@ export const createClient = async (req, res) => {
       // Send temporary password email
       await NotificationService.sendTemporaryPasswordEmail(user, tempPassword);
 
-      // Send a single notification to all admins about the new client registration
+      // Queue a notification to all admins about the new client registration
       try {
-        await NotificationService.sendClientRegistrationNotification({
+        await NotificationService.queueClientRegistrationNotification({
           name,
           email,
           phone
         });
       } catch (notificationError) {
-        console.error('Error sending admin notifications:', notificationError);
+        console.error('Error queueing admin notifications:', notificationError);
         // Continue even if notification fails
       }
 

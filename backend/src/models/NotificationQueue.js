@@ -11,7 +11,7 @@ NotificationQueue.init(
       primaryKey: true
     },
     type: {
-      type: DataTypes.ENUM('ORDER_CONFIRMATION', 'STATUS_UPDATE', 'BULLETIN', 'LOW_STOCK'),
+      type: DataTypes.ENUM('ORDER_CONFIRMATION', 'STATUS_UPDATE', 'BULLETIN', 'LOW_STOCK', 'CLIENT_REGISTRATION'),
       allowNull: false
     },
     status: {

@@ -251,40 +251,15 @@ class NotificationService {
     }
   }
 
-  static async sendClientRegistrationNotification(client) {
+  static async processClientRegistrationNotification(client, admin) {
     try {
-      console.log('Sending client registration notification');
+      console.log(`Sending client registration notification to admin: ${admin.email}`);
       const subject = 'New Client Registration Pending Approval';
       
-      // Get all active admin users
-      const adminUsers = await BackupService.getAdminUsers();
-      
-      if (adminUsers.length === 0) {
-        // Fallback to system email if no admins found
-        console.warn('No admin users found for client registration notification, using system email:', env.email.from);
-        const emailHtml = `
-          <h2>New Client Registration</h2>
-          <p>A new client has registered and is pending approval:</p>
-          <ul>
-            <li><strong>Name:</strong> ${client.name}</li>
-            <li><strong>Email:</strong> ${client.email}</li>
-            <li><strong>Phone:</strong> ${client.phone || 'Not provided'}</li>
-          </ul>
-          <p>Please log in to the admin dashboard to review and approve this client.</p>
-          <p><a href="${env.frontendUrl}/clients" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Go to Clients Page</a></p>
-          <p><strong>Warning: No admin users found in system!</strong></p>
-        `;
-        await this._sendEmail(env.email.from, subject, emailHtml, { ccSender: false });
-        return;
-      }
-
-      // Create a comma-separated list of admin emails for the To field
-      const adminEmails = adminUsers.map(admin => admin.email).join(', ');
-      
-      // Create a single email to all admins
-      console.log(`Sending client registration notification to all admins: ${adminEmails}`);
+      // Create personalized email for each admin
       const emailHtml = `
         <h2>New Client Registration</h2>
+        <p>Dear ${admin.name},</p>
         <p>A new client has registered and is pending approval:</p>
         <ul>
           <li><strong>Name:</strong> ${client.name}</li>
@@ -295,10 +270,28 @@ class NotificationService {
         <p><a href="${env.frontendUrl}/clients" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Go to Clients Page</a></p>
       `;
       
-      await this._sendEmail(adminEmails, subject, emailHtml, { ccSender: false });
-      console.log('Client registration notification sent successfully');
+      await this._sendEmail(admin.email, subject, emailHtml, { ccSender: false });
+      console.log(`Client registration notification sent successfully to ${admin.email}`);
+      return true;
     } catch (error) {
-      console.error('Error in sendClientRegistrationNotification:', error);
+      console.error(`Error sending client registration notification to ${admin?.email}:`, error);
+      return false; // Return false to indicate failure
+    }
+  }
+  
+  static async queueClientRegistrationNotification(client) {
+    try {
+      console.log('Queueing client registration notification');
+      await NotificationQueueService.queueNotification('CLIENT_REGISTRATION', {
+        clientData: {
+          name: client.name,
+          email: client.email,
+          phone: client.phone
+        }
+      });
+      console.log('Client registration notification queued successfully');
+    } catch (error) {
+      console.error('Error queueing client registration notification:', error);
       // Don't throw the error to prevent blocking the client registration process
     }
   }

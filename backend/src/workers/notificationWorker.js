@@ -115,6 +115,28 @@ async function processNotification(notification) {
         await NotificationService.processLowStockNotification(coral);
         await NotificationQueueService.markAsCompleted(notification.id);
       }
+    } else if (notification.type === 'CLIENT_REGISTRATION') {
+      console.log(`Processing client registration notification for client: ${notification.payload.clientData.name}`);
+      const adminUsers = await User.findAll({
+        where: { 
+          role: ['ADMIN', 'SUPERADMIN'],
+          status: 'ACTIVE'
+        }
+      });
+      
+      if (adminUsers.length > 0) {
+        // Send individual emails to each admin
+        for (const admin of adminUsers) {
+          await NotificationService.processClientRegistrationNotification(
+            notification.payload.clientData,
+            admin
+          );
+        }
+        await NotificationQueueService.markAsCompleted(notification.id);
+      } else {
+        console.log('No admin users found for client registration notification');
+        await NotificationQueueService.markAsCompleted(notification.id);
+      }
     } else {
       throw new Error(`Unknown notification type: ${notification.type}`);
     }
