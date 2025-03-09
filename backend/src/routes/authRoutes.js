@@ -29,15 +29,14 @@ const registerValidation = [
     .withMessage('Password must contain at least one symbol'),
   body('name').notEmpty().withMessage('Name is required'),
   body('phone')
-    .optional()
+    .notEmpty().withMessage('Phone number is required')
     .trim()
     .custom(value => {
-      if (!value) return true; // Allow empty string
       return /^[+\d\s-()]+$/.test(value);
     })
     .withMessage('Phone number can only contain numbers, spaces, +, -, and ()'),
   body('address')
-    .optional()
+    .notEmpty().withMessage('Address is required')
     .trim()
     .isLength({ max: 1000 })
     .withMessage('Address must be less than 1000 characters')

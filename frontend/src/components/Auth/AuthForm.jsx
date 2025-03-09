@@ -130,6 +130,7 @@ const AuthForm = ({ mode = 'login' }) => {
               value={formData.phone}
               onChange={handleChange}
               placeholder="Enter your phone number"
+              required
               autoComplete="tel"
               sx={{
                 mb: 2.5,
@@ -159,6 +160,7 @@ const AuthForm = ({ mode = 'login' }) => {
               value={formData.address}
               onChange={handleChange}
               placeholder="Enter your address"
+              required
               autoComplete="street-address"
               sx={{
                 mb: 2.5,
