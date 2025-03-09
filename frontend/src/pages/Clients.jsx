@@ -15,8 +15,23 @@ import {
   SubmitButton,
   Typography
 } from '../components/StyledComponents';
-import { Modal, IconButton, Stack, Container } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+import { 
+  Modal, 
+  IconButton, 
+  Stack, 
+  Container, 
+  Chip, 
+  Tabs, 
+  Tab, 
+  Badge,
+  Tooltip,
+  Alert
+} from '@mui/material';
+import { 
+  Close as CloseIcon,
+  CheckCircle as CheckCircleIcon,
+  HourglassEmpty as HourglassEmptyIcon
+} from '@mui/icons-material';
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
@@ -32,11 +47,20 @@ const Clients = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [tabValue, setTabValue] = useState(0);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
 
   const fetchClients = async () => {
     try {
       const response = await api.get('/clients');
       setClients(response.data);
+      
+      // Count pending approvals
+      const pendingCount = response.data.filter(client => 
+        client.status === 'INACTIVE'
+      ).length;
+      setPendingApprovals(pendingCount);
+      
       setLoading(false);
     } catch (error) {
       console.error('Error fetching clients:', error);
@@ -47,7 +71,15 @@ const Clients = () => {
 
   useEffect(() => {
     fetchClients();
+    
+    // Poll for updates every 5 minutes
+    const interval = setInterval(fetchClients, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
+  
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
 
   const handleInputChange = (e) => {
     setFormData({
@@ -183,7 +215,20 @@ const Clients = () => {
       {success && <FormError severity="success">{success}</FormError>}
 
       <Box sx={{ mb: 3 }}>
-        <PageTitle variant="h1" sx={{ mb: 2 }}>Clients</PageTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <PageTitle variant="h1">Clients</PageTitle>
+          {pendingApprovals > 0 && (
+            <Tooltip title={`${pendingApprovals} client${pendingApprovals !== 1 ? 's' : ''} pending approval`}>
+              <Chip 
+                icon={<HourglassEmptyIcon />} 
+                label={`${pendingApprovals} Pending Approval${pendingApprovals !== 1 ? 's' : ''}`}
+                color="warning"
+                sx={{ fontWeight: 'bold' }}
+              />
+            </Tooltip>
+          )}
+        </Box>
+        
         <Stack spacing={2} sx={{ width: { xs: '100%', sm: '50%', md: '30%' } }}>
           <ActionButton 
             variant="contained"
@@ -198,6 +243,54 @@ const Clients = () => {
             Add Client
           </ActionButton>
         </Stack>
+        
+        {pendingApprovals > 0 && (
+          <Alert 
+            severity="info" 
+            sx={{ mt: 2 }}
+            action={
+              <ActionButton
+                color="inherit"
+                size="small"
+                onClick={() => setTabValue(1)}
+              >
+                View Pending
+              </ActionButton>
+            }
+          >
+            {pendingApprovals} client registration{pendingApprovals !== 1 ? 's' : ''} pending approval
+          </Alert>
+        )}
+        
+        <Tabs 
+          value={tabValue} 
+          onChange={handleTabChange}
+          sx={{ mt: 3, borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Tab 
+            label="All Clients" 
+            id="tab-0"
+            aria-controls="tabpanel-0"
+          />
+          <Tab 
+            label={
+              <Badge 
+                badgeContent={pendingApprovals} 
+                color="error"
+                invisible={pendingApprovals === 0}
+              >
+                Pending Approval
+              </Badge>
+            } 
+            id="tab-1"
+            aria-controls="tabpanel-1"
+          />
+          <Tab 
+            label="Active Clients" 
+            id="tab-2"
+            aria-controls="tabpanel-2"
+          />
+        </Tabs>
       </Box>
 
       {/* Add Client Modal */}
@@ -342,8 +435,22 @@ const Clients = () => {
         </ModalContainer>
       </Modal>
 
-      <Box display="grid" gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={3}>
-        {clients.map((client) => (
+      <Box 
+        role="tabpanel"
+        id={`tabpanel-${tabValue}`}
+        aria-labelledby={`tab-${tabValue}`}
+        display="grid" 
+        gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))" 
+        gap={3}
+      >
+        {clients
+          .filter(client => {
+            if (tabValue === 0) return true; // All clients
+            if (tabValue === 1) return client.status === 'INACTIVE'; // Pending approval
+            if (tabValue === 2) return client.status === 'ACTIVE'; // Active clients
+            return true;
+          })
+          .map((client) => (
           <CoralCard key={client.id}>
             <CardContent>
               <Typography variant="h6">{client.name}</Typography>
@@ -361,11 +468,24 @@ const Clients = () => {
                 <Typography variant="body2">
                   <strong>Join Date:</strong> {formatDate(client.createdAt)}
                 </Typography>
-                <Typography variant="body2">
-                  <strong>Status:</strong> {client.status === 'INACTIVE' ? 
-                    <span style={{ color: '#f44336' }}>Pending Approval</span> : 
-                    <span style={{ color: '#4caf50' }}>Active</span>}
-                </Typography>
+              <Typography variant="body2">
+                <strong>Status:</strong> {client.status === 'INACTIVE' ? 
+                  <Chip 
+                    size="small"
+                    label="Pending Approval" 
+                    color="warning"
+                    icon={<HourglassEmptyIcon />}
+                    sx={{ ml: 1 }}
+                  /> : 
+                  <Chip 
+                    size="small"
+                    label="Active" 
+                    color="success"
+                    icon={<CheckCircleIcon />}
+                    sx={{ ml: 1 }}
+                  />
+                }
+              </Typography>
               </Box>
 
               <Box display="flex" flexWrap="wrap" gap={1} mt={2}>
@@ -406,6 +526,19 @@ const Clients = () => {
             </CardContent>
           </CoralCard>
         ))}
+        {clients.filter(client => {
+          if (tabValue === 0) return true;
+          if (tabValue === 1) return client.status === 'INACTIVE';
+          if (tabValue === 2) return client.status === 'ACTIVE';
+          return true;
+        }).length === 0 && (
+          <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 4 }}>
+            <Typography variant="body1" color="text.secondary">
+              {tabValue === 1 ? 'No clients pending approval' : 
+               tabValue === 2 ? 'No active clients' : 'No clients found'}
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Container>
   );

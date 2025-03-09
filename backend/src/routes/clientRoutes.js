@@ -1,5 +1,15 @@
 import express from 'express';
-import { getClients, getClient, createClient, removeClient, regeneratePassword, updateClient, approveClient } from '../controllers/clientController.js';
+import { 
+  getClients, 
+  getClient, 
+  createClient, 
+  removeClient, 
+  regeneratePassword, 
+  updateClient, 
+  approveClient,
+  getPendingApprovalsCount,
+  getPendingRegistrationsCount
+} from '../controllers/clientController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { createClientValidator, updateClientValidator, clientIdValidator } from '../middleware/validators/clientValidators.js';
 
@@ -11,6 +21,12 @@ router.use(authorize('ADMIN', 'SUPERADMIN'));
 
 // Get all clients
 router.get('/', getClients);
+
+// Get count of pending approvals
+router.get('/pending-approvals/count', getPendingApprovalsCount);
+
+// Get count of recent registrations
+router.get('/pending-registrations/count', getPendingRegistrationsCount);
 
 // Get specific client
 router.get('/:id', clientIdValidator, getClient);

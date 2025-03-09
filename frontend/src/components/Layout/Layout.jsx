@@ -17,8 +17,13 @@ import {
   Collapse,
   Divider,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Badge,
+  Tooltip,
+  Snackbar,
+  Alert
 } from '@mui/material';
+import { clientService } from '../../services/api';
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -51,6 +56,9 @@ const LayoutWithThemeToggle = ({ children }) => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [pendingRegistrations, setPendingRegistrations] = useState(0);
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'info' });
   
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
 
@@ -60,6 +68,43 @@ const LayoutWithThemeToggle = ({ children }) => {
       setAdminMenuOpen(true);
     }
   }, [isMobile, isAdmin]);
+
+  // Fetch pending approvals count
+  useEffect(() => {
+    if (isAdmin) {
+      const fetchPendingCounts = async () => {
+        try {
+          const [approvalsRes, registrationsRes] = await Promise.all([
+            clientService.getPendingApprovalsCount(),
+            clientService.getPendingRegistrationsCount()
+          ]);
+          
+          const newApprovalsCount = approvalsRes.data.count;
+          const newRegistrationsCount = registrationsRes.data.count;
+          
+          // Show toast notification if there are new pending approvals
+          if (pendingApprovals > 0 && newApprovalsCount > pendingApprovals) {
+            setToast({
+              open: true,
+              message: 'New client registration pending approval',
+              severity: 'info'
+            });
+          }
+          
+          setPendingApprovals(newApprovalsCount);
+          setPendingRegistrations(newRegistrationsCount);
+        } catch (error) {
+          console.error('Error fetching pending counts:', error);
+        }
+      };
+
+      fetchPendingCounts();
+      
+      // Poll for updates every 5 minutes
+      const interval = setInterval(fetchPendingCounts, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isAdmin, pendingApprovals]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -163,9 +208,30 @@ const LayoutWithThemeToggle = ({ children }) => {
                     onClick={() => handleNavigation('/clients')}
                   >
                     <ListItemIcon>
-                      <PeopleIcon />
+                      <Badge 
+                        badgeContent={pendingApprovals} 
+                        color="error"
+                        invisible={pendingApprovals === 0}
+                      >
+                        <PeopleIcon />
+                      </Badge>
                     </ListItemIcon>
-                    <ListItemText primary="Clients" />
+                    <ListItemText 
+                      primary={
+                        <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+                          Clients
+                          {pendingApprovals > 0 && (
+                            <Tooltip title={`${pendingApprovals} client${pendingApprovals !== 1 ? 's' : ''} pending approval`}>
+                              <Badge 
+                                badgeContent={pendingApprovals} 
+                                color="error" 
+                                sx={{ ml: 1 }}
+                              />
+                            </Tooltip>
+                          )}
+                        </Box>
+                      } 
+                    />
                   </ListItem>
                   
                   <ListItem 
@@ -454,6 +520,22 @@ const LayoutWithThemeToggle = ({ children }) => {
           {children}
         </Container>
       </Box>
+      
+      {/* Toast Notification */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={6000}
+        onClose={() => setToast({ ...toast, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setToast({ ...toast, open: false })} 
+          severity={toast.severity}
+          sx={{ width: '100%' }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

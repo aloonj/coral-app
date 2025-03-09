@@ -8,9 +8,9 @@ export const createClientValidator = [
   body('name')
     .trim()
     .notEmpty()
-    .withMessage('Name is required')
+    .withMessage('Name/Shop Name is required')
     .isLength({ max: 255 })
-    .withMessage('Name must be less than 255 characters'),
+    .withMessage('Name/Shop Name must be less than 255 characters'),
   body('phone')
     .notEmpty()
     .withMessage('Phone number is required')
@@ -40,9 +40,9 @@ export const updateClientValidator = [
     .optional()
     .trim()
     .notEmpty()
-    .withMessage('Name cannot be empty')
+    .withMessage('Name/Shop Name cannot be empty')
     .isLength({ max: 255 })
-    .withMessage('Name must be less than 255 characters'),
+    .withMessage('Name/Shop Name must be less than 255 characters'),
   body('phone')
     .optional()
     .trim()

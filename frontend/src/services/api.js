@@ -184,6 +184,8 @@ export const clientService = {
   updateClient: (id, data) => api.put(`/clients/${id}`, data),
   deleteClient: (id) => api.delete(`/clients/${id}`),
   approveClient: (id) => api.post(`/clients/${id}/approve`, {}),
+  getPendingApprovalsCount: () => api.get('/clients/pending-approvals/count'),
+  getPendingRegistrationsCount: () => api.get('/clients/pending-registrations/count'),
 };
 
 export const notificationService = {

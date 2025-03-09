@@ -5,6 +5,7 @@ import { Order } from '../models/Order.js';
 import { sequelize, Op } from '../config/database.js';
 import bcrypt from 'bcrypt';
 import NotificationService from '../services/notificationService.js';
+import BackupService from '../services/backupService.js';
 
 export const updateClient = async (req, res) => {
   const t = await sequelize.transaction();
@@ -276,7 +277,8 @@ export const createClient = async (req, res) => {
         password: tempPassword,
         name,
         role: 'CLIENT',
-        status: 'ACTIVE'
+        status: 'INACTIVE', // Changed from ACTIVE to INACTIVE to require approval
+        userId: req.user?.id // Link to the admin who created the client if applicable
       }, { transaction: t });
 
       // Create new client
@@ -284,13 +286,39 @@ export const createClient = async (req, res) => {
         email,
         name,
         phone,
-        address
+        address,
+        userId: user.id // Link to the user account
       }, { transaction: t });
 
       await t.commit();
 
       // Send temporary password email
       await NotificationService.sendTemporaryPasswordEmail(user, tempPassword);
+
+      // Send notification to all admins about the new client registration
+      try {
+        const adminUsers = await BackupService.getAdminUsers();
+        if (adminUsers && adminUsers.length > 0) {
+          const subject = 'New Client Registration Pending Approval';
+          const emailHtml = `
+            <h2>New Client Registration</h2>
+            <p>A new client has registered and is pending approval:</p>
+            <ul>
+              <li><strong>Name:</strong> ${name}</li>
+              <li><strong>Email:</strong> ${email}</li>
+              <li><strong>Phone:</strong> ${phone}</li>
+            </ul>
+            <p>Please log in to the admin dashboard to review and approve this client.</p>
+          `;
+          
+          for (const admin of adminUsers) {
+            await NotificationService._sendEmail(admin.email, subject, emailHtml, { ccSender: false });
+          }
+        }
+      } catch (notificationError) {
+        console.error('Error sending admin notifications:', notificationError);
+        // Continue even if notification fails
+      }
 
       // Include the temporary password in the response
       res.status(201).json({
@@ -432,5 +460,41 @@ export const removeClient = async (req, res) => {
     await t.rollback();
     console.error('Error removing client:', error);
     res.status(500).json({ message: 'Error removing client' });
+  }
+};
+
+// Get count of pending client registrations
+export const getPendingRegistrationsCount = async (req, res) => {
+  try {
+    // Count clients created in the last 24 hours
+    const count = await Client.count({
+      where: {
+        createdAt: {
+          [Op.gte]: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+        }
+      }
+    });
+    
+    res.json({ count });
+  } catch (error) {
+    console.error('Error fetching pending registrations count:', error);
+    res.status(500).json({ message: 'Error fetching pending registrations count' });
+  }
+};
+
+// Get count of pending client approvals
+export const getPendingApprovalsCount = async (req, res) => {
+  try {
+    const count = await User.count({
+      where: {
+        role: 'CLIENT',
+        status: 'INACTIVE'
+      }
+    });
+    
+    res.json({ count });
+  } catch (error) {
+    console.error('Error fetching pending approvals count:', error);
+    res.status(500).json({ message: 'Error fetching pending approvals count' });
   }
 };
