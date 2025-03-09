@@ -1,60 +1,98 @@
 import { useState, useEffect } from 'react';
+import { 
+  Container, 
+  Box, 
+  Typography, 
+  Grid, 
+  Card, 
+  CardContent, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem, 
+  CircularProgress, 
+  Alert, 
+  Divider,
+  List,
+  ListItem,
+  ListItemText
+} from '@mui/material';
 import { formatDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { orderService } from '../services/api';
-import styles from './ClientOrders.module.css';
-
-const statusColors = {
-  PENDING: { bg: '#fff3cd', text: '#856404' },
-  CONFIRMED: { bg: '#d1e7dd', text: '#0f5132' },
-  COMPLETED: { bg: '#cfe2ff', text: '#084298' },
-  CANCELLED: { bg: '#f8d7da', text: '#842029' }
-};
+import { StatusBadge } from '../components/StyledComponents';
 
 const OrderTable = ({ orders, title }) => {
   if (orders.length === 0) return null;
   
   return (
-    <div className={styles['order-section']}>
-      <h2>{title}</h2>
-      <div className={styles['orders-grid']}>
+    <Box sx={{ mb: 6 }}>
+      <Typography variant="h2" sx={{ mb: 3 }}>
+        {title}
+      </Typography>
+      <Grid container spacing={3}>
         {orders.map((order) => (
-          <div key={order.id} className={styles['order-card']}>
-            <div className={styles['order-header']}>
-              <div className={styles['order-number']}>
-                <strong>Order #{order.id}</strong>
-              </div>
-              <div className={styles['status-badge']} style={{
-                backgroundColor: statusColors[order.status]?.bg,
-                color: statusColors[order.status]?.text,
-              }}>
-                {order.status}
-              </div>
-            </div>
-            <div className={styles['order-date']}>
-              <strong>Date: </strong>
-              {formatDate(order.createdAt)}
-            </div>
-            <div className={styles['order-items']}>
-              <strong>Items:</strong>
-              <ul>
-                {order.items.map((coral, index) => (
-                  <li key={index}>
-                    {coral.speciesName} - Quantity: {coral.OrderItem.quantity}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {order.notes && (
-              <div className={styles['order-notes']}>
-                <strong>Notes:</strong>
-                <p>{order.notes}</p>
-              </div>
-            )}
-          </div>
+          <Grid item xs={12} sm={6} md={4} key={order.id}>
+            <Card 
+              sx={{ 
+                height: '100%',
+                transition: 'transform 0.2s, boxShadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4
+                }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    Order #{order.id}
+                  </Typography>
+                  <StatusBadge 
+                    label={order.status} 
+                    status={order.status} 
+                    size="small"
+                  />
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" component="span" fontWeight="bold">
+                    Date:{' '}
+                  </Typography>
+                  <Typography variant="body2" component="span">
+                    {formatDate(order.createdAt)}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" fontWeight="bold">
+                    Items:
+                  </Typography>
+                  <List dense disablePadding sx={{ pl: 2 }}>
+                    {order.items.map((coral, index) => (
+                      <ListItem key={index} disablePadding sx={{ py: 0.5 }}>
+                        <ListItemText 
+                          primary={`${coral.speciesName} - Quantity: ${coral.OrderItem.quantity}`}
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+                {order.notes && (
+                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="body2" fontWeight="bold">
+                      Notes:
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      {order.notes}
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
         ))}
-      </div>
-    </div>
+      </Grid>
+    </Box>
   );
 };
 
@@ -90,40 +128,54 @@ const ClientOrders = () => {
   const completedOrders = filteredOrders.filter(order => order.status === 'COMPLETED');
   const activeOrders = filteredOrders.filter(order => order.status !== 'COMPLETED');
 
-  if (loading) return <div className={styles.loading}>Loading...</div>;
-  if (error) return <div className={styles.error}>{error}</div>;
+  if (loading) return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+      <CircularProgress />
+    </Box>
+  );
+  
+  if (error) return (
+    <Box sx={{ p: 4 }}>
+      <Alert severity="error">{error}</Alert>
+    </Box>
+  );
 
   return (
-    <div className={styles['orders-container']}>
-      <div className={styles['orders-header']}>
-        <h1>Your Orders</h1>
-        <div className={styles['filter-section']}>
-          <label htmlFor="status-filter">Filter by status: </label>
-          <select
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h1">Your Orders</Typography>
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel id="status-filter-label">Filter by status</InputLabel>
+          <Select
+            labelId="status-filter-label"
             id="status-filter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className={styles['status-select']}
+            label="Filter by status"
+            size="small"
           >
             {filterOptions.map(option => (
-              <option key={option} value={option}>
+              <MenuItem key={option} value={option}>
                 {option === 'ALL' ? 'All Orders' : option}
-              </option>
+              </MenuItem>
             ))}
-          </select>
-        </div>
-      </div>
+          </Select>
+        </FormControl>
+      </Box>
 
       {orders.length === 0 ? (
-        <p className={styles['no-orders']}>You haven't placed any orders yet.</p>
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="body1" color="text.secondary">
+            You haven't placed any orders yet.
+          </Typography>
+        </Box>
       ) : (
         <>
           <OrderTable orders={activeOrders} title="Active Orders" />
           <OrderTable orders={completedOrders} title="Completed Orders" />
         </>
       )}
-
-    </div>
+    </Container>
   );
 };
 
