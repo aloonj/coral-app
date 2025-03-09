@@ -1,8 +1,21 @@
 import { useState, useEffect } from 'react';
+import { 
+  Container, 
+  Box, 
+  Typography, 
+  Button, 
+  Grid, 
+  Card, 
+  CardContent, 
+  Chip
+} from '@mui/material';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
-import styles from './AdminUsers.module.css';
 import { useAuth } from '../contexts/AuthContext';
+import { ActionButton, FormField } from '../components/StyledComponents';
+import StatusMessage from '../components/StatusMessage';
+import ConfirmationDialog from '../components/ConfirmationDialog';
+import ActionButtonGroup from '../components/ActionButtonGroup';
 
 const AdminUsers = () => {
   const { user: currentUser } = useAuth();
@@ -21,6 +34,14 @@ const AdminUsers = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Dialog state
+  const [dialog, setDialog] = useState({
+    open: false,
+    title: '',
+    message: '',
+    confirmAction: null
+  });
 
   useEffect(() => {
     const fetchAdminUsers = async () => {
@@ -36,7 +57,6 @@ const AdminUsers = () => {
 
     fetchAdminUsers();
   }, []);
-
 
   const fetchAdminUsers = async () => {
     try {
@@ -73,25 +93,44 @@ const AdminUsers = () => {
     }
   };
 
+  const openConfirmDialog = (title, message, confirmAction) => {
+    setDialog({
+      open: true,
+      title,
+      message,
+      confirmAction
+    });
+  };
+
+  const closeConfirmDialog = () => {
+    setDialog({
+      ...dialog,
+      open: false
+    });
+  };
+
   const handleRegeneratePassword = async (id) => {
     setError('');
     setSuccess('');
 
-    const confirmed = window.confirm('Are you sure you want to reset this admin user\'s password? A new temporary password will be sent to their email.');
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await api.post(`/auth/admins/${id}/regenerate-password`, {}, {
-        headers: {
-          'Content-Type': 'application/json'
+    openConfirmDialog(
+      'Reset Password',
+      'Are you sure you want to reset this admin user\'s password? A new temporary password will be sent to their email.',
+      async () => {
+        try {
+          await api.post(`/auth/admins/${id}/regenerate-password`, {}, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          setSuccess('Password reset successfully. A new temporary password has been sent to the user\'s email.');
+          closeConfirmDialog();
+        } catch (error) {
+          setError(error.response?.data?.message || 'Error regenerating password');
+          closeConfirmDialog();
         }
-      });
-      setSuccess('Password reset successfully. A new temporary password has been sent to the user\'s email.');
-    } catch (error) {
-      setError(error.response?.data?.message || 'Error regenerating password');
-    }
+      }
+    );
   };
 
   const handleEditClick = (user) => {
@@ -113,18 +152,21 @@ const AdminUsers = () => {
     setError('');
     setSuccess('');
 
-    const confirmed = window.confirm(`Are you sure you want to change this user's role to ${newRole}? This will modify their permissions and access level.`);
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await api.put(`/auth/admins/${id}/role`, { role: newRole });
-      setSuccess('User role updated successfully');
-      fetchAdminUsers();
-    } catch (error) {
-      setError(error.response?.data?.message || 'Error updating user role');
-    }
+    openConfirmDialog(
+      'Change User Role',
+      `Are you sure you want to change this user's role to ${newRole}? This will modify their permissions and access level.`,
+      async () => {
+        try {
+          await api.put(`/auth/admins/${id}/role`, { role: newRole });
+          setSuccess('User role updated successfully');
+          fetchAdminUsers();
+          closeConfirmDialog();
+        } catch (error) {
+          setError(error.response?.data?.message || 'Error updating user role');
+          closeConfirmDialog();
+        }
+      }
+    );
   };
 
   const handleEditSubmit = async (e, id) => {
@@ -133,7 +175,7 @@ const AdminUsers = () => {
     setSuccess('');
 
     try {
-      const response = await api.put(`/auth/admins/${id}`, editFormData);
+      await api.put(`/auth/admins/${id}`, editFormData);
       setSuccess('Admin user updated successfully');
       setEditingUserId(null);
       setEditFormData({ name: '', email: '' });
@@ -147,194 +189,223 @@ const AdminUsers = () => {
     setError('');
     setSuccess('');
 
-    const confirmed = window.confirm('Are you sure you want to remove this admin user? This action cannot be undone.');
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await api.delete(`/auth/admins/${id}`);
-      setSuccess('Admin user removed successfully');
-      fetchAdminUsers();
-    } catch (error) {
-      setError(error.response?.data?.message || 'Error removing admin user');
-    }
+    openConfirmDialog(
+      'Remove Admin User',
+      'Are you sure you want to remove this admin user? This action cannot be undone.',
+      async () => {
+        try {
+          await api.delete(`/auth/admins/${id}`);
+          setSuccess('Admin user removed successfully');
+          fetchAdminUsers();
+          closeConfirmDialog();
+        } catch (error) {
+          setError(error.response?.data?.message || 'Error removing admin user');
+          closeConfirmDialog();
+        }
+      }
+    );
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <Container>
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <Typography>Loading...</Typography>
+        </Box>
+      </Container>
+    );
   }
 
   return (
-    <div className={styles.container}>
-      {error && <div className={styles.error}>{error}</div>}
-      {success && <div className={styles.success}>{success}</div>}
+    <Container maxWidth="xl">
+      <StatusMessage error={error} success={success} />
 
-      <div className={styles.headerContainer}>
-        <h1 className={styles.header}>Admin User Management</h1>
-        <button
-          className={`${styles.button} ${styles.addButton}`}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h1">Admin User Management</Typography>
+        <Button
+          variant="contained"
+          color={showAddForm ? "inherit" : "success"}
           onClick={() => setShowAddForm(!showAddForm)}
         >
           {showAddForm ? 'Cancel' : 'Add Admin User'}
-        </button>
-      </div>
+        </Button>
+      </Box>
 
       {showAddForm && (
-        <form className={styles.addForm} onSubmit={handleAddAdmin}>
-          <div className={styles.formGroup}>
-            <label>
-              Name:
-              <input
-                type="text"
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box component="form" onSubmit={handleAddAdmin}>
+              <FormField
+                label="Name"
                 name="name"
-                className={styles.input}
                 value={formData.name}
                 onChange={handleInputChange}
+                fullWidth
                 required
               />
-            </label>
-          </div>
-          <div className={styles.formGroup}>
-            <label>
-              Email:
-              <input
-                type="email"
+              <FormField
+                label="Email"
                 name="email"
-                className={styles.input}
+                type="email"
                 value={formData.email}
                 onChange={handleInputChange}
+                fullWidth
                 required
               />
-            </label>
-          </div>
-          <button 
-            className={`${styles.button} ${styles.addButton}`}
-            type="submit"
-          >
-            Add Admin User
-          </button>
-        </form>
+              <Button 
+                type="submit"
+                variant="contained"
+                color="success"
+                fullWidth
+              >
+                Add Admin User
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
       )}
 
-      <div className={styles.adminGrid}>
+      <Grid container spacing={2}>
         {adminUsers.map((user) => (
-          <div key={user.id} className={styles.adminCard}>
-            <div className={styles.cardHeader}>
-              <div>
-                <div className={styles.adminName}>
-                  {user.name}
-                  {user.role === 'SUPERADMIN' && (
-                    <span className={styles.superAdminBadge} title="Super Administrator">
-                      ⭐ SUPERADMIN
-                    </span>
-                  )}
-                </div>
-                <div className={styles.adminEmail}>{user.email}</div>
-              </div>
-            </div>
-            
-            <div className={styles.adminInfo}>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Role</span>
-                <span className={styles.infoValue}>{user.role}</span>
-              </div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Join Date</span>
-                <span className={styles.infoValue}>
-                  {formatDate(user.createdAt)}
-                </span>
-              </div>
-            </div>
+          <Grid item xs={12} sm={6} md={4} key={user.id}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Typography variant="h6" component="div">
+                        {user.name}
+                      </Typography>
+                      {user.role === 'SUPERADMIN' && (
+                        <Chip
+                          label="SUPERADMIN"
+                          size="small"
+                          color="secondary"
+                          icon={<span>⭐</span>}
+                          sx={{ fontWeight: 600 }}
+                        />
+                      )}
+                    </Box>
+                    <Typography color="text.secondary" variant="body2">
+                      {user.email}
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2, mb: 2 }}>
+                  <Box>
+                    <Typography color="text.secondary" variant="caption">
+                      Role
+                    </Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {user.role}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography color="text.secondary" variant="caption">
+                      Join Date
+                    </Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {formatDate(user.createdAt)}
+                    </Typography>
+                  </Box>
+                </Box>
 
-            {editingUserId === user.id ? (
-              <form className={styles.editForm} onSubmit={(e) => handleEditSubmit(e, user.id)}>
-                <div className={styles.formGroup}>
-                  <label>
-                    Name:
-                    <input
-                      type="text"
+                {editingUserId === user.id ? (
+                  <Box component="form" onSubmit={(e) => handleEditSubmit(e, user.id)}>
+                    <FormField
+                      label="Name"
                       name="name"
-                      className={styles.input}
                       value={editFormData.name}
                       onChange={handleEditInputChange}
+                      fullWidth
                       required
                     />
-                  </label>
-                </div>
-                <div className={styles.formGroup}>
-                  <label>
-                    Email:
-                    <input
-                      type="email"
+                    <FormField
+                      label="Email"
                       name="email"
-                      className={styles.input}
+                      type="email"
                       value={editFormData.email}
                       onChange={handleEditInputChange}
+                      fullWidth
                       required
                     />
-                  </label>
-                </div>
-                <div className={styles.editActions}>
-                  <button 
-                    type="submit"
-                    className={`${styles.button} ${styles.saveButton}`}
-                  >
-                    Save
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setEditingUserId(null)}
-                    className={`${styles.button} ${styles.cancelButton}`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className={styles.adminActions}>
-                {currentUser?.role === 'SUPERADMIN' && (
-                  <>
-                    <button
-                      onClick={() => handleEditClick(user)}
-                      className={`${styles.button} ${styles.editButton}`}
-                      title="Edit admin user"
-                    >
-                      Edit
-                    </button>
-                    {user.id !== currentUser.id && (
-                      <button
-                        onClick={() => handleRoleChange(user.id, user.role === 'ADMIN' ? 'SUPERADMIN' : 'ADMIN')}
-                        className={`${styles.button} ${styles.roleButton}`}
-                        title={`Change role to ${user.role === 'ADMIN' ? 'SUPERADMIN' : 'ADMIN'}`}
+                    <ActionButtonGroup>
+                      <Button 
+                        type="submit"
+                        variant="contained"
+                        color="success"
                       >
-                        Make {user.role === 'ADMIN' ? 'SUPERADMIN' : 'ADMIN'}
-                      </button>
+                        Save
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="outlined"
+                        color="inherit"
+                        onClick={() => setEditingUserId(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </ActionButtonGroup>
+                  </Box>
+                ) : (
+                  <ActionButtonGroup>
+                    {currentUser?.role === 'SUPERADMIN' && (
+                      <>
+                        <ActionButton
+                          onClick={() => handleEditClick(user)}
+                          variant="contained"
+                          color="secondary"
+                          size="small"
+                        >
+                          Edit
+                        </ActionButton>
+                        {user.id !== currentUser.id && (
+                          <ActionButton
+                            onClick={() => handleRoleChange(user.id, user.role === 'ADMIN' ? 'SUPERADMIN' : 'ADMIN')}
+                            variant="contained"
+                            color="warning"
+                            size="small"
+                          >
+                            Make {user.role === 'ADMIN' ? 'SUPERADMIN' : 'ADMIN'}
+                          </ActionButton>
+                        )}
+                      </>
                     )}
-                  </>
+                    <ActionButton
+                      onClick={() => handleRegeneratePassword(user.id)}
+                      variant="contained"
+                      color="info"
+                      size="small"
+                      disabled={user.role === 'SUPERADMIN' && currentUser?.role !== 'SUPERADMIN'}
+                    >
+                      Reset Password
+                    </ActionButton>
+                    <ActionButton
+                      onClick={() => handleRemoveAdmin(user.id)}
+                      variant="contained"
+                      color="error"
+                      size="small"
+                      disabled={user.role === 'SUPERADMIN'}
+                    >
+                      Remove
+                    </ActionButton>
+                  </ActionButtonGroup>
                 )}
-                <button
-                  onClick={() => handleRegeneratePassword(user.id)}
-                  className={`${styles.button} ${styles.regenerateButton}`}
-                  disabled={user.role === 'SUPERADMIN' && currentUser?.role !== 'SUPERADMIN'}
-                  title={user.role === 'SUPERADMIN' && currentUser?.role !== 'SUPERADMIN' ? 'Only superadmins can reset superadmin passwords' : 'Reset password'}
-                >
-                  Reset Password
-                </button>
-                <button
-                  onClick={() => handleRemoveAdmin(user.id)}
-                  className={`${styles.button} ${styles.removeButton}`}
-                  disabled={user.role === 'SUPERADMIN'}
-                  title={user.role === 'SUPERADMIN' ? 'Cannot remove superadmin user' : 'Remove admin'}
-                >
-                  Remove
-                </button>
-              </div>
-            )}
-          </div>
+              </CardContent>
+            </Card>
+          </Grid>
         ))}
-      </div>
-    </div>
+      </Grid>
+
+      <ConfirmationDialog
+        open={dialog.open}
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={() => dialog.confirmAction && dialog.confirmAction()}
+        onCancel={closeConfirmDialog}
+      />
+    </Container>
   );
 };
 
