@@ -24,7 +24,14 @@ const Login = () => {
   }
 
   return (
-    <Container maxWidth="sm">
+    <Container 
+      maxWidth="sm"
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        px: { xs: 2, sm: 3 }
+      }}
+    >
       <Box
         sx={{
           py: 2,
