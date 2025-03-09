@@ -221,7 +221,7 @@ const Clients = () => {
           
           <Box component="form" onSubmit={handleAddClient}>
             <FormField
-              label="Name"
+              label="Name/Shop Name"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
@@ -292,7 +292,7 @@ const Clients = () => {
           
           <Box component="form" onSubmit={handleEditClient}>
             <FormField
-              label="Name"
+              label="Name/Shop Name"
               name="name"
               value={formData.name}
               onChange={handleInputChange}

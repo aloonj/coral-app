@@ -100,12 +100,12 @@ const AuthForm = ({ mode = 'login' }) => {
             <FormField
               id="name"
               name="name"
-              label="Name"
+              label="Name/Shop Name"
               variant="outlined"
               fullWidth
               value={formData.name}
               onChange={handleChange}
-              placeholder="Enter your name"
+              placeholder="Enter your name or shop name"
               required
               autoComplete="name"
               sx={{ mb: 2.5 }}
