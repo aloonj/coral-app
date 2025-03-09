@@ -46,6 +46,9 @@ Object.entries(envDefaults).forEach(([key, value]) => {
 
   // Environment configuration object
 const env = {
+  // Frontend URL for links in emails
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  
   // Backup
   backup: {
     directory: process.env.BACKUPS,

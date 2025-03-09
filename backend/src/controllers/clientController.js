@@ -295,26 +295,13 @@ export const createClient = async (req, res) => {
       // Send temporary password email
       await NotificationService.sendTemporaryPasswordEmail(user, tempPassword);
 
-      // Send notification to all admins about the new client registration
+      // Send a single notification to all admins about the new client registration
       try {
-        const adminUsers = await BackupService.getAdminUsers();
-        if (adminUsers && adminUsers.length > 0) {
-          const subject = 'New Client Registration Pending Approval';
-          const emailHtml = `
-            <h2>New Client Registration</h2>
-            <p>A new client has registered and is pending approval:</p>
-            <ul>
-              <li><strong>Name:</strong> ${name}</li>
-              <li><strong>Email:</strong> ${email}</li>
-              <li><strong>Phone:</strong> ${phone}</li>
-            </ul>
-            <p>Please log in to the admin dashboard to review and approve this client.</p>
-          `;
-          
-          for (const admin of adminUsers) {
-            await NotificationService._sendEmail(admin.email, subject, emailHtml, { ccSender: false });
-          }
-        }
+        await NotificationService.sendClientRegistrationNotification({
+          name,
+          email,
+          phone
+        });
       } catch (notificationError) {
         console.error('Error sending admin notifications:', notificationError);
         // Continue even if notification fails
