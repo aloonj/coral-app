@@ -429,6 +429,11 @@ const Orders = () => {
           </Typography>
           <Typography variant="body1" fontWeight="medium">
             {import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}
+            {((order.client?.discountRate > 0) || (order.archivedClientData?.discountRate > 0)) && (
+              <Typography component="span" sx={{ ml: 1, fontSize: '0.75rem', color: theme.palette.secondary.main }}>
+                (Discounted)
+              </Typography>
+            )}
           </Typography>
         </Grid>
       </Grid>
