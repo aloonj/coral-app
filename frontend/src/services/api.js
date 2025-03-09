@@ -149,6 +149,8 @@ export const authService = {
   logout: () => {
     tokenStorage.removeToken();
   },
+  getClientProfile: () => api.get('/auth/client-profile'),
+  updateClientProfile: (data) => api.put('/auth/client-profile', data),
 };
 
 export const orderService = {

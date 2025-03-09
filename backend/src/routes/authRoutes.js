@@ -52,6 +52,8 @@ router.post('/register', authenticate, authorize('ADMIN', 'SUPERADMIN'), registe
 router.post('/client-register', registerValidation, clientRegister);
 router.post('/login', loginValidation, login);
 router.get('/profile', authenticate, getProfile);
+router.get('/client-profile', authenticate, authorize('CLIENT'), getClientProfile);
+router.put('/client-profile', authenticate, authorize('CLIENT'), updateClientProfile);
 
 // Change password route with validation
 router.post('/change-password', 

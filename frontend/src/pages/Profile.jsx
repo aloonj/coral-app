@@ -1,19 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
+import api, { authService } from '../services/api';
 
 const Profile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [clientData, setClientData] = useState(null);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+  const [editData, setEditData] = useState({
+    address: '',
+    phone: ''
+  });
   const [passwordError, setPasswordError] = useState('');
+  const [editError, setEditError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
@@ -21,6 +28,21 @@ const Profile = () => {
       try {
         const response = await api.get('/auth/profile');
         setProfile(response.data);
+        
+        // If user is a client, fetch client data
+        if (response.data.role === 'CLIENT') {
+          try {
+            const clientResponse = await authService.getClientProfile();
+            setClientData(clientResponse.data);
+            setEditData({
+              address: clientResponse.data.address || '',
+              phone: clientResponse.data.phone || ''
+            });
+          } catch (clientErr) {
+            console.error('Failed to load client profile', clientErr);
+          }
+        }
+        
         setLoading(false);
       } catch (err) {
         setError('Failed to load profile');
@@ -34,6 +56,13 @@ const Profile = () => {
   const handlePasswordChange = (e) => {
     setPasswordData({
       ...passwordData,
+      [e.target.name]: e.target.value
+    });
+  };
+  
+  const handleEditChange = (e) => {
+    setEditData({
+      ...editData,
       [e.target.name]: e.target.value
     });
   };
@@ -74,6 +103,20 @@ const Profile = () => {
       setShowPasswordForm(false);
     } catch (err) {
       setPasswordError(err.response?.data?.message || 'Failed to update password');
+    }
+  };
+  
+  const handleSubmitEdit = async (e) => {
+    e.preventDefault();
+    setEditError('');
+    
+    try {
+      const response = await authService.updateClientProfile(editData);
+      setClientData(response.data);
+      setSuccessMessage('Profile updated successfully');
+      setShowEditForm(false);
+    } catch (err) {
+      setEditError(err.response?.data?.message || 'Failed to update profile');
     }
   };
 
@@ -149,16 +192,44 @@ const Profile = () => {
         <div style={infoStyle}>{profile?.name}</div>
       </div>
 
-      <div style={sectionStyle}>
-        <label style={labelStyle}>Role</label>
-        <div style={infoStyle}>{profile?.role}</div>
-      </div>
+
+      {/* Client-specific fields */}
+      {profile?.role === 'CLIENT' && clientData && (
+        <>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Phone</label>
+            <div style={infoStyle}>{clientData?.phone || 'Not provided'}</div>
+          </div>
+
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Address</label>
+            <div style={infoStyle}>{clientData?.address || 'Not provided'}</div>
+          </div>
+        </>
+      )}
 
       <div style={sectionStyle}>
         {successMessage && (
           <div style={{ color: 'green', marginBottom: '1rem' }}>{successMessage}</div>
         )}
-        {!showPasswordForm ? (
+        
+        {/* Edit Profile Button for Clients */}
+        {profile?.role === 'CLIENT' && !showEditForm && !showPasswordForm && (
+          <button
+            style={{...buttonStyle, marginRight: '1rem'}}
+            onClick={() => {
+              setShowEditForm(true);
+              setSuccessMessage('');
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#1a9994'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#20B2AA'}
+          >
+            Edit Profile
+          </button>
+        )}
+        
+        {/* Change Password Button */}
+        {!showPasswordForm && !showEditForm ? (
           <button
             style={buttonStyle}
             onClick={() => {
@@ -170,7 +241,74 @@ const Profile = () => {
           >
             Change Password
           </button>
-        ) : (
+        ) : null}
+        
+        {/* Edit Profile Form */}
+        {showEditForm && (
+          <form onSubmit={handleSubmitEdit}>
+            <h3 style={{ ...headingStyle, fontSize: '1.2rem' }}>Edit Profile</h3>
+            
+            {editError && (
+              <div style={{ color: 'red', marginBottom: '1rem' }}>{editError}</div>
+            )}
+
+            <div>
+              <label style={labelStyle}>Phone</label>
+              <input
+                type="text"
+                name="phone"
+                placeholder="Phone Number"
+                value={editData.phone}
+                onChange={handleEditChange}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Address</label>
+              <textarea
+                name="address"
+                placeholder="Address"
+                value={editData.address}
+                onChange={handleEditChange}
+                style={{...inputStyle, minHeight: '100px'}}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                type="submit"
+                style={buttonStyle}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#1a9994'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#20B2AA'}
+              >
+                Save Changes
+              </button>
+              <button
+                type="button"
+                style={{
+                  ...buttonStyle,
+                  backgroundColor: '#6c757d'
+                }}
+                onClick={() => {
+                  setShowEditForm(false);
+                  setEditError('');
+                  setEditData({
+                    address: clientData?.address || '',
+                    phone: clientData?.phone || ''
+                  });
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#5a6268'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#6c757d'}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+        
+        {/* Change Password Form */}
+        {showPasswordForm && (
           <form onSubmit={handleSubmitPassword}>
             <h3 style={{ ...headingStyle, fontSize: '1.2rem' }}>Change Password</h3>
             

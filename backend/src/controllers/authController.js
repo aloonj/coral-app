@@ -466,3 +466,47 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ message: 'Error fetching profile' });
   }
 };
+
+export const getClientProfile = async (req, res) => {
+  try {
+    // Find the client record associated with the authenticated user
+    const client = await Client.findOne({
+      where: { userId: req.user.id }
+    });
+    
+    if (!client) {
+      return res.status(404).json({ message: 'Client profile not found' });
+    }
+
+    res.json(client);
+  } catch (error) {
+    console.error('Get client profile error:', error);
+    res.status(500).json({ message: 'Error fetching client profile' });
+  }
+};
+
+export const updateClientProfile = async (req, res) => {
+  try {
+    const { phone, address } = req.body;
+    
+    // Find the client record associated with the authenticated user
+    const client = await Client.findOne({
+      where: { userId: req.user.id }
+    });
+    
+    if (!client) {
+      return res.status(404).json({ message: 'Client profile not found' });
+    }
+
+    // Update client details
+    await client.update({ 
+      phone, 
+      address 
+    });
+
+    res.json(client);
+  } catch (error) {
+    console.error('Update client profile error:', error);
+    res.status(500).json({ message: 'Error updating client profile' });
+  }
+};
