@@ -79,15 +79,15 @@ class NotificationService {
 
   // Process notifications from queue
   static async processOrderConfirmation(order, client) {
-    const subject = 'Order Confirmation';
-    const message = `Thank you for your order #${order.id}! Your order has been received and is being processed.`;
+    const subject = 'Order Received - Pending Confirmation';
+    const message = `Thank you for your order #${order.id}! Your order has been received and is pending confirmation. We'll notify you when it's confirmed.`;
     const emailHtml = `
-      <h2>Order Confirmation</h2>
+      <h2>Order Received</h2>
       <p>${message}</p>
       <p>Order Details:</p>
       <ul>
         <li>Total Amount: £${order.totalAmount}</li>
-        <li>Status: ${order.status === 'READY_FOR_PICKUP' ? 'Ready for Pickup/Delivery' : order.status}</li>
+    <li>Status: ${order.status === 'READY_FOR_PICKUP' ? 'Ready for Pickup/Delivery' : order.status === 'PENDING' ? 'Order Pending' : order.status}</li>
         ${order.preferredPickupDate ? `<li>Preferred Pickup Date: ${new Date(order.preferredPickupDate).toLocaleDateString()}</li>` : ''}
       </ul>
       <p>We'll notify you when your order status changes.</p>
