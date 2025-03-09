@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import api, { clientService } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import {
@@ -69,6 +70,24 @@ const Clients = () => {
     }
   };
 
+  // Handle URL query parameters for tab selection
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Check if there's a tab parameter in the URL
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    
+    // Set the tab value based on the URL parameter
+    if (tabParam === 'pending') {
+      setTabValue(1); // Pending Approval tab
+    } else if (tabParam === 'active') {
+      setTabValue(2); // Active Clients tab
+    } else if (tabParam === 'all') {
+      setTabValue(0); // All Clients tab
+    }
+  }, [location.search]);
+  
   useEffect(() => {
     fetchClients();
     

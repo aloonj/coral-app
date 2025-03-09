@@ -1,5 +1,5 @@
 import { useAuth } from '../../contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { 
   AppBar,
@@ -216,22 +216,7 @@ const LayoutWithThemeToggle = ({ children }) => {
                         <PeopleIcon />
                       </Badge>
                     </ListItemIcon>
-                    <ListItemText 
-                      primary={
-                        <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
-                          Clients
-                          {pendingApprovals > 0 && (
-                            <Tooltip title={`${pendingApprovals} client${pendingApprovals !== 1 ? 's' : ''} pending approval`}>
-                              <Badge 
-                                badgeContent={pendingApprovals} 
-                                color="error" 
-                                sx={{ ml: 1 }}
-                              />
-                            </Tooltip>
-                          )}
-                        </Box>
-                      } 
-                    />
+                    <ListItemText primary="Clients" />
                   </ListItem>
                   
                   <ListItem 
@@ -335,6 +320,25 @@ const LayoutWithThemeToggle = ({ children }) => {
           </Box>
           
           <Box sx={{ flexGrow: 1 }} />
+          
+          {/* Admin Pending Approvals Badge - visible on all devices for admins */}
+          {isAdmin && pendingApprovals > 0 && (
+            <Tooltip title={`${pendingApprovals} client${pendingApprovals !== 1 ? 's' : ''} pending approval`}>
+              <IconButton
+                color="inherit"
+                onClick={() => handleNavigation('/clients?tab=pending')}
+                aria-label="pending approvals"
+                sx={{ mr: 1 }}
+              >
+                <Badge 
+                  badgeContent={pendingApprovals} 
+                  color="error"
+                >
+                  <PeopleIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+          )}
           
           {/* Theme Toggle Button */}
           <ThemeToggle />
