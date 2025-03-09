@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { orderService, coralService } from '../services/api';
-import styles from './Dashboard.module.css';
 import { 
   Container, 
   Typography, 
@@ -163,12 +162,12 @@ const ActiveOrdersGrid = ({ orders, onStatusUpdate, selectedStatus, newOrderId }
       {filteredOrders.map(order => (
         <Grid item xs={12} sm={6} md={4} key={order.id}>
           <Paper 
-            className={order.id === newOrderId ? styles.newOrderHighlight : ''}
             sx={{
               p: 2,
               borderRadius: 1,
               border: `1px solid ${theme.palette.divider}`,
-              boxShadow: 1
+              boxShadow: order.id === newOrderId ? 3 : 1,
+              transition: 'box-shadow 0.3s ease'
             }}
           >
             <Box sx={{ 
