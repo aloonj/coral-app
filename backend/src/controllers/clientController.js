@@ -272,12 +272,14 @@ export const createClient = async (req, res) => {
     
     // Create new user account using Sequelize's create method which is parameterized
     try {
+      // When an admin creates a client, set status to ACTIVE directly
+      // This skips the approval step since the admin is creating the client
       const user = await User.create({
         email,
         password: tempPassword,
         name,
         role: 'CLIENT',
-        status: 'INACTIVE', // Changed from ACTIVE to INACTIVE to require approval
+        status: 'ACTIVE', // Set to ACTIVE when created by admin
         userId: req.user?.id // Link to the admin who created the client if applicable
       }, { transaction: t });
 
@@ -295,24 +297,8 @@ export const createClient = async (req, res) => {
       // Send temporary password email
       await NotificationService.sendTemporaryPasswordEmail(user, tempPassword);
 
-      // Queue a notification to all admins about the new client registration
-      try {
-        console.log('Attempting to queue client registration notification');
-        const notification = await NotificationService.queueClientRegistrationNotification({
-          name,
-          email,
-          phone
-        });
-        
-        if (notification) {
-          console.log(`Successfully queued client registration notification with ID: ${notification.id}`);
-        } else {
-          console.warn('Failed to queue client registration notification - returned null');
-        }
-      } catch (notificationError) {
-        console.error('Error queueing admin notifications:', notificationError);
-        // Continue even if notification fails
-      }
+      // Skip sending notification to admins since they created the client
+      // No need to notify admins about something they just did
 
       // Include the temporary password in the response
       res.status(201).json({
