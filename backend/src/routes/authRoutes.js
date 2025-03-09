@@ -11,7 +11,9 @@ import {
   removeAdminUser,
   updateAdminUser,
   updateAdminRole,
-  clientRegister
+  clientRegister,
+  getClientProfile,
+  updateClientProfile
 } from '../controllers/authController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
