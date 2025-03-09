@@ -660,7 +660,7 @@ const QuickOrder = () => {
                                     {config.defaultCurrency}{coral.price}
                                   </Typography>
                                   <Typography variant="h6" color="primary">
-                                    {config.defaultCurrency}{getDiscountedPrice(coral.price)}
+                                    {config.defaultCurrency}{getDiscountedPrice(coral.price).toFixed(2)}
                                     <Chip 
                                       size="small" 
                                       label={`-${clientDiscountRate}%`} 
