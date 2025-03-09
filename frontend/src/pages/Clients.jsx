@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../services/api';
+import api, { clientService } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import {
   CoralCard,
@@ -132,6 +132,19 @@ const Clients = () => {
       setSuccess(`New temporary password: ${response.data.temporaryPassword}`);
     } catch (error) {
       setError(error.response?.data?.message || 'Error regenerating password');
+    }
+  };
+
+  const handleApproveClient = async (id) => {
+    setError('');
+    setSuccess('');
+
+    try {
+      await clientService.approveClient(id);
+      setSuccess('Client approved successfully');
+      fetchClients();
+    } catch (error) {
+      setError(error.response?.data?.message || 'Error approving client');
     }
   };
 
@@ -348,9 +361,24 @@ const Clients = () => {
                 <Typography variant="body2">
                   <strong>Join Date:</strong> {formatDate(client.createdAt)}
                 </Typography>
+                <Typography variant="body2">
+                  <strong>Status:</strong> {client.status === 'INACTIVE' ? 
+                    <span style={{ color: '#f44336' }}>Pending Approval</span> : 
+                    <span style={{ color: '#4caf50' }}>Active</span>}
+                </Typography>
               </Box>
 
-              <Box display="flex" gap={1} mt={2}>
+              <Box display="flex" flexWrap="wrap" gap={1} mt={2}>
+                {client.status === 'INACTIVE' && (
+                  <ActionButton
+                    variant="contained"
+                    size="small"
+                    color="success"
+                    onClick={() => handleApproveClient(client.id)}
+                  >
+                    Approve
+                  </ActionButton>
+                )}
                 <ActionButton
                   variant="outlined"
                   size="small"

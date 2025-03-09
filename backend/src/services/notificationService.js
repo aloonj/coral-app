@@ -204,6 +204,22 @@ class NotificationService {
     await this._sendEmail(user.email, subject, emailHtml, options);
   }
 
+  static async sendAccountApprovedEmail(user) {
+    const subject = 'Your Account Has Been Approved';
+    // Don't CC the sender for account approval emails
+    const options = { ccSender: false };
+    const emailHtml = `
+      <h2>Account Approved</h2>
+      <p>Dear ${user.name},</p>
+      <p>We're pleased to inform you that your account has been approved!</p>
+      <p>You can now log in to your account and start placing orders.</p>
+      <p>Thanks,</p>
+      <p>Fraggle Rock</p>
+    `;
+
+    await this._sendEmail(user.email, subject, emailHtml, options);
+  }
+
   static async sendBackupSuccessNotification(backup) {
     try {
       const subject = `Backup Completed Successfully: ${backup.type}`;

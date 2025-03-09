@@ -183,6 +183,7 @@ export const clientService = {
   createClient: (data) => api.post('/clients', data),
   updateClient: (id, data) => api.put(`/clients/${id}`, data),
   deleteClient: (id) => api.delete(`/clients/${id}`),
+  approveClient: (id) => api.post(`/clients/${id}/approve`),
 };
 
 export const notificationService = {

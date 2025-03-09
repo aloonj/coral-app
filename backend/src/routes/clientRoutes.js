@@ -1,5 +1,5 @@
 import express from 'express';
-import { getClients, getClient, createClient, removeClient, regeneratePassword, updateClient } from '../controllers/clientController.js';
+import { getClients, getClient, createClient, removeClient, regeneratePassword, updateClient, approveClient } from '../controllers/clientController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { createClientValidator, updateClientValidator, clientIdValidator } from '../middleware/validators/clientValidators.js';
 
@@ -26,5 +26,8 @@ router.delete('/:id', clientIdValidator, removeClient);
 
 // Regenerate client password
 router.post('/:id/regenerate-password', clientIdValidator, regeneratePassword);
+
+// Approve client (change status from INACTIVE to ACTIVE)
+router.post('/:id/approve', clientIdValidator, approveClient);
 
 export default router;

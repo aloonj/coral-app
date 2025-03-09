@@ -240,12 +240,13 @@ export const clientRegister = async (req, res) => {
 
     // Create new user and client in a transaction
     const result = await sequelize.transaction(async (t) => {
-      // Create user
+      // Create user with INACTIVE status (pending approval)
       const user = await User.create({
         email,
         password,
         name,
-        role: 'CLIENT'
+        role: 'CLIENT',
+        status: 'INACTIVE'
       }, { transaction: t });
 
       // Create corresponding client record
@@ -270,8 +271,7 @@ export const clientRegister = async (req, res) => {
     );
 
     res.status(201).json({
-      message: 'Registration successful! You can now log in.',
-      token,
+      message: 'Registration successful! Your account is pending approval. You will be able to log in once an administrator approves your account.',
       user: {
         id: user.id,
         email: user.email,
@@ -363,7 +363,7 @@ export const login = async (req, res) => {
 
     // Check if user is active
     if (user.status !== 'ACTIVE') {
-      return res.status(401).json({ message: 'Account is inactive' });
+      return res.status(401).json({ message: 'Your account is pending approval. Please contact an administrator.' });
     }
 
     // Validate password

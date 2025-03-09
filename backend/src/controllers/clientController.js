@@ -153,13 +153,29 @@ export const getClients = async (req, res) => {
           as: 'orders',
           attributes: [],
           required: false
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['status'],
+          required: false
         }
       ],
-      group: ['Client.id', 'Client.email', 'Client.name', 'Client.phone', 'Client.address'],
+      group: ['Client.id', 'Client.email', 'Client.name', 'Client.phone', 'Client.address', 'user.id', 'user.status'],
       order: [['createdAt', 'DESC']]
     });
 
-    res.json(clients);
+    // Format the response to include user status
+    const formattedClients = clients.map(client => {
+      const clientJson = client.toJSON();
+      return {
+        ...clientJson,
+        status: clientJson.user ? clientJson.user.status : null,
+        user: undefined // Remove the nested user object
+      };
+    });
+
+    res.json(formattedClients);
   } catch (error) {
     console.error('Error fetching clients:', error);
     res.status(500).json({ message: 'Error fetching clients' });
@@ -295,6 +311,71 @@ export const createClient = async (req, res) => {
     await t.rollback();
     console.error('Error creating client:', error);
     res.status(500).json({ message: 'Error creating client' });
+  }
+};
+
+export const approveClient = async (req, res) => {
+  const t = await sequelize.transaction();
+  
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      await t.rollback();
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    
+    // Find the client using findByPk
+    const client = await Client.findByPk(id, { transaction: t });
+    if (!client) {
+      await t.rollback();
+      return res.status(404).json({ message: 'Client not found' });
+    }
+
+    // Find associated user account
+    const user = await User.findOne({ 
+      where: { email: client.email },
+      transaction: t 
+    });
+    
+    if (!user) {
+      await t.rollback();
+      return res.status(404).json({ message: 'User account not found' });
+    }
+
+    // Check if user is already active
+    if (user.status === 'ACTIVE') {
+      await t.rollback();
+      return res.status(400).json({ message: 'Client is already approved' });
+    }
+
+    // Update user status to ACTIVE
+    user.status = 'ACTIVE';
+    await user.save({ transaction: t });
+    
+    await t.commit();
+    
+    // Send notification email to client
+    try {
+      await NotificationService.sendAccountApprovedEmail(user);
+    } catch (emailError) {
+      console.error('Error sending approval email:', emailError);
+      // Continue even if email fails
+    }
+    
+    res.json({ 
+      message: 'Client approved successfully',
+      client: {
+        id: client.id,
+        email: client.email,
+        name: client.name
+      }
+    });
+  } catch (error) {
+    await t.rollback();
+    console.error('Error approving client:', error);
+    res.status(500).json({ message: 'Error approving client' });
   }
 };
 
