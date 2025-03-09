@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/api';
-import { useTheme } from '@mui/material/styles';
 import { 
   FormField, 
   FormError, 
   SubmitButton 
 } from '../StyledComponents';
-import { CircularProgress, Box, Fade, Typography, FormHelperText } from '@mui/material';
-import { useColorMode } from '../../theme/ThemeContext';
+import { CircularProgress, Box, Fade, FormHelperText } from '@mui/material';
 
 const AuthForm = ({ mode = 'login' }) => {
   const [formData, setFormData] = useState({
@@ -23,8 +21,6 @@ const AuthForm = ({ mode = 'login' }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
-  const theme = useTheme();
-  const { mode: themeMode } = useColorMode();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -112,21 +108,7 @@ const AuthForm = ({ mode = 'login' }) => {
               placeholder="Enter your name"
               required
               autoComplete="name"
-              sx={{
-                mb: 2.5,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: theme.palette.primary.main,
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: theme.palette.primary.main,
-                    borderWidth: 2,
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: theme.palette.primary.main,
-                },
-              }}
+              sx={{ mb: 2.5 }}
             />
             
             <FormField
@@ -140,21 +122,7 @@ const AuthForm = ({ mode = 'login' }) => {
               placeholder="Enter your phone number"
               required
               autoComplete="tel"
-              sx={{
-                mb: 2.5,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: theme.palette.primary.main,
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: theme.palette.primary.main,
-                    borderWidth: 2,
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: theme.palette.primary.main,
-                },
-              }}
+              sx={{ mb: 2.5 }}
             />
             
             <FormField
@@ -170,21 +138,7 @@ const AuthForm = ({ mode = 'login' }) => {
               placeholder="Enter your address"
               required
               autoComplete="street-address"
-              sx={{
-                mb: 2.5,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: theme.palette.primary.main,
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: theme.palette.primary.main,
-                    borderWidth: 2,
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: theme.palette.primary.main,
-                },
-              }}
+              sx={{ mb: 2.5 }}
             />
           </>
         )}
@@ -201,21 +155,7 @@ const AuthForm = ({ mode = 'login' }) => {
           placeholder="Enter your email"
           required
           autoComplete="email"
-          sx={{
-            mb: 2.5,
-            '& .MuiOutlinedInput-root': {
-              '&:hover fieldset': {
-                borderColor: theme.palette.primary.main,
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: theme.palette.primary.main,
-                borderWidth: 2,
-              },
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: theme.palette.primary.main,
-            },
-          }}
+          sx={{ mb: 2.5 }}
         />
 
         <Box sx={{ mb: mode === 'register' ? 1 : 3 }}>
@@ -231,20 +171,6 @@ const AuthForm = ({ mode = 'login' }) => {
             placeholder="Enter your password"
             required
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '&:hover fieldset': {
-                  borderColor: theme.palette.primary.main,
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: theme.palette.primary.main,
-                  borderWidth: 2,
-                },
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: theme.palette.primary.main,
-              },
-            }}
           />
           
           {mode === 'register' && (
@@ -263,21 +189,7 @@ const AuthForm = ({ mode = 'login' }) => {
           sx={{
             py: 1.2,
             fontWeight: 600,
-            fontSize: '1rem',
-            transition: 'all 0.3s ease',
-            position: 'relative',
-            overflow: 'hidden',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: theme.shadows[4],
-            },
-            '&:active': {
-              transform: 'translateY(0)',
-              boxShadow: theme.shadows[2],
-            },
-            ...(themeMode === 'dark' && {
-              background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-            }),
+            fontSize: '1rem'
           }}
         >
           {loading ? <CircularProgress size={24} /> : mode === 'login' ? 'Login' : 'Register'}
