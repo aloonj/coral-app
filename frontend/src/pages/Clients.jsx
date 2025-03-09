@@ -234,18 +234,8 @@ const Clients = () => {
       {success && <FormError severity="success">{success}</FormError>}
 
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ mb: 2 }}>
           <PageTitle variant="h1">Clients</PageTitle>
-          {pendingApprovals > 0 && (
-            <Tooltip title={`${pendingApprovals} client${pendingApprovals !== 1 ? 's' : ''} pending approval`}>
-              <Chip 
-                icon={<HourglassEmptyIcon />} 
-                label={`${pendingApprovals} Pending Approval${pendingApprovals !== 1 ? 's' : ''}`}
-                color="warning"
-                sx={{ fontWeight: 'bold' }}
-              />
-            </Tooltip>
-          )}
         </Box>
         
         <Stack spacing={2} sx={{ width: { xs: '100%', sm: '50%', md: '30%' } }}>
@@ -262,24 +252,6 @@ const Clients = () => {
             Add Client
           </ActionButton>
         </Stack>
-        
-        {pendingApprovals > 0 && (
-          <Alert 
-            severity="info" 
-            sx={{ mt: 2 }}
-            action={
-              <ActionButton
-                color="inherit"
-                size="small"
-                onClick={() => setTabValue(1)}
-              >
-                View Pending
-              </ActionButton>
-            }
-          >
-            {pendingApprovals} client registration{pendingApprovals !== 1 ? 's' : ''} pending approval
-          </Alert>
-        )}
         
         <Tabs 
           value={tabValue} 
