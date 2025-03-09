@@ -1,5 +1,5 @@
 import NotificationQueue from '../models/NotificationQueue.js';
-import { Op } from 'sequelize';
+import { sequelize, Op } from '../config/database.js';
 
 class NotificationQueueService {
   static async queueNotification(type, payload, options = {}) {
@@ -19,7 +19,25 @@ class NotificationQueueService {
 
   static async findPendingNotifications() {
     const maxAttempts = NotificationQueue.getAttributes().maxAttempts.defaultValue;
-    return await NotificationQueue.findAll({
+    console.log(`Looking for notifications with status PENDING and attempts < ${maxAttempts}`);
+    
+    // First check if there are any notifications in the queue at all
+    const totalCount = await NotificationQueue.count();
+    console.log(`Total notifications in queue: ${totalCount}`);
+    
+    if (totalCount > 0) {
+      // Log counts by status
+      const statusCounts = await NotificationQueue.findAll({
+        attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+        group: ['status']
+      });
+      console.log('Notification counts by status:');
+      statusCounts.forEach(stat => {
+        console.log(`${stat.status}: ${stat.getDataValue('count')}`);
+      });
+    }
+    
+    const pendingNotifications = await NotificationQueue.findAll({
       where: {
         status: 'PENDING',
         attempts: { [Op.lt]: maxAttempts },
@@ -30,6 +48,8 @@ class NotificationQueueService {
       },
       order: [['createdAt', 'ASC']]
     });
+    
+    return pendingNotifications;
   }
 
   static async findBatchableNotifications(queueEntry) {

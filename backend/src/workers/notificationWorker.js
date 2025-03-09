@@ -152,6 +152,14 @@ async function processNotifications() {
     console.log('Checking for notifications to process...');
     const notifications = await NotificationQueueService.findPendingNotifications();
     console.log(`Found ${notifications.length} notifications to process`);
+    
+    if (notifications.length > 0) {
+      // Log details about each notification
+      notifications.forEach(notification => {
+        console.log(`Notification ID: ${notification.id}, Type: ${notification.type}, Status: ${notification.status}, Created: ${notification.createdAt}`);
+        console.log(`Payload: ${JSON.stringify(notification.payload)}`);
+      });
+    }
 
     for (const notification of notifications) {
       await processNotification(notification);

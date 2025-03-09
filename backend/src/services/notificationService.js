@@ -282,17 +282,22 @@ class NotificationService {
   static async queueClientRegistrationNotification(client) {
     try {
       console.log('Queueing client registration notification');
-      await NotificationQueueService.queueNotification('CLIENT_REGISTRATION', {
+      console.log(`Client data: ${JSON.stringify(client)}`);
+      
+      const notification = await NotificationQueueService.queueNotification('CLIENT_REGISTRATION', {
         clientData: {
           name: client.name,
           email: client.email,
-          phone: client.phone
+          phone: client.phone || 'Not provided'
         }
       });
-      console.log('Client registration notification queued successfully');
+      
+      console.log(`Client registration notification queued successfully with ID: ${notification.id}`);
+      return notification;
     } catch (error) {
       console.error('Error queueing client registration notification:', error);
       // Don't throw the error to prevent blocking the client registration process
+      return null;
     }
   }
 
