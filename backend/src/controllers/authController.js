@@ -230,7 +230,7 @@ export const clientRegister = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password, name } = req.body;
+    const { email, password, name, phone, address } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
@@ -252,6 +252,8 @@ export const clientRegister = async (req, res) => {
       const client = await Client.create({
         email,
         name,
+        phone,
+        address,
         userId: user.id  // Link to user via foreign key
       }, { transaction: t });
 

@@ -8,7 +8,7 @@ import {
   FormError, 
   SubmitButton 
 } from '../StyledComponents';
-import { CircularProgress, Box, Fade } from '@mui/material';
+import { CircularProgress, Box, Fade, Typography, FormHelperText } from '@mui/material';
 import { useColorMode } from '../../theme/ThemeContext';
 
 const AuthForm = ({ mode = 'login' }) => {
@@ -16,6 +16,8 @@ const AuthForm = ({ mode = 'login' }) => {
     email: '',
     password: '',
     name: '',
+    phone: '',
+    address: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,6 +52,8 @@ const AuthForm = ({ mode = 'login' }) => {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          phone: formData.phone,
+          address: formData.address,
         });
         navigate('/login');
       }
@@ -88,33 +92,91 @@ const AuthForm = ({ mode = 'login' }) => {
       
       <form onSubmit={handleSubmit}>
         {mode === 'register' && (
-          <FormField
-            id="name"
-            name="name"
-            label="Name"
-            variant="outlined"
-            fullWidth
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Enter your name"
-            required
-            autoComplete="name"
-            sx={{
-              mb: 2.5,
-              '& .MuiOutlinedInput-root': {
-                '&:hover fieldset': {
-                  borderColor: theme.palette.primary.main,
+          <>
+            <FormField
+              id="name"
+              name="name"
+              label="Name"
+              variant="outlined"
+              fullWidth
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Enter your name"
+              required
+              autoComplete="name"
+              sx={{
+                mb: 2.5,
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: theme.palette.primary.main,
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: theme.palette.primary.main,
+                    borderWidth: 2,
+                  },
                 },
-                '&.Mui-focused fieldset': {
-                  borderColor: theme.palette.primary.main,
-                  borderWidth: 2,
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: theme.palette.primary.main,
                 },
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: theme.palette.primary.main,
-              },
-            }}
-          />
+              }}
+            />
+            
+            <FormField
+              id="phone"
+              name="phone"
+              label="Phone Number"
+              variant="outlined"
+              fullWidth
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="Enter your phone number"
+              autoComplete="tel"
+              sx={{
+                mb: 2.5,
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: theme.palette.primary.main,
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: theme.palette.primary.main,
+                    borderWidth: 2,
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: theme.palette.primary.main,
+                },
+              }}
+            />
+            
+            <FormField
+              id="address"
+              name="address"
+              label="Address"
+              variant="outlined"
+              fullWidth
+              multiline
+              rows={3}
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="Enter your address"
+              autoComplete="street-address"
+              sx={{
+                mb: 2.5,
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: theme.palette.primary.main,
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: theme.palette.primary.main,
+                    borderWidth: 2,
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: theme.palette.primary.main,
+                },
+              }}
+            />
+          </>
         )}
 
         <FormField
@@ -146,34 +208,41 @@ const AuthForm = ({ mode = 'login' }) => {
           }}
         />
 
-        <FormField
-          id="password"
-          name="password"
-          type="password"
-          label="Password"
-          variant="outlined"
-          fullWidth
-          value={formData.password}
-          onChange={handleChange}
-          placeholder="Enter your password"
-          required
-          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          sx={{
-            mb: 3,
-            '& .MuiOutlinedInput-root': {
-              '&:hover fieldset': {
-                borderColor: theme.palette.primary.main,
+        <Box sx={{ mb: mode === 'register' ? 1 : 3 }}>
+          <FormField
+            id="password"
+            name="password"
+            type="password"
+            label="Password"
+            variant="outlined"
+            fullWidth
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Enter your password"
+            required
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: theme.palette.primary.main,
+                  borderWidth: 2,
+                },
               },
-              '&.Mui-focused fieldset': {
-                borderColor: theme.palette.primary.main,
-                borderWidth: 2,
+              '& .MuiInputLabel-root.Mui-focused': {
+                color: theme.palette.primary.main,
               },
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: theme.palette.primary.main,
-            },
-          }}
-        />
+            }}
+          />
+          
+          {mode === 'register' && (
+            <FormHelperText sx={{ mt: 1, mb: 2, color: 'text.secondary' }}>
+              Password must be at least 8 characters long and include at least one number and one special character (!@#$%^&*(),.?":{}|&lt;&gt;_-).
+            </FormHelperText>
+          )}
+        </Box>
 
         <SubmitButton
           type="submit"

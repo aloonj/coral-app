@@ -21,9 +21,26 @@ const router = express.Router();
 const registerValidation = [
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
-  body('name').notEmpty().withMessage('Name is required')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long')
+    .matches(/\d/)
+    .withMessage('Password must contain at least one number')
+    .matches(/[!@#$%^&*(),.?":{}|<>_-]/)
+    .withMessage('Password must contain at least one symbol'),
+  body('name').notEmpty().withMessage('Name is required'),
+  body('phone')
+    .optional()
+    .trim()
+    .custom(value => {
+      if (!value) return true; // Allow empty string
+      return /^[+\d\s-()]+$/.test(value);
+    })
+    .withMessage('Phone number can only contain numbers, spaces, +, -, and ()'),
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Address must be less than 1000 characters')
 ];
 
 const loginValidation = [
@@ -43,8 +60,12 @@ router.post('/change-password',
   [
     body('currentPassword').notEmpty().withMessage('Current password is required'),
     body('newPassword')
-      .isLength({ min: 6 })
-      .withMessage('New password must be at least 6 characters long')
+      .isLength({ min: 8 })
+      .withMessage('New password must be at least 8 characters long')
+      .matches(/\d/)
+      .withMessage('New password must contain at least one number')
+      .matches(/[!@#$%^&*(),.?":{}|<>_-]/)
+      .withMessage('New password must contain at least one symbol')
   ],
   changePassword
 );
