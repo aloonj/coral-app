@@ -225,7 +225,7 @@ export const getOrders = async (req, res) => {
         {
           model: Client,
           as: 'client',
-          attributes: ['id', 'name', 'email', 'phone']
+          attributes: ['id', 'name', 'email', 'phone', 'discountRate']
         },
         {
           model: Coral,
@@ -258,12 +258,12 @@ export const getOrders = async (req, res) => {
 
 export const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findByPk(req.params.id, {
+  const order = await Order.findByPk(req.params.id, {
       include: [
         {
           model: Client,
           as: 'client',
-          attributes: ['id', 'name', 'email', 'phone']
+          attributes: ['id', 'name', 'email', 'phone', 'discountRate']
         },
         {
           model: Coral,
@@ -382,7 +382,8 @@ export const archiveOrder = async (req, res) => {
       name: order.client.name,
       email: order.client.email,
       phone: order.client.phone,
-      address: order.client.address
+      address: order.client.address,
+      discountRate: order.client.discountRate
     };
 
     const itemsData = order.items.map(item => ({
