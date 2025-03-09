@@ -427,14 +427,21 @@ const Orders = () => {
           <Typography variant="body2" color="text.secondary">
             Total Amount
           </Typography>
-          <Typography variant="body1" fontWeight="medium">
-            {import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}
-            {((order.client?.discountRate > 0) || (order.archivedClientData?.discountRate > 0)) && (
-              <Typography component="span" sx={{ ml: 1, fontSize: '0.75rem', color: theme.palette.secondary.main }}>
-                (Discounted)
+          <Box>
+            <Typography variant="body1" fontWeight="medium">
+              {import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(order.totalAmount || 0).toFixed(2)}
+            </Typography>
+            {order.client?.discountRate > 0 && (
+              <Typography variant="caption" sx={{ display: 'block', color: theme.palette.secondary.main, fontWeight: 'bold' }}>
+                ({order.client.discountRate}% discount applied)
               </Typography>
             )}
-          </Typography>
+            {order.archivedClientData?.discountRate > 0 && (
+              <Typography variant="caption" sx={{ display: 'block', color: theme.palette.secondary.main, fontWeight: 'bold' }}>
+                ({order.archivedClientData.discountRate}% discount applied)
+              </Typography>
+            )}
+          </Box>
         </Grid>
       </Grid>
 

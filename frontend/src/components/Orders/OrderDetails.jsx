@@ -40,9 +40,14 @@ const OrderDetails = ({ order }) => {
                 </Box>
                 <Box sx={{ mb: 0.5 }}>
                   Price per unit: {import.meta.env.VITE_DEFAULT_CURRENCY}{parseFloat(item?.OrderItem?.priceAtOrder || 0).toFixed(2)}
-                  {((order.client?.discountRate > 0) || (order.archivedClientData?.discountRate > 0)) && (
-                    <Typography component="span" sx={{ ml: 1, fontSize: '0.75rem', color: theme.palette.secondary.main }}>
-                      (Discounted)
+                  {order.client?.discountRate > 0 && (
+                    <Typography variant="caption" sx={{ display: 'block', color: theme.palette.secondary.main, fontWeight: 'bold' }}>
+                      ({order.client.discountRate}% discount applied)
+                    </Typography>
+                  )}
+                  {order.archivedClientData?.discountRate > 0 && (
+                    <Typography variant="caption" sx={{ display: 'block', color: theme.palette.secondary.main, fontWeight: 'bold' }}>
+                      ({order.archivedClientData.discountRate}% discount applied)
                     </Typography>
                   )}
                 </Box>
