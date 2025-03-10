@@ -277,9 +277,11 @@ const QuickOrder = () => {
     });
   };
 
-  // Group corals by category
+  // Group corals by category and sort alphabetically by species name
   const groupedCorals = categories.reduce((acc, category) => {
-    acc[category.id] = corals.filter(coral => coral.categoryId === category.id);
+    acc[category.id] = corals
+      .filter(coral => coral.categoryId === category.id)
+      .sort((a, b) => a.speciesName.localeCompare(b.speciesName));
     return acc;
   }, {});
 
@@ -368,11 +370,13 @@ const QuickOrder = () => {
     if (searchTerm.trim() === '') {
       filteredGroupedCorals[category.id] = categoryCorals;
     } else {
-      filteredGroupedCorals[category.id] = categoryCorals.filter(coral => 
-        coral.speciesName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        coral.scientificName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        coral.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filteredGroupedCorals[category.id] = categoryCorals
+        .filter(coral => 
+          coral.speciesName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          coral.scientificName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          coral.description.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => a.speciesName.localeCompare(b.speciesName));
     }
   });
 
