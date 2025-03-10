@@ -13,6 +13,7 @@ const AuthForm = ({ mode = 'login' }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     name: '',
     phone: '',
     address: '',
@@ -34,6 +35,13 @@ const AuthForm = ({ mode = 'login' }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Check if passwords match for registration
+    if (mode === 'register' && formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
 
     try {
       if (mode === 'login') {
@@ -179,6 +187,24 @@ const AuthForm = ({ mode = 'login' }) => {
             </FormHelperText>
           )}
         </Box>
+
+        {mode === 'register' && (
+          <Box sx={{ mb: 3 }}>
+            <FormField
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              label="Confirm Password"
+              variant="outlined"
+              fullWidth
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="Confirm your password"
+              required
+              autoComplete="new-password"
+            />
+          </Box>
+        )}
 
         <SubmitButton
           type="submit"
