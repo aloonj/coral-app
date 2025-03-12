@@ -405,36 +405,6 @@ const QuickOrder = () => {
         </ToggleButtonGroup>
       </Box>
 
-      {/* Search Box */}
-      <Box sx={{ mb: 3 }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search corals by name or description..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton 
-                  onClick={clearSearch}
-                  edge="end"
-                  size="small"
-                  aria-label="clear search"
-                >
-                  <ClearIcon />
-                </IconButton>
-              </InputAdornment>
-            )
-          }}
-        />
-      </Box>
-
       <Box sx={{ 
         display: 'flex', 
         gap: 1, 
@@ -495,6 +465,36 @@ const QuickOrder = () => {
           </FormControl>
         </Box>
       )}
+
+      {/* Search Box */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search corals by name or description..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <IconButton 
+                  onClick={clearSearch}
+                  edge="end"
+                  size="small"
+                  aria-label="clear search"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
+      </Box>
 
       {/* No results message when searching */}
       {searchTerm.trim() !== '' && 
