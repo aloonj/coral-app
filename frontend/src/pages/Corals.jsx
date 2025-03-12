@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { coralService, categoryService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -63,7 +63,11 @@ const Corals = () => {
   const [corals, setCorals] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const observerRef = useRef(null);
   const [showInactiveCategories, setShowInactiveCategories] = useState(true); // Start with inactive visible for admin
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -74,16 +78,52 @@ const Corals = () => {
   const [collapsedCategories, setCollapsedCategories] = useState(new Set());
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedStockFilter, setSelectedStockFilter] = useState(null);
+  const [categoryFormError, setCategoryFormError] = useState('');
+  const [categoryError, setCategoryError] = useState('');
 
+  // Function to fetch corals with pagination
+  const fetchCorals = useCallback(async (newOffset = 0, resetCorals = true) => {
+    try {
+      setLoadingMore(true);
+      
+      const params = {
+        limit: 9,
+        offset: newOffset,
+        ...(selectedCategory && { categoryId: selectedCategory }),
+        ...(selectedStockFilter && { stockStatus: selectedStockFilter })
+      };
+      
+      const response = await coralService.getCorals(params);
+      const newCorals = response.data;
+      
+      if (resetCorals) {
+        setCorals(newCorals);
+      } else {
+        setCorals(prev => [...prev, ...newCorals]);
+      }
+      
+      setOffset(newOffset + newCorals.length);
+      setHasMore(newCorals.length === 9); // If we got fewer than 9, we've reached the end
+    } catch (error) {
+      console.error('Error fetching corals:', error);
+      setError('Error loading corals. Please try again.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [selectedCategory, selectedStockFilter]);
+
+  // Initial data load
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
-        const [coralsRes, categoriesRes] = await Promise.all([
-          coralService.getAllCorals(),
-          categoryService.getAllCategories(showInactiveCategories),
-        ]);
-        setCorals(coralsRes.data);
+        setLoading(true);
+        
+        // Fetch categories first
+        const categoriesRes = await categoryService.getAllCategories(showInactiveCategories);
         setCategories(categoriesRes.data);
+        
+        // Fetch initial corals with pagination
+        await fetchCorals(0, true);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Error loading data. Please try again later.');
@@ -92,11 +132,39 @@ const Corals = () => {
       }
     };
 
-    fetchData();
-  }, [showInactiveCategories]);
+    fetchInitialData();
+  }, [showInactiveCategories, fetchCorals]);
 
-  const [categoryFormError, setCategoryFormError] = useState('');
-  const [categoryError, setCategoryError] = useState('');
+  // Reset and refetch when category or stock filter changes
+  useEffect(() => {
+    if (!loading) {
+      setOffset(0);
+      setHasMore(true);
+      fetchCorals(0, true);
+    }
+  }, [selectedCategory, selectedStockFilter, fetchCorals, loading]);
+
+  // Set up intersection observer for infinite scrolling
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchCorals(offset, false);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+    
+    return () => {
+      if (observerRef.current) {
+        observer.disconnect();
+      }
+    };
+  }, [offset, hasMore, loadingMore, loading, fetchCorals]);
 
   const handleCategorySubmit = async (e) => {
     e.preventDefault();
@@ -148,8 +216,8 @@ const Corals = () => {
     if (window.confirm('Are you sure you want to delete this coral?')) {
       try {
         await coralService.deleteCoral(coralId);
-        const res = await coralService.getAllCorals();
-        setCorals(res.data);
+        // Refresh corals after deletion
+        fetchCorals(0, true);
       } catch (error) {
         console.error('Error deleting coral:', error);
       }
@@ -217,6 +285,14 @@ const Corals = () => {
 
   // Get active categories for display
   const activeCategories = categories.filter(cat => cat.status !== 'INACTIVE');
+
+  // Group corals by category
+  const groupedCorals = {};
+  activeCategories.forEach(category => {
+    groupedCorals[category.id] = validCorals
+      .filter(coral => coral.categoryId === category.id)
+      .sort((a, b) => a.speciesName.localeCompare(b.speciesName));
+  });
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -353,21 +429,8 @@ const Corals = () => {
       </Box>
 
       {(selectedCategory ? activeCategories.filter(c => c.id === selectedCategory) : activeCategories).map(category => {
-        // Get and sort corals for this category
-        const categoryCorals = validCorals
-          .filter(coral => {
-            // Apply category filter
-            if (coral.categoryId !== category.id) return false;
-            
-            // Apply stock filter if selected
-            if (selectedStockFilter) {
-              const stockStatus = getStockStatus(coral);
-              return stockStatus === selectedStockFilter;
-            }
-            
-            return true;
-          })
-          .sort((a, b) => a.speciesName.localeCompare(b.speciesName));
+        // Get corals for this category
+        const categoryCorals = groupedCorals[category.id] || [];
         
         // Skip if category has no corals after filtering
         if (categoryCorals.length === 0) return null;
@@ -557,6 +620,25 @@ const Corals = () => {
           </Box>
         );
       })}
+
+      {/* Infinite Scroll Observer */}
+      <Box 
+        ref={observerRef} 
+        sx={{ 
+          height: '50px', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          my: 3
+        }}
+      >
+        {loadingMore && <CircularProgress size={30} />}
+        {!hasMore && corals.length > 0 && (
+          <Typography variant="body2" color="text.secondary">
+            No more items to load
+          </Typography>
+        )}
+      </Box>
 
       {/* Category Modal */}
       <Modal
