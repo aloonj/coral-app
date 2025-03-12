@@ -268,10 +268,10 @@ const QuickOrder = () => {
   };
 
   // Function to refresh lazy loading observers
-  const refreshLazyLoading = useCallback(() => {
+  const refreshLazyLoading = () => {
     // Increment the trigger to cause a re-render and refresh of observers
     setLazyLoadRefreshTrigger(prev => prev + 1);
-  }, []);
+  };
 
   const toggleCategory = (categoryId) => {
     setCollapsedCategories(prev => {
