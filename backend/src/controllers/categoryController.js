@@ -26,7 +26,20 @@ export const getAllCategories = async (req, res) => {
       where,
       order: [['name', 'ASC']]
     });
-    res.json(categories);
+    
+    // Get coral counts for each category
+    const categoriesWithCounts = await Promise.all(categories.map(async (category) => {
+      const count = await Coral.count({
+        where: { categoryId: category.id }
+      });
+      
+      return {
+        ...category.toJSON(),
+        coralCount: count
+      };
+    }));
+    
+    res.json(categoriesWithCounts);
   } catch (error) {
     console.error('Get categories error:', error);
     res.status(500).json({ message: 'Error fetching categories' });
