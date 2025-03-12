@@ -73,6 +73,7 @@ const Corals = () => {
   const [categoryForm, setCategoryForm] = useState({ name: '', description: '' });
   const [collapsedCategories, setCollapsedCategories] = useState(new Set());
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedStockFilter, setSelectedStockFilter] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -264,31 +265,18 @@ const Corals = () => {
         )}
       </Box>
 
-      <Box sx={{ 
-        display: 'flex', 
-        gap: 1, 
-        flexWrap: 'wrap', 
-        mb: 3 
-      }}>
-        <Chip
-          label="All Categories"
-          color={selectedCategory === null ? "primary" : "default"}
-          onClick={() => setSelectedCategory(null)}
-          sx={{ 
-            fontWeight: 'bold',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 1
-            },
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-        />
-        {activeCategories.map(category => (
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>Filter by Category:</Typography>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 1, 
+          flexWrap: 'wrap', 
+          mb: 2 
+        }}>
           <Chip
-            key={category.id}
-            label={category.name}
-            color={selectedCategory === category.id ? "primary" : "default"}
-            onClick={() => setSelectedCategory(category.id)}
+            label="All Categories"
+            color={selectedCategory === null ? "primary" : "default"}
+            onClick={() => setSelectedCategory(null)}
             sx={{ 
               fontWeight: 'bold',
               '&:hover': {
@@ -298,16 +286,90 @@ const Corals = () => {
               transition: 'transform 0.2s, box-shadow 0.2s'
             }}
           />
-        ))}
+          {activeCategories.map(category => (
+            <Chip
+              key={category.id}
+              label={category.name}
+              color={selectedCategory === category.id ? "primary" : "default"}
+              onClick={() => setSelectedCategory(category.id)}
+              sx={{ 
+                fontWeight: 'bold',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 1
+                },
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+            />
+          ))}
+        </Box>
+
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>Filter by Stock:</Typography>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 1, 
+          flexWrap: 'wrap'
+        }}>
+          <Chip
+            label="All Stock"
+            color={selectedStockFilter === null ? "primary" : "default"}
+            onClick={() => setSelectedStockFilter(null)}
+            sx={{ 
+              fontWeight: 'bold',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 1
+              },
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+          />
+          <Chip
+            label="Low Stock"
+            color={selectedStockFilter === 'LOW_STOCK' ? "warning" : "default"}
+            onClick={() => setSelectedStockFilter('LOW_STOCK')}
+            sx={{ 
+              fontWeight: 'bold',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 1
+              },
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+          />
+          <Chip
+            label="Out of Stock"
+            color={selectedStockFilter === 'OUT_OF_STOCK' ? "error" : "default"}
+            onClick={() => setSelectedStockFilter('OUT_OF_STOCK')}
+            sx={{ 
+              fontWeight: 'bold',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 1
+              },
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+          />
+        </Box>
       </Box>
 
       {(selectedCategory ? activeCategories.filter(c => c.id === selectedCategory) : activeCategories).map(category => {
         // Get and sort corals for this category
         const categoryCorals = validCorals
-          .filter(coral => coral.categoryId === category.id)
+          .filter(coral => {
+            // Apply category filter
+            if (coral.categoryId !== category.id) return false;
+            
+            // Apply stock filter if selected
+            if (selectedStockFilter) {
+              const stockStatus = getStockStatus(coral);
+              return stockStatus === selectedStockFilter;
+            }
+            
+            return true;
+          })
           .sort((a, b) => a.speciesName.localeCompare(b.speciesName));
         
-        // Skip if category has no corals
+        // Skip if category has no corals after filtering
         if (categoryCorals.length === 0) return null;
 
         return (
