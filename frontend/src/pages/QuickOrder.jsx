@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { BASE_URL, coralService, categoryService, clientService, orderService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -55,7 +55,11 @@ const QuickOrder = () => {
   const [selectedClient, setSelectedClient] = useState('');
   const [clientDiscountRate, setClientDiscountRate] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const observerRef = useRef(null);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   const [collapsedCategories, setCollapsedCategories] = useState(new Set());
   const [orderQuantities, setOrderQuantities] = useState({});
@@ -89,32 +93,67 @@ const QuickOrder = () => {
     }
   }, [isAdmin, selectedClient, clients]);
 
+  // Function to fetch corals with pagination
+  const fetchCorals = useCallback(async (newOffset = 0, resetCorals = true) => {
+    try {
+      setLoadingMore(true);
+      
+      const params = {
+        limit: 9,
+        offset: newOffset,
+        ...(selectedCategory && { categoryId: selectedCategory }),
+        ...(searchTerm && { search: searchTerm })
+      };
+      
+      const response = await coralService.getCorals(params);
+      const newCorals = response.data;
+      
+      if (resetCorals) {
+        setCorals(newCorals);
+      } else {
+        setCorals(prev => [...prev, ...newCorals]);
+      }
+      
+      setOffset(newOffset + newCorals.length);
+      setHasMore(newCorals.length === 9); // If we got fewer than 9, we've reached the end
+      
+      // Initialize order quantities for new corals
+      if (newCorals.length > 0) {
+        setOrderQuantities(prev => {
+          const newQuantities = { ...prev };
+          newCorals.forEach(coral => {
+            if (!newQuantities[coral.id]) {
+              newQuantities[coral.id] = 0;
+            }
+          });
+          return newQuantities;
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching corals:', error);
+      setError('Error loading corals. Please try again.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [selectedCategory, searchTerm]);
+
+  // Initial data load
   useEffect(() => {
     if (!user) {
       window.location.href = '/login';
       return;
     }
 
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
-        // Fetch corals and categories
-        const [coralsResponse, categoriesResponse] = await Promise.all([
-          coralService.getAllCorals(),
-          categoryService.getAllCategories()
-        ]);
+        setLoading(true);
         
-        const coralData = coralsResponse.data;
-        const categoryData = categoriesResponse.data;
+        // Fetch categories first
+        const categoriesResponse = await categoryService.getAllCategories();
+        setCategories(categoriesResponse.data);
         
-        setCorals(coralData);
-        setCategories(categoryData);
-        
-        // Initialize order quantities
-        const initialQuantities = {};
-        coralData.forEach(coral => {
-          initialQuantities[coral.id] = 0;
-        });
-        setOrderQuantities(initialQuantities);
+        // Fetch initial corals with pagination
+        await fetchCorals(0, true);
         
         // Fetch clients or client profile separately
         if (isAdmin) {
@@ -143,8 +182,39 @@ const QuickOrder = () => {
       }
     };
 
-    fetchData();
-  }, [user, isAdmin]);
+    fetchInitialData();
+  }, [user, isAdmin, fetchCorals]);
+
+  // Reset and refetch when category or search changes
+  useEffect(() => {
+    if (!loading) {
+      setOffset(0);
+      setHasMore(true);
+      fetchCorals(0, true);
+    }
+  }, [selectedCategory, searchTerm, fetchCorals, loading]);
+
+  // Set up intersection observer for infinite scrolling
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchCorals(offset, false);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+    
+    return () => {
+      if (observerRef.current) {
+        observer.disconnect();
+      }
+    };
+  }, [offset, hasMore, loadingMore, loading, fetchCorals]);
 
   // Early return for loading and error states
   if (!user) {
@@ -288,7 +358,7 @@ const QuickOrder = () => {
     });
   };
 
-  // Group corals by category and sort alphabetically by species name
+  // Group corals by category
   const groupedCorals = categories.reduce((acc, category) => {
     acc[category.id] = corals
       .filter(coral => coral.categoryId === category.id)
@@ -762,6 +832,25 @@ const QuickOrder = () => {
           </Box>
         );
       })}
+
+      {/* Infinite Scroll Observer */}
+      <Box 
+        ref={observerRef} 
+        sx={{ 
+          height: '50px', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          my: 3
+        }}
+      >
+        {loadingMore && <CircularProgress size={30} />}
+        {!hasMore && corals.length > 0 && (
+          <Typography variant="body2" color="text.secondary">
+            No more items to load
+          </Typography>
+        )}
+      </Box>
 
       {/* Order Summary */}
       {Object.values(orderQuantities).some(q => q > 0) && (

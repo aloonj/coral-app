@@ -113,13 +113,46 @@ export const createCoral = async (req, res) => {
 
 export const getAllCorals = async (req, res) => {
   try {
-    const corals = await Coral.findAll({
+    const { 
+      limit = 9, 
+      offset = 0, 
+      categoryId, 
+      search 
+    } = req.query;
+
+    // Build query options
+    const queryOptions = {
       include: [{
         association: 'creator',
         attributes: ['id', 'name', 'email']
-      }]
-    });
+      }],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['speciesName', 'ASC']]
+    };
 
+    // Add category filter if provided
+    if (categoryId) {
+      queryOptions.where = {
+        ...queryOptions.where,
+        categoryId: parseInt(categoryId)
+      };
+    }
+
+    // Add search filter if provided
+    if (search) {
+      const { Op } = require('sequelize');
+      queryOptions.where = {
+        ...queryOptions.where,
+        [Op.or]: [
+          { speciesName: { [Op.iLike]: `%${search}%` } },
+          { scientificName: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } }
+        ]
+      };
+    }
+
+    const corals = await Coral.findAll(queryOptions);
 
     res.json(corals);
   } catch (error) {

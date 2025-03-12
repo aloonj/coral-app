@@ -34,6 +34,7 @@ api.interceptors.response.use(
 
 export const coralService = {
   getAllCorals: () => api.get('/corals'),
+  getCorals: (params = {}) => api.get('/corals', { params }),
   getCoral: (id) => api.get(`/corals/${id}`),
   createCoral: (data) => {
     // If data is already FormData, use it directly
