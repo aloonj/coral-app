@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import placeholderImage from '../../assets/images/image-coming-soon.svg';
 import { BASE_URL } from '../../services/api';
 
@@ -9,26 +9,65 @@ const ImageGallery = ({
   onImageClick,
   showZoomIcon = true,
   enableDarkening = true,
-  imageRef
+  imageRef: externalImageRef
 }) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isInView, setIsInView] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const internalImageRef = useRef(null);
+  const imageContainerRef = useRef(null);
   
-  // Find first non-null image URL, prepend BASE_URL if it exists, or use placeholder
-  const displayUrl = images.find(img => img !== null) 
+  // Use external ref if provided, otherwise use internal ref
+  const imageRefToUse = externalImageRef || internalImageRef;
+  
+  // Find first non-null image URL
+  const imageUrl = images.find(img => img !== null);
+  
+  // Only construct the full URL if the image is in view, otherwise use placeholder
+  const displayUrl = isInView && imageUrl
     ? `${BASE_URL}/uploads/${
-        images.find(img => img !== null).startsWith('uncategorized/') 
+        imageUrl.startsWith('uncategorized/') 
           ? '' // Don't add corals/ prefix for uncategorized images
-          : images.find(img => img !== null).startsWith('corals/') 
+          : imageUrl.startsWith('corals/') 
             ? '' // Don't add corals/ prefix if it's already there
-            : images.find(img => img !== null).includes('/') 
+            : imageUrl.includes('/') 
               ? 'corals/' // Add corals/ prefix for category/filename paths
               : '' // Don't add prefix for root-level files
-      }${images.find(img => img !== null)}`
+      }${imageUrl}`
     : placeholderImage;
+
+  // Set up Intersection Observer to detect when image is in viewport
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsInView(true);
+          // Once the image is in view, we can disconnect the observer
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 } // Trigger when at least 10% of the image is visible
+    );
+    
+    if (imageContainerRef.current) {
+      observer.observe(imageContainerRef.current);
+    }
+    
+    return () => {
+      if (imageContainerRef.current) {
+        observer.disconnect();
+      }
+    };
+  }, []);
 
   const handleImageError = (e) => {
     e.target.src = placeholderImage;
+    setIsLoaded(true); // Mark as loaded even if it's the fallback image
+  };
+  
+  const handleImageLoad = () => {
+    setIsLoaded(true);
   };
 
   const styles = {
@@ -53,7 +92,8 @@ const ImageGallery = ({
       height: '100%',
       objectFit: style.objectFit || 'contain',
       transition: 'all 0.3s ease-in-out',
-      display: 'block'
+      display: 'block',
+      opacity: isLoaded ? 1 : 0.2, // Fade in when loaded
     },
     overlay: {
       position: 'absolute',
@@ -79,6 +119,7 @@ const ImageGallery = ({
 
   return (
     <div 
+      ref={imageContainerRef}
       style={styles.container}
       onMouseEnter={() => setShowOverlay(true)}
       onMouseLeave={() => setShowOverlay(false)}
@@ -86,11 +127,13 @@ const ImageGallery = ({
     >
       <div style={styles.imageWrapper}>
         <img
-          ref={imageRef}
+          ref={imageRefToUse}
           src={displayUrl}
           alt={alt}
           style={styles.image}
           onError={handleImageError}
+          onLoad={handleImageLoad}
+          loading="lazy" // Add native lazy loading as a fallback
         />
       </div>
       <div style={styles.overlay}>

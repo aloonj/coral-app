@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { BASE_URL, coralService, categoryService, clientService, orderService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -69,6 +69,8 @@ const QuickOrder = () => {
   });
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  // State to trigger lazy loading refresh when categories are expanded or filters change
+  const [lazyLoadRefreshTrigger, setLazyLoadRefreshTrigger] = useState(0);
 
   // Save layout preference to localStorage when it changes
   useEffect(() => {
@@ -265,11 +267,20 @@ const QuickOrder = () => {
     }
   };
 
+  // Function to refresh lazy loading observers
+  const refreshLazyLoading = useCallback(() => {
+    // Increment the trigger to cause a re-render and refresh of observers
+    setLazyLoadRefreshTrigger(prev => prev + 1);
+  }, []);
+
   const toggleCategory = (categoryId) => {
     setCollapsedCategories(prev => {
       const newSet = new Set(prev);
       if (newSet.has(categoryId)) {
         newSet.delete(categoryId);
+        // When expanding a category, trigger lazy loading refresh after a short delay
+        // to allow the collapse animation to complete
+        setTimeout(() => refreshLazyLoading(), 300);
       } else {
         newSet.add(categoryId);
       }
@@ -323,6 +334,8 @@ const QuickOrder = () => {
   const handleLayoutChange = (event, newLayout) => {
     if (newLayout !== null) {
       setLayoutView(newLayout);
+      // Refresh lazy loading when layout changes
+      setTimeout(() => refreshLazyLoading(), 100);
     }
   };
 
@@ -356,10 +369,15 @@ const QuickOrder = () => {
         return newSet;
       });
     }
+    
+    // Refresh lazy loading after search and category expansion
+    setTimeout(() => refreshLazyLoading(), 300);
   };
 
   const clearSearch = () => {
     setSearchTerm('');
+    // Refresh lazy loading after clearing search
+    setTimeout(() => refreshLazyLoading(), 100);
   };
 
   // Filter corals based on search term
@@ -438,7 +456,11 @@ const QuickOrder = () => {
         <Chip
           label="All Categories"
           color={selectedCategory === null ? "primary" : "default"}
-          onClick={() => setSelectedCategory(null)}
+          onClick={() => {
+            setSelectedCategory(null);
+            // Refresh lazy loading after category filter change
+            setTimeout(() => refreshLazyLoading(), 100);
+          }}
           sx={{ 
             fontWeight: 'bold',
             '&:hover': {
@@ -453,7 +475,11 @@ const QuickOrder = () => {
             key={category.id}
             label={category.name}
             color={selectedCategory === category.id ? "primary" : "default"}
-            onClick={() => setSelectedCategory(category.id)}
+            onClick={() => {
+              setSelectedCategory(category.id);
+              // Refresh lazy loading after category filter change
+              setTimeout(() => refreshLazyLoading(), 100);
+            }}
             sx={{ 
               fontWeight: 'bold',
               '&:hover': {
@@ -618,6 +644,8 @@ const QuickOrder = () => {
                                 height: '100%', 
                                 objectFit: 'cover' 
                               }}
+                              // Pass the refresh trigger to force observer refresh
+                              key={`image-${coral.id}-${lazyLoadRefreshTrigger}`}
                             />
                           </CardMedia>
                         </Box>

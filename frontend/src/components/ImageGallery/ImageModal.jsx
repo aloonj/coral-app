@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ImageGallery from './ImageGallery';
 
 const ImageModal = ({ images = [], alt = '', onClose }) => {
@@ -74,6 +74,8 @@ const ImageModal = ({ images = [], alt = '', onClose }) => {
             showZoomIcon={false}
             enableDarkening={false}
             enableZoom={false}
+            // Force the image to load immediately when modal opens
+            key={`modal-image-${Date.now()}`}
           />
         </div>
       </div>
