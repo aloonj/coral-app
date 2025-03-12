@@ -7,6 +7,7 @@ import {
   sanitizeCategoryName
 } from '../utils/fileUtils.js';
 import { promises as fsPromises } from 'fs';
+import { Op } from '../config/database.js';
 
 // Helper function to move files
 const moveFile = async (sourcePath, targetPath) => {
@@ -141,7 +142,6 @@ export const getAllCorals = async (req, res) => {
 
     // Add search filter if provided
     if (search) {
-      const { Op } = require('sequelize');
       queryOptions.where = {
         ...queryOptions.where,
         [Op.or]: [
