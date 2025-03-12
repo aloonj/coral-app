@@ -336,7 +336,7 @@ const Corals = () => {
                     <ExpandLessIcon sx={{ mr: 1 }} />
                   }
                   <Typography variant="h6" component="div">
-                    {category.name}
+                    {category.name} ({categoryCorals.length})
                   </Typography>
                 </Box>
               </Box>
