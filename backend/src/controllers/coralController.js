@@ -145,9 +145,9 @@ export const getAllCorals = async (req, res) => {
       queryOptions.where = {
         ...queryOptions.where,
         [Op.or]: [
-          { speciesName: { [Op.iLike]: `%${search}%` } },
-          { scientificName: { [Op.iLike]: `%${search}%` } },
-          { description: { [Op.iLike]: `%${search}%` } }
+          { speciesName: { [Op.like]: `%${search}%` } },
+          { scientificName: { [Op.like]: `%${search}%` } },
+          { description: { [Op.like]: `%${search}%` } }
         ]
       };
     }
