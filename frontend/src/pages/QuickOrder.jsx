@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import debounce from 'lodash/debounce';
 import { useNavigate } from 'react-router-dom';
 import api, { BASE_URL, coralService, categoryService, clientService, orderService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -73,6 +74,7 @@ const QuickOrder = () => {
   });
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   // State to trigger lazy loading refresh when categories are expanded or filters change
   const [lazyLoadRefreshTrigger, setLazyLoadRefreshTrigger] = useState(0);
 
@@ -102,7 +104,7 @@ const QuickOrder = () => {
         limit: 9,
         offset: newOffset,
         ...(selectedCategory && { categoryId: selectedCategory }),
-        ...(searchTerm && { search: searchTerm })
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       };
       
       const response = await coralService.getCorals(params);
@@ -135,7 +137,7 @@ const QuickOrder = () => {
     } finally {
       setLoadingMore(false);
     }
-  }, [selectedCategory, searchTerm]);
+  }, [selectedCategory, debouncedSearchTerm]);
 
   // Initial data load
   useEffect(() => {
@@ -185,14 +187,32 @@ const QuickOrder = () => {
     fetchInitialData();
   }, [user, isAdmin, fetchCorals]);
 
-  // Reset and refetch when category or search changes
+  // Create a debounced function to update the debouncedSearchTerm
+  const debouncedSetSearch = useMemo(
+    () => debounce((value) => {
+      setDebouncedSearchTerm(value);
+    }, 500), // 500ms delay
+    []
+  );
+
+  // Update debouncedSearchTerm when searchTerm changes
+  useEffect(() => {
+    debouncedSetSearch(searchTerm);
+    
+    // Cleanup the debounce function on unmount
+    return () => {
+      debouncedSetSearch.cancel();
+    };
+  }, [searchTerm, debouncedSetSearch]);
+
+  // Reset and refetch when category or debounced search changes
   useEffect(() => {
     if (!loading) {
       setOffset(0);
       setHasMore(true);
       fetchCorals(0, true);
     }
-  }, [selectedCategory, searchTerm, fetchCorals, loading]);
+  }, [selectedCategory, debouncedSearchTerm, fetchCorals, loading]);
 
   // Set up intersection observer for infinite scrolling
   useEffect(() => {
@@ -410,19 +430,20 @@ const QuickOrder = () => {
   };
 
   const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
+    const value = event.target.value;
+    setSearchTerm(value);
     
     // Auto-expand categories with matching results
-    if (event.target.value.trim() !== '') {
+    if (value.trim() !== '') {
       const matchingCategories = new Set();
       
       // Find categories with matching corals
       categories.forEach(category => {
         const categoryCorals = groupedCorals[category.id] || [];
         const hasMatch = categoryCorals.some(coral => 
-          coral.speciesName.toLowerCase().includes(event.target.value.toLowerCase()) ||
-          coral.scientificName.toLowerCase().includes(event.target.value.toLowerCase()) ||
-          coral.description.toLowerCase().includes(event.target.value.toLowerCase())
+          coral.speciesName.toLowerCase().includes(value.toLowerCase()) ||
+          coral.scientificName.toLowerCase().includes(value.toLowerCase()) ||
+          coral.description.toLowerCase().includes(value.toLowerCase())
         );
         
         if (hasMatch) {
@@ -446,6 +467,7 @@ const QuickOrder = () => {
 
   const clearSearch = () => {
     setSearchTerm('');
+    setDebouncedSearchTerm('');
     // Refresh lazy loading after clearing search
     setTimeout(() => refreshLazyLoading(), 100);
   };
