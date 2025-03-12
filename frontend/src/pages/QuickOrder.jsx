@@ -405,6 +405,30 @@ const QuickOrder = () => {
         </ToggleButtonGroup>
       </Box>
 
+      {isAdmin && (
+        <Box sx={{ mb: 3 }}>
+          <FormControl fullWidth variant="outlined">
+            <InputLabel id="client-select-label">Order on behalf of</InputLabel>
+            <Select
+              labelId="client-select-label"
+              id="client-select"
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              label="Order on behalf of"
+            >
+              <MenuItem value="">
+                <em>Select a client...</em>
+              </MenuItem>
+              {clients.map(client => (
+                <MenuItem key={client.id} value={client.id}>
+                  {client.name} ({client.email})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+
       <Box sx={{ 
         display: 'flex', 
         gap: 1, 
@@ -441,30 +465,6 @@ const QuickOrder = () => {
           />
         ))}
       </Box>
-
-      {isAdmin && (
-        <Box sx={{ mb: 3 }}>
-          <FormControl fullWidth variant="outlined">
-            <InputLabel id="client-select-label">Order on behalf of</InputLabel>
-            <Select
-              labelId="client-select-label"
-              id="client-select"
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              label="Order on behalf of"
-            >
-              <MenuItem value="">
-                <em>Select a client...</em>
-              </MenuItem>
-              {clients.map(client => (
-                <MenuItem key={client.id} value={client.id}>
-                  {client.name} ({client.email})
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      )}
 
       {/* Search Box */}
       <Box sx={{ mb: 3 }}>
