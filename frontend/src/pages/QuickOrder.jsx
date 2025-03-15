@@ -33,7 +33,9 @@ import {
   CardMedia,
   CardActions,
   InputAdornment,
-  Collapse
+  Collapse,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { 
   ViewList as ViewListIcon,
@@ -68,7 +70,6 @@ const QuickOrder = () => {
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef(null);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
-  const [collapsedCategories, setCollapsedCategories] = useState(new Set());
   const { orderQuantities, updateQuantity, clearCart, addToCart } = useCart();
   const [orderedCorals, setOrderedCorals] = useState([]);
   const showAdditionalDetails = import.meta.env.VITE_SHOW_ADDITIONAL_CORAL_DETAILS === 'true';
@@ -147,22 +148,6 @@ const QuickOrder = () => {
     }
   }, [selectedCategory, debouncedSearchTerm]);
 
-  // Function to fetch corals for a specific category
-  const fetchCoralsByCategory = useCallback(async (categoryId) => {
-    try {
-      const params = {
-        limit: 3, // Get just a few corals per category
-        offset: 0,
-        categoryId
-      };
-      
-      const response = await coralService.getCorals(params);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching corals for category ${categoryId}:`, error);
-      return [];
-    }
-  }, []);
 
   // Initial data load
   useEffect(() => {
@@ -180,17 +165,8 @@ const QuickOrder = () => {
         const fetchedCategories = categoriesResponse.data;
         setCategories(fetchedCategories);
         
-        // Fetch a few corals from each category to ensure all categories have some corals
-        let allCorals = [];
-        for (const category of fetchedCategories) {
-          const categoryCorals = await fetchCoralsByCategory(category.id);
-          allCorals = [...allCorals, ...categoryCorals];
-        }
-        
-        // Set all fetched corals
-        setCorals(allCorals);
-        setOffset(allCorals.length);
-        setHasMore(true);
+        // Fetch corals for the selected category (or all if none selected)
+        await fetchCorals(0, true);
         
         // Fetch clients or client profile separately
         if (isAdmin) {
@@ -220,7 +196,7 @@ const QuickOrder = () => {
     };
 
     fetchInitialData();
-  }, [user, isAdmin, fetchCoralsByCategory]);
+  }, [user, isAdmin, fetchCorals]);
 
   // Create a debounced function to update the debouncedSearchTerm
   const debouncedSetSearch = useMemo(
@@ -434,29 +410,6 @@ const QuickOrder = () => {
     setLazyLoadRefreshTrigger(prev => prev + 1);
   };
 
-  const toggleCategory = (categoryId) => {
-    setCollapsedCategories(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId);
-        // When expanding a category, trigger lazy loading refresh after a short delay
-        // to allow the collapse animation to complete
-        setTimeout(() => refreshLazyLoading(), 300);
-      } else {
-        newSet.add(categoryId);
-      }
-      return newSet;
-    });
-  };
-
-  // Group corals by category
-  const groupedCorals = categories.reduce((acc, category) => {
-    acc[category.id] = corals
-      .filter(coral => coral.categoryId === category.id)
-      .sort((a, b) => a.speciesName.localeCompare(b.speciesName));
-    return acc;
-  }, {});
-
   const getStockStatus = (coral) => {
     if (coral.quantity === 0) return 'OUT_OF_STOCK';
     if (coral.quantity <= coral.minimumStock) return 'LOW_STOCK';
@@ -504,35 +457,7 @@ const QuickOrder = () => {
     const value = event.target.value;
     setSearchTerm(value);
     
-    // Auto-expand categories with matching results
-    if (value.trim() !== '') {
-      const matchingCategories = new Set();
-      
-      // Find categories with matching corals
-      categories.forEach(category => {
-        const categoryCorals = groupedCorals[category.id] || [];
-        const hasMatch = categoryCorals.some(coral => 
-          coral.speciesName.toLowerCase().includes(value.toLowerCase()) ||
-          coral.scientificName.toLowerCase().includes(value.toLowerCase()) ||
-          coral.description.toLowerCase().includes(value.toLowerCase())
-        );
-        
-        if (hasMatch) {
-          matchingCategories.add(category.id);
-        }
-      });
-      
-      // Expand matching categories
-      setCollapsedCategories(prev => {
-        const newSet = new Set(prev);
-        matchingCategories.forEach(id => {
-          newSet.delete(id); // Remove from collapsed set to expand
-        });
-        return newSet;
-      });
-    }
-    
-    // Refresh lazy loading after search and category expansion
+    // Refresh lazy loading after search change
     setTimeout(() => refreshLazyLoading(), 300);
   };
 
@@ -543,23 +468,14 @@ const QuickOrder = () => {
     setTimeout(() => refreshLazyLoading(), 100);
   };
 
-  // Filter corals based on search term
-  const filteredGroupedCorals = {};
-  categories.forEach(category => {
-    const categoryCorals = groupedCorals[category.id] || [];
-    
-    if (searchTerm.trim() === '') {
-      filteredGroupedCorals[category.id] = categoryCorals;
-    } else {
-      filteredGroupedCorals[category.id] = categoryCorals
-        .filter(coral => 
-          coral.speciesName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          coral.scientificName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          coral.description.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .sort((a, b) => a.speciesName.localeCompare(b.speciesName));
-    }
-  });
+  // Handle tab change
+  const handleCategoryChange = (event, newValue) => {
+    setSelectedCategory(newValue);
+    setOffset(0);
+    setHasMore(true);
+    // Refresh lazy loading after category change
+    setTimeout(() => refreshLazyLoading(), 100);
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -610,49 +526,40 @@ const QuickOrder = () => {
         </Box>
       )}
 
-      <Box sx={{ 
-        display: 'flex', 
-        gap: 1, 
-        flexWrap: 'wrap', 
-        mb: 3 
-      }}>
-        <Chip
-          label="All Categories"
-          color={selectedCategory === null ? "primary" : "default"}
-          onClick={() => {
-            setSelectedCategory(null);
-            // Refresh lazy loading after category filter change
-            setTimeout(() => refreshLazyLoading(), 100);
-          }}
-          sx={{ 
-            fontWeight: 'bold',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 1
-            },
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-        />
-        {categories.filter(cat => cat.status !== 'INACTIVE').map(category => (
-          <Chip
-            key={category.id}
-            label={category.name}
-            color={selectedCategory === category.id ? "primary" : "default"}
-            onClick={() => {
-              setSelectedCategory(category.id);
-              // Refresh lazy loading after category filter change
-              setTimeout(() => refreshLazyLoading(), 100);
-            }}
-            sx={{ 
+      {/* Category Tabs */}
+      <Box sx={{ mb: 3 }}>
+        <Tabs
+          value={selectedCategory}
+          onChange={handleCategoryChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          aria-label="category tabs"
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            '& .MuiTab-root': {
               fontWeight: 'bold',
+              transition: 'all 0.2s',
               '&:hover': {
                 transform: 'translateY(-2px)',
                 boxShadow: 1
-              },
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
-          />
-        ))}
+              }
+            }
+          }}
+        >
+          <Tab label="All Categories" value={null} />
+          {categories
+            .filter(cat => cat.status !== 'INACTIVE')
+            .map(category => (
+              <Tab 
+                key={category.id} 
+                label={category.name} 
+                value={category.id} 
+              />
+            ))
+          }
+        </Tabs>
       </Box>
 
       {/* Search Box */}
@@ -686,8 +593,7 @@ const QuickOrder = () => {
       </Box>
 
       {/* No results message when searching */}
-      {searchTerm.trim() !== '' && 
-        Object.values(filteredGroupedCorals).every(corals => corals.length === 0) && (
+      {searchTerm.trim() !== '' && corals.length === 0 && (
         <Box sx={{ 
           py: 4, 
           textAlign: 'center',
@@ -709,73 +615,26 @@ const QuickOrder = () => {
         </Box>
       )}
 
-      {categories
-        .filter(category => (selectedCategory === null || category.id === selectedCategory))
-        .map(category => {
-          const categoryCorals = filteredGroupedCorals[category.id] || [];
-        
-        const categoryTotal = categoryCorals.reduce((total, coral) => 
-          total + (orderQuantities[coral.id] || 0), 0);
-
-        return (
-          <Box key={`category-${category.id}`} sx={{ mb: 3 }}>
-            <Paper 
-              sx={{ 
-                p: 2, 
-                mb: 2,
-                background: theme.palette.primary.main,
-                color: theme.palette.primary.contrastText,
-                cursor: 'pointer',
-                '&:hover': {
-                  boxShadow: 3
-                }
-              }}
-              onClick={() => toggleCategory(category.id)}
+      {/* Coral Grid/List */}
+      <Grid container spacing={2}>
+        {corals.map(coral => {
+          const stockStatus = getStockStatus(coral);
+          const stockChipProps = getStockChipProps(stockStatus);
+          
+          return (
+            <Grid 
+              item 
+              key={coral.id} 
+              xs={12} 
+              md={layoutView === 'grid' ? 4 : 12}
             >
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center'
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  {collapsedCategories.has(category.id) ? 
-                    <ExpandMoreIcon sx={{ mr: 1 }} /> : 
-                    <ExpandLessIcon sx={{ mr: 1 }} />
-                  }
-                  <Typography variant="h6" component="div">
-                    {category.name}
-                  </Typography>
-                </Box>
-                {categoryTotal > 0 && (
-                  <Chip 
-                    label={`${categoryTotal} ordered`} 
-                    color="secondary"
-                    size="small"
-                  />
-                )}
-              </Box>
-            </Paper>
-            
-            <Collapse in={!collapsedCategories.has(category.id)}>
-              <Grid container spacing={2}>
-                {categoryCorals.map(coral => {
-                  const stockStatus = getStockStatus(coral);
-                  const stockChipProps = getStockChipProps(stockStatus);
-                  
-                  return (
-                    <Grid 
-                      item 
-                      key={coral.id} 
-                      xs={12} 
-                      md={layoutView === 'grid' ? 4 : 12}
-                    >
-                      <Card 
-                        sx={{ 
-                          display: 'flex',
-                          flexDirection: layoutView === 'grid' ? 'column' : 'row',
-                          height: '100%'
-                        }}
-                      >
+              <Card 
+                sx={{ 
+                  display: 'flex',
+                  flexDirection: layoutView === 'grid' ? 'column' : 'row',
+                  height: '100%'
+                }}
+              >
                         <Box 
                           sx={{ 
                             width: layoutView === 'grid' ? '100%' : 300,
@@ -926,34 +785,12 @@ const QuickOrder = () => {
                             )}
                           </CardContent>
                         </Box>
-                      </Card>
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            </Collapse>
-          </Box>
-        );
-      })}
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
 
-      {/* Order Button */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        my: 3 
-      }}>
-        <Button
-          variant="contained"
-          color="primary"
-          size="large"
-          onClick={handleBulkOrder}
-          disabled={isOrderButtonDisabled || Object.values(orderQuantities).every(qty => qty === 0)}
-          startIcon={<ShoppingCartIcon />}
-          sx={{ px: 4, py: 1 }}
-        >
-          Place Order
-        </Button>
-      </Box>
 
       {/* Infinite Scroll Observer */}
       <Box 
