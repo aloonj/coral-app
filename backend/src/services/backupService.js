@@ -27,21 +27,16 @@ class BackupService {
   }
 
   static async createBackup(type = 'database') {
+    // Only database backups are supported now
+    if (type !== 'database') {
+      throw new Error('Only database backups are supported');
+    }
+    
     const backup = await Backup.create({ type });
     
     try {
       await backup.update({ status: 'in_progress' });
-      
-      switch (type) {
-        case 'database':
-          await this.createDatabaseBackup(backup);
-          break;
-        case 'images':
-          await this.createImagesBackup(backup);
-          break;
-        default:
-          throw new Error(`Invalid backup type: ${type}`);
-      }
+      await this.createDatabaseBackup(backup);
       
       const stats = await fs.stat(backup.path);
       await backup.update({
@@ -116,28 +111,6 @@ class BackupService {
     }
   }
 
-  static async createImagesBackup(backup) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '');
-    const filename = `images_${timestamp}.zip`;
-    const filepath = path.join(BACKUP_PATH, filename);
-    
-    // Ensure backup directory exists
-    await fs.mkdir(BACKUP_PATH, { recursive: true });
-    
-    const output = createWriteStream(filepath);
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    
-    archive.pipe(output);
-    archive.directory('uploads/', 'uploads');
-    
-    await new Promise((resolve, reject) => {
-      output.on('close', resolve);
-      archive.on('error', reject);
-      archive.finalize();
-    });
-
-    await backup.update({ path: filepath });
-  }
 
   static async cleanupOldBackups() {
     const cutoffDate = new Date();

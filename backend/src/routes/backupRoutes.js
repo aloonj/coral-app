@@ -27,9 +27,9 @@ router.get('/', authenticate, async (req, res) => {
 // Trigger a new backup
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { type = 'full' } = req.body;
-    if (!['full', 'database', 'images'].includes(type)) {
-      return res.status(400).json({ error: 'Invalid backup type' });
+    const { type = 'database' } = req.body;
+    if (type !== 'database') {
+      return res.status(400).json({ error: 'Only database backups are supported' });
     }
     const backup = await BackupService.createBackup(type);
     res.json(backup);

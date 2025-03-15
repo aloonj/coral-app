@@ -4,26 +4,25 @@ import { formatDate } from '../utils/dateUtils';
 import {
   Box,
   Typography,
-  Grid,
   Paper,
   Button,
   CircularProgress,
   Chip,
-  Card,
-  CardHeader,
-  CardContent,
-  CardActions,
-  Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
   useTheme
 } from '@mui/material';
 import {
   Backup as BackupIcon,
-  Schedule as ScheduleIcon,
   CheckCircle as CheckCircleIcon,
   CloudDownload as DownloadIcon,
   Delete as DeleteIcon,
   Storage as DatabaseIcon,
-  Image as ImageIcon,
   Error as ErrorIcon
 } from '@mui/icons-material';
 import ConfirmationDialog from '../components/ConfirmationDialog';
@@ -98,7 +97,16 @@ const Backups = () => {
         setLoading(true);
       }
       const response = await backupService.getAllBackups();
-      setBackups(response.data);
+      // Filter to only database backups from the last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const recentBackups = response.data.filter(backup => 
+        backup.type === 'database' && 
+        new Date(backup.createdAt) >= sevenDaysAgo
+      );
+      
+      setBackups(recentBackups);
       setError(null);
     } catch (err) {
       setError('Failed to load backups');
@@ -124,10 +132,10 @@ const Backups = () => {
     }
   }, [backups, pollingInterval]);
 
-  const handleCreateBackup = async (type) => {
+  const handleCreateBackup = async () => {
     try {
       setCreating(true);
-      await backupService.createBackup(type);
+      await backupService.createBackup();
       await loadBackups(); // Load the initial state
       startPolling(true); // Start rapid polling for updates
     } catch (err) {
@@ -201,10 +209,6 @@ const Backups = () => {
     }
   };
 
-  const getBackupIcon = (type) => {
-    return type === 'database' ? <DatabaseIcon /> : <ImageIcon />;
-  };
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
@@ -256,116 +260,75 @@ const Backups = () => {
             variant="contained"
             color="primary"
             startIcon={<DatabaseIcon />}
-            onClick={() => handleCreateBackup('database')}
+            onClick={() => handleCreateBackup()}
             disabled={creating}
           >
-            Database Backup
-          </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            startIcon={<ImageIcon />}
-            onClick={() => handleCreateBackup('images')}
-            disabled={creating}
-          >
-            Images Backup
+            Create Database Backup
           </Button>
         </ActionButtonGroup>
       </Box>
 
       <StatusMessage error={error} />
 
-      <Grid container spacing={3}>
-        {backups.map((backup) => (
-          <Grid item xs={12} sm={6} md={4} key={backup.id}>
-            <Card elevation={2}>
-              <CardHeader
-                title={
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    {getBackupIcon(backup.type)}
-                    <Typography variant="h6" sx={{ ml: 1, textTransform: 'capitalize' }}>
-                      {backup.type}
-                    </Typography>
-                  </Box>
-                }
-                action={
-                  <Chip
-                    label={backup.status.toUpperCase()}
-                    sx={{
-                      bgcolor: getStatusColor(backup.status),
-                      color: 'white',
-                      fontWeight: 'bold'
-                    }}
-                  />
-                }
-              />
-              <CardContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary">Created</Typography>
-                    <Typography variant="body2" fontWeight="medium">
-                      {formatDate(backup.createdAt)}
-                    </Typography>
-                  </Box>
-                  
-                  {backup.completedAt && (
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Completed</Typography>
-                      <Typography variant="body2" fontWeight="medium">
-                        {formatDate(backup.completedAt)}
-                      </Typography>
-                    </Box>
-                  )}
-                  
-                  {backup.size && (
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Size</Typography>
-                      <Typography variant="body2" fontWeight="medium">
-                        {formatSize(backup.size)}
-                      </Typography>
-                    </Box>
-                  )}
-                  
-                  {backup.error && (
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Error</Typography>
-                      <Typography variant="body2" fontWeight="medium" color="error.main">
-                        {backup.error}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              </CardContent>
-              
-              <Divider />
-              
-              <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-                {backup.status === 'success' && (
-                  <Button
-                    variant="contained"
-                    color="success"
-                    startIcon={<DownloadIcon />}
-                    onClick={() => handleDownload(backup)}
-                    fullWidth
-                  >
-                    Download
-                  </Button>
-                )}
-                <Button
-                  variant="contained"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={() => handleDelete(backup)}
-                  fullWidth={backup.status !== 'success'}
-                  sx={{ ml: backup.status === 'success' ? 1 : 0 }}
-                >
-                  Delete
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <TableContainer component={Paper} sx={{ mt: 3 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Status</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell>Completed</TableCell>
+              <TableCell>Size</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {backups.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  No database backups found in the last 7 days
+                </TableCell>
+              </TableRow>
+            ) : (
+              backups.map((backup) => (
+                <TableRow key={backup.id}>
+                  <TableCell>
+                    <Chip
+                      label={backup.status.toUpperCase()}
+                      sx={{
+                        bgcolor: getStatusColor(backup.status),
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>{formatDate(backup.createdAt)}</TableCell>
+                  <TableCell>{backup.completedAt ? formatDate(backup.completedAt) : 'N/A'}</TableCell>
+                  <TableCell>{formatSize(backup.size)}</TableCell>
+                  <TableCell align="right">
+                    {backup.status === 'success' && (
+                      <IconButton 
+                        color="primary" 
+                        onClick={() => handleDownload(backup)}
+                        title="Download backup"
+                      >
+                        <DownloadIcon />
+                      </IconButton>
+                    )}
+                    <IconButton 
+                      color="error" 
+                      onClick={() => handleDelete(backup)}
+                      title="Delete backup"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Confirmation Dialog */}
       <ConfirmationDialog
