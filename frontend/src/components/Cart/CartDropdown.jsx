@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -38,6 +38,8 @@ const CartDropdown = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState('');
+  const [animateCart, setAnimateCart] = useState(false);
+  const prevTotalItemsRef = useRef(totalItems);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   
   const handleClick = (event) => {
@@ -55,6 +57,23 @@ const CartDropdown = () => {
       setAnchorEl(null);
     }
   };
+  
+  // Detect changes in cart items to trigger animation
+  useEffect(() => {
+    // Only animate if items were added (not removed)
+    if (totalItems > prevTotalItemsRef.current) {
+      setAnimateCart(true);
+      
+      // Reset animation after it completes
+      const timer = setTimeout(() => {
+        setAnimateCart(false);
+      }, 1000); // Animation duration
+      
+      return () => clearTimeout(timer);
+    }
+    
+    prevTotalItemsRef.current = totalItems;
+  }, [totalItems]);
   
   // Check if we're on the QuickOrder page and get the selected client from localStorage
   useEffect(() => {
@@ -216,8 +235,32 @@ const CartDropdown = () => {
         onClick={handleClick}
         aria-label="cart"
         title="Cart"
+        sx={{
+          animation: animateCart ? 
+            'cartBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2' : 
+            'none',
+          '@keyframes cartBounce': {
+            '0%, 100%': { transform: 'scale(1)' },
+            '50%': { transform: 'scale(1.3)' }
+          }
+        }}
       >
-        <Badge badgeContent={totalItems} color="secondary">
+        <Badge 
+          badgeContent={totalItems} 
+          color="secondary"
+          sx={{
+            '& .MuiBadge-badge': {
+              animation: animateCart ? 
+                'badgePulse 1s cubic-bezier(0.4, 0, 0.6, 1)' : 
+                'none',
+              '@keyframes badgePulse': {
+                '0%': { backgroundColor: theme.palette.secondary.main },
+                '50%': { backgroundColor: theme.palette.success.main },
+                '100%': { backgroundColor: theme.palette.secondary.main }
+              }
+            }
+          }}
+        >
           <ShoppingCartIcon />
         </Badge>
       </IconButton>

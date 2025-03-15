@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { keyframes } from '@mui/system';
 import debounce from 'lodash/debounce';
 import { useNavigate } from 'react-router-dom';
 import api, { BASE_URL, coralService, categoryService, clientService, orderService } from '../services/api';
@@ -84,6 +85,8 @@ const QuickOrder = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  // State to track which coral was recently added to cart
+  const [recentlyAddedCoral, setRecentlyAddedCoral] = useState(null);
   // State to trigger lazy loading refresh when categories are expanded or filters change
   const [lazyLoadRefreshTrigger, setLazyLoadRefreshTrigger] = useState(0);
 
@@ -308,6 +311,14 @@ const QuickOrder = () => {
     // If changing from 0 to a positive number, use addToCart to ensure it's added to cartItems
     if (currentValue === 0 && newValue > 0) {
       addToCart(coral, newValue);
+      
+      // Set recently added coral to trigger highlight animation
+      setRecentlyAddedCoral(coralId);
+      
+      // Clear the highlight after animation completes
+      setTimeout(() => {
+        setRecentlyAddedCoral(null);
+      }, 1500); // Animation duration
     } else {
       // Otherwise just update the quantity
       updateQuantity(coralId, newValue);
@@ -666,7 +677,28 @@ const QuickOrder = () => {
                 sx={{ 
                   display: 'flex',
                   flexDirection: layoutView === 'grid' ? 'column' : 'row',
-                  height: '100%'
+                  height: '100%',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  ...(recentlyAddedCoral === coral.id && {
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(76, 175, 80, 0.3)',
+                      animation: 'fadeOut 1.5s forwards',
+                      pointerEvents: 'none',
+                      zIndex: 1
+                    },
+                    '@keyframes fadeOut': {
+                      '0%': { opacity: 1 },
+                      '20%': { opacity: 1 },
+                      '100%': { opacity: 0 }
+                    }
+                  })
                 }}
               >
                         <Box 
@@ -798,6 +830,14 @@ const QuickOrder = () => {
                                       if (newValue === 1) {
                                         // If this is the first item, use addToCart to ensure it's added to cartItems
                                         addToCart(coral, 1);
+                                        
+                                        // Set recently added coral to trigger highlight animation
+                                        setRecentlyAddedCoral(coral.id);
+                                        
+                                        // Clear the highlight after animation completes
+                                        setTimeout(() => {
+                                          setRecentlyAddedCoral(null);
+                                        }, 1500); // Animation duration
                                       } else {
                                         // Otherwise just update the quantity
                                         handleQuantityChange(coral.id, newValue);
