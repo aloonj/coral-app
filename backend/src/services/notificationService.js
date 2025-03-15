@@ -225,26 +225,23 @@ class NotificationService {
       const subject = `Backup Completed Successfully: ${backup.type}`;
       const emailHtml = `
         <h2>Backup Completed Successfully</h2>
-        <p>A new backup has been created and is attached to this email.</p>
+        <p>A new backup has been created and saved to the destination folder.</p>
         <h3>Backup Details:</h3>
         <ul>
           <li>Type: ${backup.type}</li>
           <li>Size: ${(backup.size / 1024 / 1024).toFixed(2)} MB</li>
           <li>Created: ${new Date(backup.createdAt).toLocaleString()}</li>
           <li>Completed: ${new Date(backup.completedAt).toLocaleString()}</li>
+          <li>Path: ${backup.path}</li>
         </ul>
       `;
 
       const mailOptions = {
-        attachments: [{
-          filename: path.basename(backup.path),
-          path: backup.path
-        }],
         ccSender: false
       };
 
       await this._sendEmail(env.email.from, subject, emailHtml, mailOptions);
-      console.log(`Backup success notification sent with attachment: ${backup.path}`);
+      console.log(`Backup success notification sent without attachment: ${backup.path}`);
     } catch (error) {
       console.error('Error sending backup success notification:', error);
       // Don't throw the error to prevent blocking the backup process
