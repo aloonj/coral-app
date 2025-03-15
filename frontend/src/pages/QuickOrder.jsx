@@ -843,8 +843,7 @@ const QuickOrder = () => {
                                     const newValue = (orderQuantities[coral.id] || 0) + 1;
                                     if (newValue <= coral.quantity) {
                                       handleQuantityChange(coral.id, newValue);
-                                      // Also add to cart for persistence
-                                      addToCart(coral, 1);
+                                      // No need to call addToCart here as handleQuantityChange already updates the cart
                                     }
                                   }}
                                   disabled={stockStatus === 'OUT_OF_STOCK' || orderQuantities[coral.id] >= coral.quantity}
