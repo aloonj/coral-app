@@ -815,8 +815,8 @@ const QuickOrder = () => {
                               }}>
                                 <IconButton 
                                   size="small"
-                                  onClick={() => handleQuantityChange(coral.id, orderQuantities[coral.id] - 1)}
-                                  disabled={stockStatus === 'OUT_OF_STOCK' || orderQuantities[coral.id] === 0}
+                                  onClick={() => handleQuantityChange(coral.id, (orderQuantities[coral.id] || 0) - 1)}
+                                  disabled={stockStatus === 'OUT_OF_STOCK' || !orderQuantities[coral.id]}
                                   color="primary"
                                 >
                                   <RemoveIcon />
@@ -826,7 +826,7 @@ const QuickOrder = () => {
                                   type="number"
                                   variant="outlined"
                                   size="small"
-                                  value={orderQuantities[coral.id]}
+                                  value={orderQuantities[coral.id] || 0}
                                   onChange={(e) => handleQuantityChange(coral.id, parseInt(e.target.value) || 0)}
                                   inputProps={{ 
                                     min: 0, 
