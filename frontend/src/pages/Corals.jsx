@@ -98,7 +98,7 @@ const Corals = () => {
         limit: 9,
         offset: newOffset,
         ...(selectedCategory && { categoryId: selectedCategory }),
-        ...(selectedStockFilter && { stockStatus: selectedStockFilter }),
+        // We'll filter by stock status on the frontend instead
         ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       };
       
@@ -301,14 +301,30 @@ const Corals = () => {
     );
   }
 
-  // Filter out corals with invalid categories
-  const validCorals = corals.filter(coral => {
-    const hasValidCategory = categories.some(cat => cat.id === coral.categoryId && cat.status !== 'INACTIVE');
-    if (!hasValidCategory) {
-      console.warn(`Coral ${coral.speciesName} has invalid or inactive category ID: ${coral.categoryId}`);
-    }
-    return hasValidCategory;
-  });
+  // Filter corals based on category and stock status
+  const filteredCorals = useMemo(() => {
+    return corals.filter(coral => {
+      // Filter by category
+      const hasValidCategory = categories.some(cat => cat.id === coral.categoryId && cat.status !== 'INACTIVE');
+      if (!hasValidCategory) {
+        console.warn(`Coral ${coral.speciesName} has invalid or inactive category ID: ${coral.categoryId}`);
+        return false;
+      }
+      
+      // Skip category filter if no category is selected
+      if (selectedCategory && coral.categoryId !== selectedCategory) {
+        return false;
+      }
+      
+      // Filter by stock status
+      if (selectedStockFilter) {
+        const stockStatus = getStockStatus(coral);
+        return stockStatus === selectedStockFilter;
+      }
+      
+      return true;
+    });
+  }, [corals, categories, selectedCategory, selectedStockFilter]);
 
   // Get active categories for display
   const activeCategories = categories.filter(cat => cat.status !== 'INACTIVE');
@@ -502,12 +518,9 @@ const Corals = () => {
         </Tabs>
       </Box>
 
-      {/* Display corals based on selected category */}
+      {/* Display filtered corals */}
       <Grid container spacing={2}>
-        {validCorals.map(coral => {
-          // Skip corals that don't match the selected category
-          if (selectedCategory && coral.categoryId !== selectedCategory) return null;
-          
+        {filteredCorals.map(coral => {
           const stockStatus = getStockStatus(coral);
           const category = categories.find(cat => cat.id === coral.categoryId);
           
