@@ -45,8 +45,8 @@ class BackupService {
         completedAt: new Date()
       });
 
-      // Send success notification with backup file
-      await NotificationService.sendBackupSuccessNotification(backup);
+      // Success notification disabled as files are backed up externally
+      // await NotificationService.sendBackupSuccessNotification(backup);
       
       await this.cleanupOldBackups();
       return backup;
