@@ -8,6 +8,7 @@ import { config } from '../config';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
 import ImageModal from '../components/ImageGallery/ImageModal';
 import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {
   Container,
   Typography,
@@ -526,47 +527,73 @@ const QuickOrder = () => {
         </Box>
       )}
 
-      {/* Category Tabs */}
+      {/* Category Selection - Responsive */}
       <Box sx={{ mb: 3 }}>
-        <Tabs
-          value={selectedCategory}
-          onChange={handleCategoryChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          allowScrollButtonsMobile
-          aria-label="category tabs"
-      sx={{
-        borderBottom: 1,
-        borderColor: 'divider',
-        '& .MuiTab-root': {
-          fontWeight: 'bold',
-          position: 'relative',
-          transition: 'transform 0.2s, box-shadow 0.2s',
-          zIndex: 1,
-          '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: 1,
-            zIndex: 2
-          }
-        },
-        // Fix for mobile scrolling
-        '& .MuiTabs-scroller': {
-          overflow: 'auto !important'
-        }
-      }}
-        >
-          <Tab label="All" value={null} />
-          {categories
-            .filter(cat => cat.status !== 'INACTIVE')
-            .map(category => (
-              <Tab 
-                key={category.id} 
-                label={category.name} 
-                value={category.id} 
-              />
-            ))
-          }
-        </Tabs>
+        {/* Desktop: Wrapping Tabs */}
+        <Box sx={{ 
+          display: { xs: 'none', md: 'block' } 
+        }}>
+          <Tabs
+            value={selectedCategory}
+            onChange={handleCategoryChange}
+            aria-label="category tabs"
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider',
+              '& .MuiTabs-flexContainer': {
+                flexWrap: 'wrap',
+              },
+              '& .MuiTab-root': {
+                fontWeight: 'bold',
+                my: 0.5,
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                }
+              }
+            }}
+          >
+            <Tab label="All" value={null} />
+            {categories
+              .filter(cat => cat.status !== 'INACTIVE')
+              .map(category => (
+                <Tab 
+                  key={category.id} 
+                  label={category.name} 
+                  value={category.id} 
+                />
+              ))
+            }
+          </Tabs>
+        </Box>
+        
+        {/* Mobile: Dropdown Select */}
+        <Box sx={{ 
+          display: { xs: 'block', md: 'none' } 
+        }}>
+          <FormControl fullWidth variant="outlined">
+            <InputLabel id="category-select-label">Category</InputLabel>
+            <Select
+              labelId="category-select-label"
+              id="category-select"
+              value={selectedCategory === null ? 'all' : selectedCategory}
+              onChange={(e) => {
+                const value = e.target.value === 'all' ? null : e.target.value;
+                handleCategoryChange(null, value);
+              }}
+              label="Category"
+            >
+              <MenuItem value="all">All Categories</MenuItem>
+              {categories
+                .filter(cat => cat.status !== 'INACTIVE')
+                .map(category => (
+                  <MenuItem key={category.id} value={category.id}>
+                    {category.name}
+                  </MenuItem>
+                ))
+              }
+            </Select>
+          </FormControl>
+        </Box>
       </Box>
 
       {/* Search Box */}
