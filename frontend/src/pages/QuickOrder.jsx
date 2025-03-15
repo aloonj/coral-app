@@ -85,8 +85,9 @@ const QuickOrder = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  // State to track which coral was recently added to cart
+  // State to track which coral was recently added to or removed from cart
   const [recentlyAddedCoral, setRecentlyAddedCoral] = useState(null);
+  const [recentlyRemovedCoral, setRecentlyRemovedCoral] = useState(null);
   // State to trigger lazy loading refresh when categories are expanded or filters change
   const [lazyLoadRefreshTrigger, setLazyLoadRefreshTrigger] = useState(0);
 
@@ -308,9 +309,15 @@ const QuickOrder = () => {
     
     if (!coral) return;
     
-    // If changing from 0 to a positive number, use addToCart to ensure it's added to cartItems
-    if (currentValue === 0 && newValue > 0) {
-      addToCart(coral, newValue);
+    // If value is increasing, show the green highlight
+    if (newValue > currentValue) {
+      // If changing from 0 to a positive number, use addToCart to ensure it's added to cartItems
+      if (currentValue === 0) {
+        addToCart(coral, newValue);
+      } else {
+        // Otherwise just update the quantity
+        updateQuantity(coralId, newValue);
+      }
       
       // Set recently added coral to trigger highlight animation
       setRecentlyAddedCoral(coralId);
@@ -319,9 +326,30 @@ const QuickOrder = () => {
       setTimeout(() => {
         setRecentlyAddedCoral(null);
       }, 1500); // Animation duration
-    } else {
-      // Otherwise just update the quantity
+    } 
+    // If value is decreasing but not to zero, show the red highlight
+    else if (newValue < currentValue && newValue > 0) {
       updateQuantity(coralId, newValue);
+      
+      // Set recently removed coral to trigger highlight animation
+      setRecentlyRemovedCoral(coralId);
+      
+      // Clear the highlight after animation completes
+      setTimeout(() => {
+        setRecentlyRemovedCoral(null);
+      }, 1500); // Animation duration
+    }
+    // If value is decreasing to zero, remove from cart and show red highlight
+    else if (newValue === 0 && currentValue > 0) {
+      updateQuantity(coralId, 0);
+      
+      // Set recently removed coral to trigger highlight animation
+      setRecentlyRemovedCoral(coralId);
+      
+      // Clear the highlight after animation completes
+      setTimeout(() => {
+        setRecentlyRemovedCoral(null);
+      }, 1500); // Animation duration
     }
     
     // Update orderedCorals when quantity changes
@@ -688,7 +716,7 @@ const QuickOrder = () => {
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      background: 'rgba(76, 175, 80, 0.3)',
+                      background: 'rgba(76, 175, 80, 0.3)', // Green for adding
                       animation: 'fadeOut 1.5s forwards',
                       pointerEvents: 'none',
                       zIndex: 1
@@ -697,6 +725,20 @@ const QuickOrder = () => {
                       '0%': { opacity: 1 },
                       '20%': { opacity: 1 },
                       '100%': { opacity: 0 }
+                    }
+                  }),
+                  ...(recentlyRemovedCoral === coral.id && {
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(211, 47, 47, 0.3)', // Red for removing
+                      animation: 'fadeOut 1.5s forwards',
+                      pointerEvents: 'none',
+                      zIndex: 1
                     }
                   })
                 }}
@@ -800,7 +842,12 @@ const QuickOrder = () => {
                               }}>
                                 <IconButton 
                                   size="small"
-                                  onClick={() => handleQuantityChange(coral.id, (orderQuantities[coral.id] || 0) - 1)}
+                                  onClick={() => {
+                                    const currentQty = orderQuantities[coral.id] || 0;
+                                    if (currentQty > 0) {
+                                      handleQuantityChange(coral.id, currentQty - 1);
+                                    }
+                                  }}
                                   disabled={stockStatus === 'OUT_OF_STOCK' || !orderQuantities[coral.id]}
                                   color="primary"
                                 >
@@ -830,18 +877,15 @@ const QuickOrder = () => {
                                       if (newValue === 1) {
                                         // If this is the first item, use addToCart to ensure it's added to cartItems
                                         addToCart(coral, 1);
-                                        
-                                        // Set recently added coral to trigger highlight animation
-                                        setRecentlyAddedCoral(coral.id);
-                                        
-                                        // Clear the highlight after animation completes
-                                        setTimeout(() => {
-                                          setRecentlyAddedCoral(null);
-                                        }, 1500); // Animation duration
-                                      } else {
-                                        // Otherwise just update the quantity
-                                        handleQuantityChange(coral.id, newValue);
-                                      }
+                                      } 
+                                      
+                                      // Always trigger the highlight animation when adding items
+                                      setRecentlyAddedCoral(coral.id);
+                                      
+                                      // Clear the highlight after animation completes
+                                      setTimeout(() => {
+                                        setRecentlyAddedCoral(null);
+                                      }, 1500); // Animation duration
                                     }
                                   }}
                                   disabled={stockStatus === 'OUT_OF_STOCK' || orderQuantities[coral.id] >= coral.quantity}
