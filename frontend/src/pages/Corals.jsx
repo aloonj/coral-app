@@ -324,35 +324,34 @@ const Corals = () => {
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 2 }}>Coral Management</Typography>
         {hasAdminPrivileges && (
-          <Stack spacing={2} sx={{ width: { xs: '100%', sm: '50%', md: '30%' } }}>
+          <Stack spacing={2} direction={{ xs: 'column', md: 'row' }} sx={{ width: '100%' }}>
             <ActionButton
               variant="contained"
               color="success"
               startIcon={<AddIcon />}
               onClick={() => navigate('/corals/add')}
-              fullWidth
               sx={{ 
                 py: 1.5,
-                fontSize: '1rem'
+                fontSize: '1rem',
+                width: { xs: '100%', md: 'auto' }
               }}
             >
               Add Coral
             </ActionButton>
             <ActionButton
               variant="contained"
-              sx={{ 
-                backgroundColor: '#FF8C00', 
-                '&:hover': { backgroundColor: '#E67E00' },
-                py: 1.5,
-                fontSize: '1rem'
-              }}
+              color="info"
               startIcon={<CategoryIcon />}
               onClick={() => {
                 setEditingCategory(null);
                 setCategoryForm({ name: '', description: '' });
                 setShowCategoryModal(true);
               }}
-              fullWidth
+              sx={{ 
+                py: 1.5,
+                fontSize: '1rem',
+                width: { xs: '100%', md: 'auto' }
+              }}
             >
               Manage Categories
             </ActionButton>
