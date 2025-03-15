@@ -64,6 +64,7 @@ const QuickOrder = () => {
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   const [collapsedCategories, setCollapsedCategories] = useState(new Set());
   const [orderQuantities, setOrderQuantities] = useState({});
+  const [orderedCorals, setOrderedCorals] = useState([]);
   const showAdditionalDetails = import.meta.env.VITE_SHOW_ADDITIONAL_CORAL_DETAILS === 'true';
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedCoral, setSelectedCoral] = useState(null);
@@ -287,10 +288,35 @@ const QuickOrder = () => {
   }
 
   const handleQuantityChange = (coralId, value) => {
+    const newValue = Math.max(0, Math.min(value, corals.find(c => c.id === coralId)?.quantity || 0));
+    
     setOrderQuantities(prev => ({
       ...prev,
-      [coralId]: Math.max(0, Math.min(value, corals.find(c => c.id === coralId)?.quantity || 0))
+      [coralId]: newValue
     }));
+    
+    // Update orderedCorals when quantity changes
+    const coral = corals.find(c => c.id === coralId);
+    if (coral) {
+      if (newValue > 0) {
+        // Add or update coral in orderedCorals
+        setOrderedCorals(prev => {
+          const existingIndex = prev.findIndex(c => c.id === coralId);
+          if (existingIndex >= 0) {
+            // Update existing coral
+            const updated = [...prev];
+            updated[existingIndex] = coral;
+            return updated;
+          } else {
+            // Add new coral
+            return [...prev, coral];
+          }
+        });
+      } else if (newValue === 0) {
+        // Remove coral from orderedCorals if quantity is 0
+        setOrderedCorals(prev => prev.filter(c => c.id !== coralId));
+      }
+    }
   };
 
   const clearOrder = () => {
@@ -300,6 +326,8 @@ const QuickOrder = () => {
       resetQuantities[coral.id] = 0;
     });
     setOrderQuantities(resetQuantities);
+    // Clear ordered corals
+    setOrderedCorals([]);
   };
 
   // Function to calculate discounted price
@@ -330,8 +358,8 @@ const QuickOrder = () => {
     }
 
     try {
-      // Calculate total amount with discounts
-      const totalAmount = corals.reduce((total, coral) => {
+      // Calculate total amount with discounts using all ordered corals
+      const totalAmount = [...orderedCorals, ...corals].reduce((total, coral) => {
         const quantity = orderQuantities[coral.id] || 0;
         if (quantity === 0) return total;
         
@@ -902,7 +930,7 @@ const QuickOrder = () => {
                 </Typography>
                 <Typography variant="body1">
                   <strong>Total Price:</strong> {config.defaultCurrency}
-                  {corals.reduce((total, coral) => {
+                  {[...orderedCorals, ...corals].reduce((total, coral) => {
                     const quantity = orderQuantities[coral.id] || 0;
                     if (quantity === 0) return total;
                     
