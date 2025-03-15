@@ -532,7 +532,7 @@ const QuickOrder = () => {
           value={selectedCategory}
           onChange={handleCategoryChange}
           variant="scrollable"
-          scrollButtons={{ xs: 'auto', md: false }}
+          scrollButtons="auto"
           allowScrollButtonsMobile
           aria-label="category tabs"
           sx={{
@@ -545,6 +545,10 @@ const QuickOrder = () => {
                 transform: 'translateY(-2px)',
                 boxShadow: 1
               }
+            },
+            // Fix for mobile scrolling
+            '& .MuiTabs-scroller': {
+              overflow: 'auto !important'
             }
           }}
         >
