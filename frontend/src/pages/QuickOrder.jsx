@@ -277,31 +277,37 @@ const QuickOrder = () => {
 
   const handleQuantityChange = (coralId, value) => {
     const newValue = Math.max(0, Math.min(value, corals.find(c => c.id === coralId)?.quantity || 0));
+    const currentValue = orderQuantities[coralId] || 0;
+    const coral = corals.find(c => c.id === coralId);
     
-    // Update quantity in cart context
-    updateQuantity(coralId, newValue);
+    if (!coral) return;
+    
+    // If changing from 0 to a positive number, use addToCart to ensure it's added to cartItems
+    if (currentValue === 0 && newValue > 0) {
+      addToCart(coral, newValue);
+    } else {
+      // Otherwise just update the quantity
+      updateQuantity(coralId, newValue);
+    }
     
     // Update orderedCorals when quantity changes
-    const coral = corals.find(c => c.id === coralId);
-    if (coral) {
-      if (newValue > 0) {
-        // Add or update coral in orderedCorals
-        setOrderedCorals(prev => {
-          const existingIndex = prev.findIndex(c => c.id === coralId);
-          if (existingIndex >= 0) {
-            // Update existing coral
-            const updated = [...prev];
-            updated[existingIndex] = coral;
-            return updated;
-          } else {
-            // Add new coral
-            return [...prev, coral];
-          }
-        });
-      } else if (newValue === 0) {
-        // Remove coral from orderedCorals if quantity is 0
-        setOrderedCorals(prev => prev.filter(c => c.id !== coralId));
-      }
+    if (newValue > 0) {
+      // Add or update coral in orderedCorals
+      setOrderedCorals(prev => {
+        const existingIndex = prev.findIndex(c => c.id === coralId);
+        if (existingIndex >= 0) {
+          // Update existing coral
+          const updated = [...prev];
+          updated[existingIndex] = coral;
+          return updated;
+        } else {
+          // Add new coral
+          return [...prev, coral];
+        }
+      });
+    } else if (newValue === 0) {
+      // Remove coral from orderedCorals if quantity is 0
+      setOrderedCorals(prev => prev.filter(c => c.id !== coralId));
     }
   };
 
@@ -842,8 +848,13 @@ const QuickOrder = () => {
                                   onClick={() => {
                                     const newValue = (orderQuantities[coral.id] || 0) + 1;
                                     if (newValue <= coral.quantity) {
-                                      handleQuantityChange(coral.id, newValue);
-                                      // No need to call addToCart here as handleQuantityChange already updates the cart
+                                      if (newValue === 1) {
+                                        // If this is the first item, use addToCart to ensure it's added to cartItems
+                                        addToCart(coral, 1);
+                                      } else {
+                                        // Otherwise just update the quantity
+                                        handleQuantityChange(coral.id, newValue);
+                                      }
                                     }
                                   }}
                                   disabled={stockStatus === 'OUT_OF_STOCK' || orderQuantities[coral.id] >= coral.quantity}
