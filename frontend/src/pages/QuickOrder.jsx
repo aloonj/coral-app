@@ -877,7 +877,10 @@ const QuickOrder = () => {
                                       if (newValue === 1) {
                                         // If this is the first item, use addToCart to ensure it's added to cartItems
                                         addToCart(coral, 1);
-                                      } 
+                                      } else {
+                                        // Otherwise just update the quantity
+                                        updateQuantity(coral.id, newValue);
+                                      }
                                       
                                       // Always trigger the highlight animation when adding items
                                       setRecentlyAddedCoral(coral.id);
