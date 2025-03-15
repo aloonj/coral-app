@@ -69,10 +69,11 @@ const StockLevels = () => {
         // Sort corals by stock status and quantity
         const sortedCorals = coralsRes.data.sort((a, b) => {
           // First sort by status priority (OUT_OF_STOCK > LOW_STOCK > AVAILABLE)
+          // This uses the status field which is set by the backend based on quantity and minimumStock
           const statusPriority = {
-            'OUT_OF_STOCK': 0,
-            'LOW_STOCK': 1,
-            'AVAILABLE': 2
+            'OUT_OF_STOCK': 0, // quantity === 0
+            'LOW_STOCK': 1,    // quantity <= minimumStock
+            'AVAILABLE': 2     // quantity > minimumStock
           };
           
           const statusDiff = statusPriority[a.status] - statusPriority[b.status];
