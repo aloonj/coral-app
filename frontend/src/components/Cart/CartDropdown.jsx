@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -15,7 +15,8 @@ import {
   Popover,
   Drawer,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Chip
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -27,17 +28,19 @@ import {
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { config } from '../../config';
+import api from '../../services/api';
 
 const CartDropdown = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { cartItems, orderQuantities, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
+  const { cartItems, orderQuantities, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice, getDiscountedPrice } = useCart();
   const { user } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState('');
+  const [clientDiscountRate, setClientDiscountRate] = useState(0);
   const [animateCart, setAnimateCart] = useState(false);
   const prevTotalItemsRef = useRef(totalItems);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
@@ -98,6 +101,34 @@ const CartDropdown = () => {
     };
   }, [location.pathname]);
 
+  // Fetch client discount rate
+  useEffect(() => {
+    const fetchClientDiscountRate = async () => {
+      try {
+        if (isAdmin && selectedClient) {
+          // For admin users, get discount rate from the selected client
+          const response = await api.get(`/clients/${selectedClient}`);
+          if (response.data) {
+            setClientDiscountRate(parseFloat(response.data.discountRate) || 0);
+          }
+        } else if (!isAdmin && user) {
+          // For regular clients, get their own discount rate
+          const response = await api.get('/clients/profile');
+          if (response.data) {
+            setClientDiscountRate(parseFloat(response.data.discountRate) || 0);
+          }
+        } else {
+          setClientDiscountRate(0);
+        }
+      } catch (error) {
+        console.error('Error fetching client discount rate:', error);
+        setClientDiscountRate(0);
+      }
+    };
+    
+    fetchClientDiscountRate();
+  }, [isAdmin, selectedClient, user]);
+
   const handleCheckout = () => {
     navigate('/quickorder');
     handleClose();
@@ -107,6 +138,17 @@ const CartDropdown = () => {
   const isPlaceOrderDisabled = isAdmin && !selectedClient;
   
   const open = Boolean(anchorEl);
+  
+  // Calculate discounted total price
+  const discountedTotalPrice = useMemo(() => {
+    if (!clientDiscountRate) return totalPrice;
+    
+    return cartItems.reduce((sum, item) => {
+      const quantity = orderQuantities[item.id] || 0;
+      const discountedPrice = getDiscountedPrice(item.price, clientDiscountRate);
+      return sum + (discountedPrice * quantity);
+    }, 0);
+  }, [cartItems, orderQuantities, clientDiscountRate, getDiscountedPrice, totalPrice]);
   
   // Cart content that will be used in both popover and drawer
   const cartContent = (
@@ -138,67 +180,103 @@ const CartDropdown = () => {
       ) : (
         <>
           <List sx={{ py: 0 }}>
-            {cartItems.map(item => (
-              <ListItem
-                key={item.id}
-                secondaryAction={
-                  <IconButton edge="end" onClick={() => removeFromCart(item.id)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                }
-                divider
-              >
-                <ListItemAvatar>
-                  <Avatar src={item.imageUrl} alt={item.speciesName} variant="rounded" />
-                </ListItemAvatar>
-                <ListItemText
-                  primary={item.speciesName}
-                  secondary={
-                    <>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                        <IconButton 
-                          size="small" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateQuantity(item.id, Math.max(1, (orderQuantities[item.id] || 0) - 1));
-                          }}
-                          sx={{ p: 0.5 }}
-                        >
-                          <RemoveIcon fontSize="small" />
-                        </IconButton>
-                        
-                        <Typography component="span" variant="body2" sx={{ mx: 1 }}>
-                          {orderQuantities[item.id]}
-                        </Typography>
-                        
-                        <IconButton 
-                          size="small" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateQuantity(item.id, (orderQuantities[item.id] || 0) + 1);
-                          }}
-                          sx={{ p: 0.5 }}
-                        >
-                          <AddIcon fontSize="small" />
-                        </IconButton>
-                        
-                        <Typography component="span" variant="body2" sx={{ ml: 1 }}>
-                          × {config.defaultCurrency}{item.price}
-                        </Typography>
-                      </Box>
-                    </>
+            {cartItems.map(item => {
+              const discountedPrice = clientDiscountRate > 0 
+                ? getDiscountedPrice(item.price, clientDiscountRate) 
+                : item.price;
+              
+              return (
+                <ListItem
+                  key={item.id}
+                  secondaryAction={
+                    <IconButton edge="end" onClick={() => removeFromCart(item.id)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
                   }
-                />
-              </ListItem>
-            ))}
+                  divider
+                >
+                  <ListItemAvatar>
+                    <Avatar src={item.imageUrl} alt={item.speciesName} variant="rounded" />
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={item.speciesName}
+                    secondary={
+                      <>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                          <IconButton 
+                            size="small" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(item.id, Math.max(1, (orderQuantities[item.id] || 0) - 1));
+                            }}
+                            sx={{ p: 0.5 }}
+                          >
+                            <RemoveIcon fontSize="small" />
+                          </IconButton>
+                          
+                          <Typography component="span" variant="body2" sx={{ mx: 1 }}>
+                            {orderQuantities[item.id]}
+                          </Typography>
+                          
+                          <IconButton 
+                            size="small" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(item.id, (orderQuantities[item.id] || 0) + 1);
+                            }}
+                            sx={{ p: 0.5 }}
+                          >
+                            <AddIcon fontSize="small" />
+                          </IconButton>
+                          
+                          {clientDiscountRate > 0 ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+                              <Typography component="span" variant="body2" sx={{ textDecoration: 'line-through', color: 'text.secondary', mr: 1 }}>
+                                {config.defaultCurrency}{item.price}
+                              </Typography>
+                              <Typography component="span" variant="body2" color="primary">
+                                {config.defaultCurrency}{discountedPrice.toFixed(2)}
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <Typography component="span" variant="body2" sx={{ ml: 1 }}>
+                              × {config.defaultCurrency}{item.price}
+                            </Typography>
+                          )}
+                        </Box>
+                      </>
+                    }
+                  />
+                </ListItem>
+              );
+            })}
           </List>
           
           <Box sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.12)' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="subtitle1">Total:</Typography>
-              <Typography variant="subtitle1" fontWeight="bold">
-                {config.defaultCurrency}{totalPrice.toFixed(2)}
-              </Typography>
+              {clientDiscountRate > 0 ? (
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                    {config.defaultCurrency}{totalPrice.toFixed(2)}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                      {config.defaultCurrency}{discountedTotalPrice.toFixed(2)}
+                    </Typography>
+                    <Chip 
+                      size="small" 
+                      label={`-${clientDiscountRate}%`} 
+                      color="secondary"
+                      sx={{ ml: 1, height: 20 }}
+                    />
+                  </Box>
+                </Box>
+              ) : (
+                <Typography variant="subtitle1" fontWeight="bold">
+                  {config.defaultCurrency}{totalPrice.toFixed(2)}
+                </Typography>
+              )}
             </Box>
             
             <Box sx={{ display: 'flex', gap: 1 }}>
