@@ -120,19 +120,6 @@ const QuickOrder = () => {
       
       setOffset(newOffset + newCorals.length);
       setHasMore(newCorals.length === 9); // If we got fewer than 9, we've reached the end
-      
-      // Initialize order quantities for new corals
-      if (newCorals.length > 0) {
-        setOrderQuantities(prev => {
-          const newQuantities = { ...prev };
-          newCorals.forEach(coral => {
-            if (!newQuantities[coral.id]) {
-              newQuantities[coral.id] = 0;
-            }
-          });
-          return newQuantities;
-        });
-      }
     } catch (error) {
       console.error('Error fetching corals:', error);
       setError('Error loading corals. Please try again.');
