@@ -552,7 +552,7 @@ const QuickOrder = () => {
             }
           }}
         >
-          <Tab label="All Categories" value={null} />
+          <Tab label="All" value={null} />
           {categories
             .filter(cat => cat.status !== 'INACTIVE')
             .map(category => (
