@@ -532,7 +532,7 @@ const QuickOrder = () => {
           value={selectedCategory}
           onChange={handleCategoryChange}
           variant="scrollable"
-          scrollButtons="auto"
+          scrollButtons={{ xs: 'auto', md: false }}
           allowScrollButtonsMobile
           aria-label="category tabs"
           sx={{
