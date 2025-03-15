@@ -683,8 +683,7 @@ const QuickOrder = () => {
       )}
 
       {categories
-        .filter(category => (selectedCategory === null || category.id === selectedCategory) && 
-                           (filteredGroupedCorals[category.id]?.length > 0))
+        .filter(category => (selectedCategory === null || category.id === selectedCategory))
         .map(category => {
           const categoryCorals = filteredGroupedCorals[category.id] || [];
         
