@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import debounce from 'lodash/debounce';
 import { useNavigate } from 'react-router-dom';
 import { coralService, categoryService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,7 +28,10 @@ import {
   CardMedia,
   Collapse,
   CircularProgress,
-  Stack
+  Stack,
+  Tabs,
+  Tab,
+  InputAdornment
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -37,7 +41,9 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Category as CategoryIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon
 } from '@mui/icons-material';
 import {
   PageTitle,
@@ -80,6 +86,8 @@ const Corals = () => {
   const [selectedStockFilter, setSelectedStockFilter] = useState(null);
   const [categoryFormError, setCategoryFormError] = useState('');
   const [categoryError, setCategoryError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   // Function to fetch corals with pagination
   const fetchCorals = useCallback(async (newOffset = 0, resetCorals = true) => {
@@ -90,7 +98,8 @@ const Corals = () => {
         limit: 9,
         offset: newOffset,
         ...(selectedCategory && { categoryId: selectedCategory }),
-        ...(selectedStockFilter && { stockStatus: selectedStockFilter })
+        ...(selectedStockFilter && { stockStatus: selectedStockFilter }),
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       };
       
       const response = await coralService.getCorals(params);
@@ -110,7 +119,7 @@ const Corals = () => {
     } finally {
       setLoadingMore(false);
     }
-  }, [selectedCategory, selectedStockFilter]);
+  }, [selectedCategory, selectedStockFilter, debouncedSearchTerm]);
 
   // Initial data load
   useEffect(() => {
@@ -135,14 +144,32 @@ const Corals = () => {
     fetchInitialData();
   }, [showInactiveCategories, fetchCorals]);
 
-  // Reset and refetch when category or stock filter changes
+  // Create a debounced function to update the debouncedSearchTerm
+  const debouncedSetSearch = useMemo(
+    () => debounce((value) => {
+      setDebouncedSearchTerm(value);
+    }, 500), // 500ms delay
+    []
+  );
+
+  // Update debouncedSearchTerm when searchTerm changes
+  useEffect(() => {
+    debouncedSetSearch(searchTerm);
+    
+    // Cleanup the debounce function on unmount
+    return () => {
+      debouncedSetSearch.cancel();
+    };
+  }, [searchTerm, debouncedSetSearch]);
+
+  // Reset and refetch when category, stock filter, or search term changes
   useEffect(() => {
     if (!loading) {
       setOffset(0);
       setHasMore(true);
       fetchCorals(0, true);
     }
-  }, [selectedCategory, selectedStockFilter, fetchCorals, loading]);
+  }, [selectedCategory, selectedStockFilter, debouncedSearchTerm, fetchCorals, loading]);
 
   // Set up intersection observer for infinite scrolling
   useEffect(() => {
@@ -341,44 +368,99 @@ const Corals = () => {
         )}
       </Box>
 
+      {/* Search Box */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search corals by name or description..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <IconButton 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setDebouncedSearchTerm('');
+                  }}
+                  edge="end"
+                  size="small"
+                  aria-label="clear search"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
+      </Box>
+
+      {/* No results message when searching */}
+      {searchTerm.trim() !== '' && corals.length === 0 && (
+        <Box sx={{ 
+          py: 4, 
+          textAlign: 'center',
+          backgroundColor: theme.palette.background.paper,
+          borderRadius: 1,
+          boxShadow: 1,
+          mb: 3
+        }}>
+          <Typography variant="h6" color="text.secondary">
+            No corals found matching "{searchTerm}"
+          </Typography>
+          <Button 
+            variant="outlined" 
+            startIcon={<ClearIcon />} 
+            onClick={() => {
+              setSearchTerm('');
+              setDebouncedSearchTerm('');
+            }}
+            sx={{ mt: 2 }}
+          >
+            Clear Search
+          </Button>
+        </Box>
+      )}
+
+      {/* Category Tabs */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>Filter by Category:</Typography>
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 1, 
-          flexWrap: 'wrap', 
-          mb: 2 
-        }}>
-          <Chip
-            label="All Categories"
-            color={selectedCategory === null ? "primary" : "default"}
-            onClick={() => setSelectedCategory(null)}
-            sx={{ 
+        <Tabs
+          value={selectedCategory}
+          onChange={(e, newValue) => setSelectedCategory(newValue)}
+          aria-label="category tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            '& .MuiTabs-flexContainer': {
+              flexWrap: 'wrap',
+            },
+            '& .MuiTab-root': {
               fontWeight: 'bold',
+              my: 0.5,
               '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: 1
-              },
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
-          />
+                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+              }
+            }
+          }}
+        >
+          <Tab label="All Categories" value={null} />
           {activeCategories.map(category => (
-            <Chip
-              key={category.id}
-              label={category.name}
-              color={selectedCategory === category.id ? "primary" : "default"}
-              onClick={() => setSelectedCategory(category.id)}
-              sx={{ 
-                fontWeight: 'bold',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 1
-                },
-                transition: 'transform 0.2s, box-shadow 0.2s'
-              }}
+            <Tab 
+              key={category.id} 
+              label={category.name} 
+              value={category.id} 
             />
           ))}
-        </Box>
+        </Tabs>
 
         <Typography variant="subtitle1" sx={{ mb: 1 }}>Filter by Stock:</Typography>
         <Box sx={{ 
