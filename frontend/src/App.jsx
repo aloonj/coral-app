@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
 import LayoutWithThemeToggle from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Corals from './pages/Corals';
@@ -39,7 +40,8 @@ function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
-        <LayoutWithThemeToggle>
+        <CartProvider>
+          <LayoutWithThemeToggle>
           <Routes>
             <Route
               path="/"
@@ -173,7 +175,8 @@ function App() {
               }
             />
           </Routes>
-        </LayoutWithThemeToggle>
+          </LayoutWithThemeToggle>
+        </CartProvider>
       </AuthProvider>
     </Router>
   );

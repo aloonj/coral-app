@@ -3,6 +3,7 @@ import debounce from 'lodash/debounce';
 import { useNavigate } from 'react-router-dom';
 import api, { BASE_URL, coralService, categoryService, clientService, orderService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import { config } from '../config';
 import ImageGallery from '../components/ImageGallery/ImageGallery';
 import ImageModal from '../components/ImageGallery/ImageModal';
@@ -63,7 +64,7 @@ const QuickOrder = () => {
   const observerRef = useRef(null);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   const [collapsedCategories, setCollapsedCategories] = useState(new Set());
-  const [orderQuantities, setOrderQuantities] = useState({});
+  const { orderQuantities, updateQuantity, clearCart, addToCart } = useCart();
   const [orderedCorals, setOrderedCorals] = useState([]);
   const showAdditionalDetails = import.meta.env.VITE_SHOW_ADDITIONAL_CORAL_DETAILS === 'true';
   const [showImageModal, setShowImageModal] = useState(false);
@@ -290,10 +291,8 @@ const QuickOrder = () => {
   const handleQuantityChange = (coralId, value) => {
     const newValue = Math.max(0, Math.min(value, corals.find(c => c.id === coralId)?.quantity || 0));
     
-    setOrderQuantities(prev => ({
-      ...prev,
-      [coralId]: newValue
-    }));
+    // Update quantity in cart context
+    updateQuantity(coralId, newValue);
     
     // Update orderedCorals when quantity changes
     const coral = corals.find(c => c.id === coralId);
@@ -320,12 +319,8 @@ const QuickOrder = () => {
   };
 
   const clearOrder = () => {
-    // Reset all quantities to 0
-    const resetQuantities = {};
-    corals.forEach(coral => {
-      resetQuantities[coral.id] = 0;
-    });
-    setOrderQuantities(resetQuantities);
+    // Clear cart using context
+    clearCart();
     // Clear ordered corals
     setOrderedCorals([]);
   };
@@ -857,7 +852,14 @@ const QuickOrder = () => {
                                 
                                 <IconButton 
                                   size="small"
-                                  onClick={() => handleQuantityChange(coral.id, orderQuantities[coral.id] + 1)}
+                                  onClick={() => {
+                                    const newValue = (orderQuantities[coral.id] || 0) + 1;
+                                    if (newValue <= coral.quantity) {
+                                      handleQuantityChange(coral.id, newValue);
+                                      // Also add to cart for persistence
+                                      addToCart(coral, 1);
+                                    }
+                                  }}
                                   disabled={stockStatus === 'OUT_OF_STOCK' || orderQuantities[coral.id] >= coral.quantity}
                                   color="primary"
                                 >

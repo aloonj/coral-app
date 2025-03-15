@@ -41,6 +41,7 @@ import {
   Receipt as ReceiptIcon
 } from '@mui/icons-material';
 import ThemeToggle from '../ThemeToggle';
+import CartDropdown from '../Cart/CartDropdown';
 import fraggleRockLogo from '../../assets/images/fr-logo.svg';
 
 /**
@@ -354,6 +355,11 @@ const LayoutWithThemeToggle = ({ children }) => {
                 </Badge>
               </IconButton>
             </Tooltip>
+          )}
+          
+          {/* Cart Dropdown */}
+          {user && (
+            <CartDropdown />
           )}
           
           {/* Theme Toggle Button */}
