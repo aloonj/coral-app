@@ -527,6 +527,36 @@ const QuickOrder = () => {
         </Box>
       )}
 
+      {/* Search Box */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search corals by name or description..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <IconButton 
+                  onClick={clearSearch}
+                  edge="end"
+                  size="small"
+                  aria-label="clear search"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
+      </Box>
+
       {/* Category Selection - Responsive */}
       <Box sx={{ mb: 3 }}>
         {/* Desktop: Wrapping Tabs */}
@@ -594,36 +624,6 @@ const QuickOrder = () => {
             </Select>
           </FormControl>
         </Box>
-      </Box>
-
-      {/* Search Box */}
-      <Box sx={{ mb: 3 }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search corals by name or description..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton 
-                  onClick={clearSearch}
-                  edge="end"
-                  size="small"
-                  aria-label="clear search"
-                >
-                  <ClearIcon />
-                </IconButton>
-              </InputAdornment>
-            )
-          }}
-        />
       </Box>
 
       {/* No results message when searching */}
