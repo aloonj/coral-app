@@ -31,7 +31,11 @@ import {
   Stack,
   Tabs,
   Tab,
-  InputAdornment
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -421,38 +425,69 @@ const Corals = () => {
         </Box>
       )}
 
-      {/* Category Tabs */}
+      {/* Category Selection - Responsive */}
       <Box sx={{ mb: 3 }}>
-        <Tabs
-          value={selectedCategory}
-          onChange={(e, newValue) => setSelectedCategory(newValue)}
-          aria-label="category tabs"
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            '& .MuiTabs-flexContainer': {
-              flexWrap: 'wrap',
-            },
-            '& .MuiTab-root': {
-              fontWeight: 'bold',
-              my: 0.5,
-              '&:hover': {
-                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+        {/* Desktop: Tabs */}
+        <Box sx={{ 
+          display: { xs: 'none', md: 'block' } 
+        }}>
+          <Tabs
+            value={selectedCategory}
+            onChange={(e, newValue) => setSelectedCategory(newValue)}
+            aria-label="category tabs"
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider',
+              '& .MuiTabs-flexContainer': {
+                flexWrap: 'wrap',
+              },
+              '& .MuiTab-root': {
+                fontWeight: 'bold',
+                my: 0.5,
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                }
               }
-            }
-          }}
-        >
-          <Tab label="All Categories" value={null} />
-          {activeCategories.map(category => (
-            <Tab 
-              key={category.id} 
-              label={category.name} 
-              value={category.id} 
-            />
-          ))}
-        </Tabs>
+            }}
+          >
+            <Tab label="All Categories" value={null} />
+            {activeCategories.map(category => (
+              <Tab 
+                key={category.id} 
+                label={category.name} 
+                value={category.id} 
+              />
+            ))}
+          </Tabs>
+        </Box>
+        
+        {/* Mobile: Dropdown Select */}
+        <Box sx={{ 
+          display: { xs: 'block', md: 'none' } 
+        }}>
+          <FormControl fullWidth variant="outlined">
+            <InputLabel id="category-select-label">Category</InputLabel>
+            <Select
+              labelId="category-select-label"
+              id="category-select"
+              value={selectedCategory === null ? 'all' : selectedCategory}
+              onChange={(e) => {
+                const value = e.target.value === 'all' ? null : e.target.value;
+                setSelectedCategory(value);
+              }}
+              label="Category"
+            >
+              <MenuItem value="all">All Categories</MenuItem>
+              {activeCategories.map(category => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
       </Box>
 
       {/* Display corals based on selected category */}
