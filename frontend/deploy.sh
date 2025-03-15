@@ -3,6 +3,23 @@
 # Exit on error
 set -e
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Check if we're in the frontend directory
+if [[ "$(basename "$SCRIPT_DIR")" == "frontend" ]]; then
+    # We're already in the frontend directory
+    cd "$SCRIPT_DIR"
+else
+    # We're in the parent directory, need to cd into frontend
+    if [[ -d "$SCRIPT_DIR/frontend" ]]; then
+        cd "$SCRIPT_DIR/frontend"
+    else
+        echo "Error: Cannot find frontend directory. Please run this script from the project root or frontend directory."
+        exit 1
+    fi
+fi
+
 echo "Starting frontend deployment process..."
 
 # Create necessary directories

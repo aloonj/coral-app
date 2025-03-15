@@ -3,6 +3,23 @@
 # Exit on error
 set -e
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Check if we're in the backend directory
+if [[ "$(basename "$SCRIPT_DIR")" == "backend" ]]; then
+    # We're already in the backend directory
+    cd "$SCRIPT_DIR"
+else
+    # We're in the parent directory, need to cd into backend
+    if [[ -d "$SCRIPT_DIR/backend" ]]; then
+        cd "$SCRIPT_DIR/backend"
+    else
+        echo "Error: Cannot find backend directory. Please run this script from the project root or backend directory."
+        exit 1
+    fi
+fi
+
 echo "Starting deployment process..."
 
 # Create necessary directories

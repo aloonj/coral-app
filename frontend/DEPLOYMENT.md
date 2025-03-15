@@ -71,11 +71,14 @@ The application comes with a pre-configured `ecosystem.config.cjs` file that sup
 For production deployment, use the deployment script:
 
 ```bash
-# Start the application in production mode
+# Start the application in production mode (from frontend directory)
 ./deploy.sh production
+
+# Or from project root
+./frontend/deploy.sh production
 ```
 
-Note: The environment parameter is now required. The script will exit with an error if no environment is specified.
+Note: The environment parameter is now required. The script will exit with an error if no environment is specified. The script will automatically detect if it's being run from the project root or the frontend directory.
 
 This will:
 1. Stop any running development app
