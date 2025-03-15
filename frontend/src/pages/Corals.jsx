@@ -83,7 +83,7 @@ const Corals = () => {
   const [categoryForm, setCategoryForm] = useState({ name: '', description: '' });
   const [collapsedCategories, setCollapsedCategories] = useState(new Set());
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedStockFilter, setSelectedStockFilter] = useState(null);
+  // Stock filter state removed as it's being moved elsewhere
   const [categoryFormError, setCategoryFormError] = useState('');
   const [categoryError, setCategoryError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,7 +98,7 @@ const Corals = () => {
         limit: 9,
         offset: newOffset,
         ...(selectedCategory && { categoryId: selectedCategory }),
-        ...(selectedStockFilter && { stockStatus: selectedStockFilter }),
+        // Stock filter parameter removed as it's being moved elsewhere
         ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       };
       
@@ -119,7 +119,7 @@ const Corals = () => {
     } finally {
       setLoadingMore(false);
     }
-  }, [selectedCategory, selectedStockFilter, debouncedSearchTerm]);
+  }, [selectedCategory, debouncedSearchTerm]);
 
   // Initial data load
   useEffect(() => {
@@ -162,14 +162,14 @@ const Corals = () => {
     };
   }, [searchTerm, debouncedSetSearch]);
 
-  // Reset and refetch when category, stock filter, or search term changes
+  // Reset and refetch when category or search term changes
   useEffect(() => {
     if (!loading) {
       setOffset(0);
       setHasMore(true);
       fetchCorals(0, true);
     }
-  }, [selectedCategory, selectedStockFilter, debouncedSearchTerm, fetchCorals, loading]);
+  }, [selectedCategory, debouncedSearchTerm, fetchCorals, loading]);
 
   // Set up intersection observer for infinite scrolling
   useEffect(() => {
@@ -393,53 +393,7 @@ const Corals = () => {
         />
       </Box>
 
-      {/* Stock Filter Chips - Moved above category tabs */}
-      <Box sx={{ 
-        display: 'flex', 
-        gap: 1, 
-        flexWrap: 'wrap',
-        mb: 3
-      }}>
-        <Chip
-          label="All Stock"
-          color={selectedStockFilter === null ? "primary" : "default"}
-          onClick={() => setSelectedStockFilter(null)}
-          sx={{ 
-            fontWeight: 'bold',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 1
-            },
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-        />
-        <Chip
-          label="Low Stock"
-          color={selectedStockFilter === 'LOW_STOCK' ? "warning" : "default"}
-          onClick={() => setSelectedStockFilter('LOW_STOCK')}
-          sx={{ 
-            fontWeight: 'bold',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 1
-            },
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-        />
-        <Chip
-          label="Out of Stock"
-          color={selectedStockFilter === 'OUT_OF_STOCK' ? "error" : "default"}
-          onClick={() => setSelectedStockFilter('OUT_OF_STOCK')}
-          sx={{ 
-            fontWeight: 'bold',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 1
-            },
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-        />
-      </Box>
+      {/* Stock Filter Chips removed as they're being moved elsewhere */}
 
       {/* No results message when searching */}
       {searchTerm.trim() !== '' && corals.length === 0 && (
