@@ -51,6 +51,7 @@ import {
   ShoppingCart as ShoppingCartIcon
 } from '@mui/icons-material';
 import { PageTitle } from '../components/StyledComponents';
+import FloatingCartButton from '../components/Cart/FloatingCartButton';
 
 const QuickOrder = () => {
   const navigate = useNavigate();
@@ -943,6 +944,9 @@ const QuickOrder = () => {
           }}
         />
       )}
+
+      {/* Floating Cart Button */}
+      <FloatingCartButton />
     </Container>
   );
 };

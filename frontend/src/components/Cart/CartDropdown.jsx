@@ -30,7 +30,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { config } from '../../config';
 import api from '../../services/api';
 
-const CartDropdown = () => {
+const CartDropdown = ({ 
+  anchorEl: externalAnchorEl, 
+  open: externalOpen, 
+  drawerOpen: externalDrawerOpen, 
+  onClose: externalOnClose,
+  floatingButton = false
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -45,6 +51,11 @@ const CartDropdown = () => {
   const prevTotalItemsRef = useRef(totalItems);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   
+  // Use external props if provided (for floating button), otherwise use internal state
+  const effectiveAnchorEl = externalAnchorEl !== undefined ? externalAnchorEl : anchorEl;
+  const effectiveOpen = externalOpen !== undefined ? externalOpen : Boolean(anchorEl);
+  const effectiveDrawerOpen = externalDrawerOpen !== undefined ? externalDrawerOpen : drawerOpen;
+  
   const handleClick = (event) => {
     if (isMobile) {
       setDrawerOpen(true);
@@ -54,10 +65,14 @@ const CartDropdown = () => {
   };
   
   const handleClose = () => {
-    if (isMobile) {
-      setDrawerOpen(false);
+    if (externalOnClose) {
+      externalOnClose();
     } else {
-      setAnchorEl(null);
+      if (isMobile) {
+        setDrawerOpen(false);
+      } else {
+        setAnchorEl(null);
+      }
     }
   };
   
@@ -136,8 +151,6 @@ const CartDropdown = () => {
   
   // Determine if the Place Order button should be disabled
   const isPlaceOrderDisabled = isAdmin && !selectedClient;
-  
-  const open = Boolean(anchorEl);
   
   // Calculate discounted total price
   const discountedTotalPrice = useMemo(() => {
@@ -308,46 +321,49 @@ const CartDropdown = () => {
   
   return (
     <>
-      <IconButton
-        color="inherit"
-        onClick={handleClick}
-        aria-label="cart"
-        title="Cart"
-        sx={{
-          animation: animateCart ? 
-            'cartBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2' : 
-            'none',
-          '@keyframes cartBounce': {
-            '0%, 100%': { transform: 'scale(1)' },
-            '50%': { transform: 'scale(1.3)' }
-          }
-        }}
-      >
-        <Badge 
-          badgeContent={totalItems} 
-          color="secondary"
+      {/* Only show the cart icon button if not used as a floating button */}
+      {!floatingButton && (
+        <IconButton
+          color="inherit"
+          onClick={handleClick}
+          aria-label="cart"
+          title="Cart"
           sx={{
-            '& .MuiBadge-badge': {
-              animation: animateCart ? 
-                'badgePulse 1s cubic-bezier(0.4, 0, 0.6, 1)' : 
-                'none',
-              '@keyframes badgePulse': {
-                '0%': { backgroundColor: theme.palette.secondary.main },
-                '50%': { backgroundColor: theme.palette.success.main },
-                '100%': { backgroundColor: theme.palette.secondary.main }
-              }
+            animation: animateCart ? 
+              'cartBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2' : 
+              'none',
+            '@keyframes cartBounce': {
+              '0%, 100%': { transform: 'scale(1)' },
+              '50%': { transform: 'scale(1.3)' }
             }
           }}
         >
-          <ShoppingCartIcon />
-        </Badge>
-      </IconButton>
+          <Badge 
+            badgeContent={totalItems} 
+            color="secondary"
+            sx={{
+              '& .MuiBadge-badge': {
+                animation: animateCart ? 
+                  'badgePulse 1s cubic-bezier(0.4, 0, 0.6, 1)' : 
+                  'none',
+                '@keyframes badgePulse': {
+                  '0%': { backgroundColor: theme.palette.secondary.main },
+                  '50%': { backgroundColor: theme.palette.success.main },
+                  '100%': { backgroundColor: theme.palette.secondary.main }
+                }
+              }
+            }}
+          >
+            <ShoppingCartIcon />
+          </Badge>
+        </IconButton>
+      )}
       
       {/* Desktop Popover */}
       {!isMobile && (
         <Popover
-          open={open}
-          anchorEl={anchorEl}
+          open={effectiveOpen}
+          anchorEl={effectiveAnchorEl}
           onClose={handleClose}
           anchorOrigin={{
             vertical: 'bottom',
@@ -368,7 +384,7 @@ const CartDropdown = () => {
       {isMobile && (
         <Drawer
           anchor="right"
-          open={drawerOpen}
+          open={effectiveDrawerOpen}
           onClose={handleClose}
           PaperProps={{
             sx: { 
