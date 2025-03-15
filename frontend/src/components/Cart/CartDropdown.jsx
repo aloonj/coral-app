@@ -20,7 +20,9 @@ import {
 import {
   Delete as DeleteIcon,
   ShoppingCart as ShoppingCartIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Add as AddIcon,
+  Remove as RemoveIcon
 } from '@mui/icons-material';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -31,7 +33,7 @@ const CartDropdown = () => {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { cartItems, orderQuantities, removeFromCart, clearCart, totalItems, totalPrice } = useCart();
+  const { cartItems, orderQuantities, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
   const { user } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -134,9 +136,37 @@ const CartDropdown = () => {
                   primary={item.speciesName}
                   secondary={
                     <>
-                      <Typography component="span" variant="body2">
-                        {orderQuantities[item.id]} × {config.defaultCurrency}{item.price}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                        <IconButton 
+                          size="small" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateQuantity(item.id, Math.max(1, (orderQuantities[item.id] || 0) - 1));
+                          }}
+                          sx={{ p: 0.5 }}
+                        >
+                          <RemoveIcon fontSize="small" />
+                        </IconButton>
+                        
+                        <Typography component="span" variant="body2" sx={{ mx: 1 }}>
+                          {orderQuantities[item.id]}
+                        </Typography>
+                        
+                        <IconButton 
+                          size="small" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateQuantity(item.id, (orderQuantities[item.id] || 0) + 1);
+                          }}
+                          sx={{ p: 0.5 }}
+                        >
+                          <AddIcon fontSize="small" />
+                        </IconButton>
+                        
+                        <Typography component="span" variant="body2" sx={{ ml: 1 }}>
+                          × {config.defaultCurrency}{item.price}
+                        </Typography>
+                      </Box>
                     </>
                   }
                 />
