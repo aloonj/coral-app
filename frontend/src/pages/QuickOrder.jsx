@@ -43,7 +43,8 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Search as SearchIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  ShoppingCart as ShoppingCartIcon
 } from '@mui/icons-material';
 import { PageTitle } from '../components/StyledComponents';
 
@@ -54,7 +55,11 @@ const QuickOrder = () => {
   const [corals, setCorals] = useState([]);
   const [categories, setCategories] = useState([]);
   const [clients, setClients] = useState([]);
-  const [selectedClient, setSelectedClient] = useState('');
+  const [selectedClient, setSelectedClient] = useState(() => {
+    // Initialize from localStorage if available
+    const savedClient = localStorage.getItem('selectedClient');
+    return savedClient || '';
+  });
   const [clientDiscountRate, setClientDiscountRate] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -94,6 +99,12 @@ const QuickOrder = () => {
       } else {
         setClientDiscountRate(0);
       }
+      
+      // Save selected client to localStorage
+      localStorage.setItem('selectedClient', selectedClient);
+    } else if (isAdmin && !selectedClient) {
+      // Clear localStorage when no client is selected
+      localStorage.removeItem('selectedClient');
     }
   }, [isAdmin, selectedClient, clients]);
 
@@ -326,6 +337,9 @@ const QuickOrder = () => {
     return Math.round(discountedPrice * 100) / 100; // Round to 2 decimal places
   };
 
+  // Check if the order button should be disabled
+  const isOrderButtonDisabled = isAdmin && !selectedClient;
+
   const handleBulkOrder = async () => {
     const orderItems = Object.entries(orderQuantities)
       .filter(([_, quantity]) => quantity > 0)
@@ -355,6 +369,12 @@ const QuickOrder = () => {
         return total + (discountedPrice * quantity);
       }, 0);
 
+      // Validate that admin has selected a client
+      if (isAdmin && !selectedClient) {
+        alert('Please select a client to place an order for');
+        return;
+      }
+      
       const orderData = {
         items: orderItems,
         totalAmount,
@@ -881,6 +901,25 @@ const QuickOrder = () => {
           </Box>
         );
       })}
+
+      {/* Order Button */}
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        my: 3 
+      }}>
+        <Button
+          variant="contained"
+          color="primary"
+          size="large"
+          onClick={handleBulkOrder}
+          disabled={isOrderButtonDisabled || Object.values(orderQuantities).every(qty => qty === 0)}
+          startIcon={<ShoppingCartIcon />}
+          sx={{ px: 4, py: 1 }}
+        >
+          Place Order
+        </Button>
+      </Box>
 
       {/* Infinite Scroll Observer */}
       <Box 

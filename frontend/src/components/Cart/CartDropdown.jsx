@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -23,15 +23,20 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { config } from '../../config';
 
 const CartDropdown = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { cartItems, orderQuantities, removeFromCart, clearCart, totalItems, totalPrice } = useCart();
+  const { user } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState('');
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   
   const handleClick = (event) => {
     if (isMobile) {
@@ -49,10 +54,23 @@ const CartDropdown = () => {
     }
   };
   
+  // Check if we're on the QuickOrder page and get the selected client from localStorage
+  useEffect(() => {
+    if (location.pathname === '/quickorder') {
+      const savedClient = localStorage.getItem('selectedClient');
+      if (savedClient) {
+        setSelectedClient(savedClient);
+      }
+    }
+  }, [location.pathname]);
+
   const handleCheckout = () => {
     navigate('/quickorder');
     handleClose();
   };
+  
+  // Determine if the Place Order button should be disabled
+  const isPlaceOrderDisabled = isAdmin && !selectedClient;
   
   const open = Boolean(anchorEl);
   
@@ -137,8 +155,9 @@ const CartDropdown = () => {
                 onClick={handleCheckout}
                 color="primary"
                 fullWidth
+                disabled={isPlaceOrderDisabled}
               >
-                Checkout
+                Place Order
               </Button>
             </Box>
           </Box>
