@@ -147,6 +147,23 @@ const QuickOrder = () => {
     }
   }, [selectedCategory, debouncedSearchTerm]);
 
+  // Function to fetch corals for a specific category
+  const fetchCoralsByCategory = useCallback(async (categoryId) => {
+    try {
+      const params = {
+        limit: 3, // Get just a few corals per category
+        offset: 0,
+        categoryId
+      };
+      
+      const response = await coralService.getCorals(params);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching corals for category ${categoryId}:`, error);
+      return [];
+    }
+  }, []);
+
   // Initial data load
   useEffect(() => {
     if (!user) {
@@ -160,10 +177,20 @@ const QuickOrder = () => {
         
         // Fetch categories first
         const categoriesResponse = await categoryService.getAllCategories();
-        setCategories(categoriesResponse.data);
+        const fetchedCategories = categoriesResponse.data;
+        setCategories(fetchedCategories);
         
-        // Fetch initial corals with pagination
-        await fetchCorals(0, true);
+        // Fetch a few corals from each category to ensure all categories have some corals
+        let allCorals = [];
+        for (const category of fetchedCategories) {
+          const categoryCorals = await fetchCoralsByCategory(category.id);
+          allCorals = [...allCorals, ...categoryCorals];
+        }
+        
+        // Set all fetched corals
+        setCorals(allCorals);
+        setOffset(allCorals.length);
+        setHasMore(true);
         
         // Fetch clients or client profile separately
         if (isAdmin) {
@@ -193,7 +220,7 @@ const QuickOrder = () => {
     };
 
     fetchInitialData();
-  }, [user, isAdmin, fetchCorals]);
+  }, [user, isAdmin, fetchCoralsByCategory]);
 
   // Create a debounced function to update the debouncedSearchTerm
   const debouncedSetSearch = useMemo(
