@@ -256,6 +256,7 @@ const Corals = () => {
     }
   };
 
+  // Calculate stock status based on quantity and minimumStock
   const getStockStatus = (coral) => {
     if (coral.quantity === 0) return 'OUT_OF_STOCK';
     if (coral.quantity <= coral.minimumStock) return 'LOW_STOCK';

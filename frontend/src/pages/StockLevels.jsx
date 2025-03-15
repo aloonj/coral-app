@@ -66,17 +66,35 @@ const StockLevels = () => {
         
         const coralsRes = await coralService.getCorals(params);
         
-        // Sort corals by stock status and quantity
-        const sortedCorals = coralsRes.data.sort((a, b) => {
+        // Calculate correct status for each coral and sort
+        const processedCorals = coralsRes.data.map(coral => {
+          // Calculate the correct status based on quantity and minimumStock
+          let calculatedStatus;
+          if (coral.quantity === 0) {
+            calculatedStatus = 'OUT_OF_STOCK';
+          } else if (coral.quantity <= coral.minimumStock) {
+            calculatedStatus = 'LOW_STOCK';
+          } else {
+            calculatedStatus = 'AVAILABLE';
+          }
+          
+          // Return coral with calculated status
+          return {
+            ...coral,
+            calculatedStatus
+          };
+        });
+        
+        // Sort corals by calculated status and quantity
+        const sortedCorals = processedCorals.sort((a, b) => {
           // First sort by status priority (OUT_OF_STOCK > LOW_STOCK > AVAILABLE)
-          // This uses the status field which is set by the backend based on quantity and minimumStock
           const statusPriority = {
-            'OUT_OF_STOCK': 0, // quantity === 0
-            'LOW_STOCK': 1,    // quantity <= minimumStock
-            'AVAILABLE': 2     // quantity > minimumStock
+            'OUT_OF_STOCK': 0,
+            'LOW_STOCK': 1,
+            'AVAILABLE': 2
           };
           
-          const statusDiff = statusPriority[a.status] - statusPriority[b.status];
+          const statusDiff = statusPriority[a.calculatedStatus] - statusPriority[b.calculatedStatus];
           if (statusDiff !== 0) return statusDiff;
           
           // Then sort by quantity (ascending)
@@ -95,7 +113,20 @@ const StockLevels = () => {
     fetchData();
   }, [selectedCategory]);
 
-  const getStockStatusChip = (status) => {
+  // Calculate stock status based on quantity and minimumStock
+  const getCalculatedStatus = (coral) => {
+    if (coral.quantity === 0) {
+      return 'OUT_OF_STOCK';
+    } else if (coral.quantity <= coral.minimumStock) {
+      return 'LOW_STOCK';
+    } else {
+      return 'AVAILABLE';
+    }
+  };
+
+  const getStockStatusChip = (coral) => {
+    const status = getCalculatedStatus(coral);
+    
     switch (status) {
       case 'OUT_OF_STOCK':
         return <Chip label="Out of Stock" color="error" size="small" />;
@@ -188,19 +219,19 @@ const StockLevels = () => {
         <Paper sx={{ p: 2, flex: 1, minWidth: '200px' }}>
           <Typography variant="h6" color="error" gutterBottom>Out of Stock</Typography>
           <Typography variant="h4">
-            {corals.filter(coral => coral.status === 'OUT_OF_STOCK').length}
+            {corals.filter(coral => coral.quantity === 0).length}
           </Typography>
         </Paper>
         <Paper sx={{ p: 2, flex: 1, minWidth: '200px' }}>
           <Typography variant="h6" color="warning.main" gutterBottom>Low Stock</Typography>
           <Typography variant="h4">
-            {corals.filter(coral => coral.status === 'LOW_STOCK').length}
+            {corals.filter(coral => coral.quantity > 0 && coral.quantity <= coral.minimumStock).length}
           </Typography>
         </Paper>
         <Paper sx={{ p: 2, flex: 1, minWidth: '200px' }}>
           <Typography variant="h6" color="success.main" gutterBottom>In Stock</Typography>
           <Typography variant="h4">
-            {corals.filter(coral => coral.status === 'AVAILABLE').length}
+            {corals.filter(coral => coral.quantity > coral.minimumStock).length}
           </Typography>
         </Paper>
         <Paper sx={{ p: 2, flex: 1, minWidth: '200px' }}>
@@ -234,8 +265,8 @@ const StockLevels = () => {
                   sx={{ 
                     '&:last-child td, &:last-child th': { border: 0 },
                     backgroundColor: 
-                      coral.status === 'OUT_OF_STOCK' ? 'error.lighter' :
-                      coral.status === 'LOW_STOCK' ? 'warning.lighter' :
+                      coral.quantity === 0 ? 'error.lighter' :
+                      coral.quantity <= coral.minimumStock ? 'warning.lighter' :
                       'inherit'
                   }}
                 >
@@ -247,7 +278,7 @@ const StockLevels = () => {
                   <TableCell align="right">{config.defaultCurrency}{coral.price}</TableCell>
                   <TableCell align="right">{coral.quantity}</TableCell>
                   <TableCell align="right">{coral.minimumStock}</TableCell>
-                  <TableCell>{getStockStatusChip(coral.status)}</TableCell>
+                  <TableCell>{getStockStatusChip(coral)}</TableCell>
                 </TableRow>
               );
             })}
