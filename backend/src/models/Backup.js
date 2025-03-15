@@ -8,7 +8,7 @@ const Backup = sequelize.define('Backup', {
     primaryKey: true
   },
   type: {
-    type: DataTypes.ENUM('database'),
+    type: DataTypes.ENUM('full', 'database', 'images'),
     allowNull: false
   },
   status: {
