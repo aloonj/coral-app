@@ -47,7 +47,8 @@ import {
   Category as CategoryIcon,
   Close as CloseIcon,
   Search as SearchIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import {
   PageTitle,
@@ -358,6 +359,19 @@ const Corals = () => {
               }}
             >
               Manage Categories
+            </ActionButton>
+            <ActionButton
+              variant="contained"
+              color="primary"
+              startIcon={<AssessmentIcon />}
+              onClick={() => navigate('/corals/stock-levels')}
+              sx={{ 
+                py: 1.5,
+                fontSize: '1rem',
+                width: { xs: '100%', md: 'auto' }
+              }}
+            >
+              Stock Levels
             </ActionButton>
           </Stack>
         )}

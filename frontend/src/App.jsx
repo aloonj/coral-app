@@ -4,6 +4,7 @@ import { CartProvider } from './contexts/CartContext';
 import LayoutWithThemeToggle from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Corals from './pages/Corals';
+import StockLevels from './pages/StockLevels';
 import QuickOrder from './pages/QuickOrder';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -72,6 +73,14 @@ function App() {
               element={
                 <ProtectedRoute requireAdmin>
                   <Corals />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/corals/stock-levels" 
+              element={
+                <ProtectedRoute requireAdmin>
+                  <StockLevels />
                 </ProtectedRoute>
               } 
             />
