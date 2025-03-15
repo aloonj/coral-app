@@ -111,31 +111,49 @@ npm run seed
 
 ### 5. Configure PM2
 
-Create ecosystem.config.js in the backend directory:
+The application comes with a pre-configured `ecosystem.config.cjs` file that supports both production and development environments.
+
+#### Production Deployment
+
+For production deployment:
+
 ```bash
-nano ecosystem.config.js
+# Start the application in production mode
+pm2 start ecosystem.config.cjs --env production
+# Or use the deployment script
+./deploy.sh production
 ```
 
-Add the following content:
-```javascript
-module.exports = {
-  apps: [{
-    name: 'coral-backend',
-    script: 'src/server.js',
-    instances: 1,
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '1G',
-    env: {
-      NODE_ENV: 'production',
-    }
-  }]
-};
+#### Development Deployment
+
+For development deployment:
+
+```bash
+# Start the application in development mode
+pm2 start ecosystem.config.cjs --env development
+# Or use the deployment script
+./deploy.sh development
 ```
 
-Start the application with PM2:
+#### Environment-Specific Configuration
+
+The ecosystem config file defines different app configurations for production and development:
+
+- **Production Environment**:
+  - App names: `coral-backend`, `coral-notification-worker`, `coral-backup-worker`
+  - Ports: Backend runs on port 5000
+  - Watch mode: Disabled
+  - Environment: `NODE_ENV=production`
+
+- **Development Environment**:
+  - App names: `dev-coral-backend`, `dev-coral-notification-worker`, `dev-coral-backup-worker`
+  - Ports: Backend runs on port 5001
+  - Watch mode: Enabled for automatic reloading
+  - Environment: `NODE_ENV=development`
+
+After starting the application, save the PM2 configuration:
+
 ```bash
-pm2 start ecosystem.config.js
 pm2 save
 pm2 startup
 ```
