@@ -535,22 +535,25 @@ const QuickOrder = () => {
           scrollButtons="auto"
           allowScrollButtonsMobile
           aria-label="category tabs"
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            '& .MuiTab-root': {
-              fontWeight: 'bold',
-              transition: 'all 0.2s',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: 1
-              }
-            },
-            // Fix for mobile scrolling
-            '& .MuiTabs-scroller': {
-              overflow: 'auto !important'
-            }
-          }}
+      sx={{
+        borderBottom: 1,
+        borderColor: 'divider',
+        '& .MuiTab-root': {
+          fontWeight: 'bold',
+          position: 'relative',
+          transition: 'transform 0.2s, box-shadow 0.2s',
+          zIndex: 1,
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: 1,
+            zIndex: 2
+          }
+        },
+        // Fix for mobile scrolling
+        '& .MuiTabs-scroller': {
+          overflow: 'auto !important'
+        }
+      }}
         >
           <Tab label="All" value={null} />
           {categories
