@@ -2,7 +2,7 @@ import env from './env.js';
 import User from '../models/User.js';
 import Category from '../models/Category.js';
 import Coral from '../models/Coral.js';
-import sequelize from './database.js';
+import { sequelize } from './database.js';
 import { fileURLToPath } from 'url';
 
 const categories = [

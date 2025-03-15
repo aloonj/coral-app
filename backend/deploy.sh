@@ -36,7 +36,10 @@ fi
 
 # Initialize/update database
 echo "Running database operations..."
-node src/config/seeder.js
+if ! node src/config/seeder.js; then
+    echo "Database seeding failed. Exiting deployment."
+    exit 1
+fi
 
 # Start/restart PM2 application
 echo "Starting application..."
