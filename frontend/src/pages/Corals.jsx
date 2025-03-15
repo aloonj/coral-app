@@ -401,6 +401,54 @@ const Corals = () => {
         />
       </Box>
 
+      {/* Stock Filter Chips - Moved above category tabs */}
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 1, 
+        flexWrap: 'wrap',
+        mb: 3
+      }}>
+        <Chip
+          label="All Stock"
+          color={selectedStockFilter === null ? "primary" : "default"}
+          onClick={() => setSelectedStockFilter(null)}
+          sx={{ 
+            fontWeight: 'bold',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 1
+            },
+            transition: 'transform 0.2s, box-shadow 0.2s'
+          }}
+        />
+        <Chip
+          label="Low Stock"
+          color={selectedStockFilter === 'LOW_STOCK' ? "warning" : "default"}
+          onClick={() => setSelectedStockFilter('LOW_STOCK')}
+          sx={{ 
+            fontWeight: 'bold',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 1
+            },
+            transition: 'transform 0.2s, box-shadow 0.2s'
+          }}
+        />
+        <Chip
+          label="Out of Stock"
+          color={selectedStockFilter === 'OUT_OF_STOCK' ? "error" : "default"}
+          onClick={() => setSelectedStockFilter('OUT_OF_STOCK')}
+          sx={{ 
+            fontWeight: 'bold',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 1
+            },
+            transition: 'transform 0.2s, box-shadow 0.2s'
+          }}
+        />
+      </Box>
+
       {/* No results message when searching */}
       {searchTerm.trim() !== '' && corals.length === 0 && (
         <Box sx={{ 
@@ -430,7 +478,6 @@ const Corals = () => {
 
       {/* Category Tabs */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>Filter by Category:</Typography>
         <Tabs
           value={selectedCategory}
           onChange={(e, newValue) => setSelectedCategory(newValue)}
@@ -461,53 +508,6 @@ const Corals = () => {
             />
           ))}
         </Tabs>
-
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>Filter by Stock:</Typography>
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 1, 
-          flexWrap: 'wrap'
-        }}>
-          <Chip
-            label="All Stock"
-            color={selectedStockFilter === null ? "primary" : "default"}
-            onClick={() => setSelectedStockFilter(null)}
-            sx={{ 
-              fontWeight: 'bold',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: 1
-              },
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
-          />
-          <Chip
-            label="Low Stock"
-            color={selectedStockFilter === 'LOW_STOCK' ? "warning" : "default"}
-            onClick={() => setSelectedStockFilter('LOW_STOCK')}
-            sx={{ 
-              fontWeight: 'bold',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: 1
-              },
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
-          />
-          <Chip
-            label="Out of Stock"
-            color={selectedStockFilter === 'OUT_OF_STOCK' ? "error" : "default"}
-            onClick={() => setSelectedStockFilter('OUT_OF_STOCK')}
-            sx={{ 
-              fontWeight: 'bold',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: 1
-              },
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
-          />
-        </Box>
       </Box>
 
       {(selectedCategory ? activeCategories.filter(c => c.id === selectedCategory) : activeCategories).map(category => {
