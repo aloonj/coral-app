@@ -37,17 +37,27 @@ ENV=${1:-production}
 echo "Deploying for environment: $ENV"
 
 if [ "$ENV" = "development" ]; then
+    # Development environment
     APP_NAME="dev-coral-frontend"
+    
+    # Stop production app if it's running
+    echo "Stopping any running production app..."
+    pm2 stop coral-frontend 2>/dev/null || true
 else
+    # Production environment
     APP_NAME="coral-frontend"
+    
+    # Stop development app if it's running
+    echo "Stopping any running development app..."
+    pm2 stop dev-coral-frontend 2>/dev/null || true
 fi
 
 if pm2 list | grep -q "$APP_NAME"; then
-    echo "Restarting existing PM2 process..."
+    echo "Restarting existing PM2 process: $APP_NAME"
     pm2 restart $APP_NAME
 else
-    echo "Starting new PM2 process..."
-    pm2 start ecosystem.config.cjs --env $ENV
+    echo "Starting new PM2 process: $APP_NAME"
+    pm2 start ecosystem.config.cjs --only $APP_NAME --env $ENV
 fi
 
 # Save PM2 process list

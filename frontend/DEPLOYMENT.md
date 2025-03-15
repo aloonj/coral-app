@@ -68,25 +68,31 @@ The application comes with a pre-configured `ecosystem.config.cjs` file that sup
 
 #### Production Deployment
 
-For production deployment:
+For production deployment, use the deployment script:
 
 ```bash
 # Start the application in production mode
-pm2 start ecosystem.config.cjs --env production
-# Or use the deployment script
 ./deploy.sh production
 ```
 
+This will:
+1. Stop any running development app
+2. Start or restart the production app with the correct environment settings
+
 #### Development Deployment
 
-For development deployment:
+For development deployment, use the deployment script:
 
 ```bash
 # Start the application in development mode
-pm2 start ecosystem.config.cjs --env development
-# Or use the deployment script
 ./deploy.sh development
 ```
+
+This will:
+1. Stop any running production app
+2. Start or restart the development app with the correct environment settings
+
+> **Important**: Always use the deployment script instead of starting the ecosystem file directly with PM2. The script ensures only the appropriate app for the selected environment is running.
 
 #### Environment-Specific Configuration
 
