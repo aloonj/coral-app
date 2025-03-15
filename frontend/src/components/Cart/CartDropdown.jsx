@@ -62,6 +62,19 @@ const CartDropdown = () => {
         setSelectedClient(savedClient);
       }
     }
+    
+    // Listen for client selection changes
+    const handleClientSelectionChange = (event) => {
+      setSelectedClient(event.detail.selectedClient);
+    };
+    
+    // Add event listener
+    window.addEventListener('clientSelectionChanged', handleClientSelectionChange);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('clientSelectionChanged', handleClientSelectionChange);
+    };
   }, [location.pathname]);
 
   const handleCheckout = () => {

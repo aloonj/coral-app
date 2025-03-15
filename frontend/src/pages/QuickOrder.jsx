@@ -100,11 +100,19 @@ const QuickOrder = () => {
         setClientDiscountRate(0);
       }
       
-      // Save selected client to localStorage
+      // Save selected client to localStorage and dispatch custom event
       localStorage.setItem('selectedClient', selectedClient);
+      // Dispatch a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('clientSelectionChanged', { 
+        detail: { selectedClient } 
+      }));
     } else if (isAdmin && !selectedClient) {
       // Clear localStorage when no client is selected
       localStorage.removeItem('selectedClient');
+      // Dispatch a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('clientSelectionChanged', { 
+        detail: { selectedClient: '' } 
+      }));
     }
   }, [isAdmin, selectedClient, clients]);
 
