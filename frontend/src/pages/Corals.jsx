@@ -98,7 +98,7 @@ const Corals = () => {
         limit: 9,
         offset: newOffset,
         ...(selectedCategory && { categoryId: selectedCategory }),
-        // Removed selectedStockFilter from API params to always show all corals
+        ...(selectedStockFilter && { stockStatus: selectedStockFilter }),
         ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       };
       
