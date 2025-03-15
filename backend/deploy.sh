@@ -45,8 +45,21 @@ fi
 echo "Starting application..."
 
 # Check if environment is specified
-ENV=${1:-production}
+if [ -z "$1" ]; then
+    echo "Error: No environment specified. Please specify 'production' or 'development'."
+    echo "Usage: ./deploy.sh [production|development]"
+    exit 1
+fi
+
+ENV=$1
 echo "Deploying for environment: $ENV"
+
+# Validate environment parameter
+if [ "$ENV" != "production" ] && [ "$ENV" != "development" ]; then
+    echo "Error: Invalid environment '$ENV'. Please specify 'production' or 'development'."
+    echo "Usage: ./deploy.sh [production|development]"
+    exit 1
+fi
 
 if [ "$ENV" = "development" ]; then
     # Development environment
@@ -64,14 +77,37 @@ else
     pm2 stop dev-coral-backend dev-coral-notification-worker dev-coral-backup-worker 2>/dev/null || true
 fi
 
+# Load environment variables from .env file to pass to PM2
+echo "Loading environment variables from .env file..."
+ENV_VARS=""
+while IFS= read -r line || [[ -n "$line" ]]; do
+    # Skip comments and empty lines
+    if [[ ! "$line" =~ ^# && -n "$line" ]]; then
+        # Extract variable name and value
+        if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
+            VAR_NAME="${BASH_REMATCH[1]}"
+            VAR_VALUE="${BASH_REMATCH[2]}"
+            # Remove quotes if present
+            VAR_VALUE="${VAR_VALUE%\"}"
+            VAR_VALUE="${VAR_VALUE#\"}"
+            VAR_VALUE="${VAR_VALUE%\'}"
+            VAR_VALUE="${VAR_VALUE#\'}"
+            # Add to environment variables string
+            ENV_VARS="$ENV_VARS --env $VAR_NAME=\"$VAR_VALUE\""
+        fi
+    fi
+done < .env
+
 # Start or restart the apps for the selected environment
 for APP_NAME in "${APP_NAMES[@]}"; do
     if pm2 list | grep -q "$APP_NAME"; then
         echo "Restarting existing PM2 process: $APP_NAME"
-        pm2 restart $APP_NAME
+        # Use eval to properly handle the environment variables
+        eval "pm2 restart $APP_NAME $ENV_VARS"
     else
         echo "Starting new PM2 process: $APP_NAME"
-        pm2 start ecosystem.config.cjs --only $APP_NAME --env $ENV
+        # Use eval to properly handle the environment variables
+        eval "pm2 start ecosystem.config.cjs --only $APP_NAME --env $ENV $ENV_VARS"
     fi
 done
 

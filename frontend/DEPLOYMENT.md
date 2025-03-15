@@ -75,6 +75,8 @@ For production deployment, use the deployment script:
 ./deploy.sh production
 ```
 
+Note: The environment parameter is now required. The script will exit with an error if no environment is specified.
+
 This will:
 1. Stop any running development app
 2. Start or restart the production app with the correct environment settings
@@ -92,7 +94,10 @@ This will:
 1. Stop any running production app
 2. Start or restart the development app with the correct environment settings
 
-> **Important**: Always use the deployment script instead of starting the ecosystem file directly with PM2. The script ensures only the appropriate app for the selected environment is running.
+> **Important**: Always use the deployment script instead of starting the ecosystem file directly with PM2. The script:
+> 1. Ensures only the appropriate app for the selected environment is running
+> 2. Passes all environment variables from your .env file to PM2
+> 3. Handles error checking and proper startup sequence
 
 #### Environment-Specific Configuration
 
