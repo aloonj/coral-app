@@ -99,8 +99,8 @@ router.get('/google',
   })
 );
 
-// Google login route (POST method to hide URL from browser history)
-router.post('/google-login', (req, res) => {
+// Google login route (GET method for simplicity)
+router.get('/google-login', (req, res) => {
   res.redirect('/api/auth/google');
 });
 
