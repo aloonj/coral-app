@@ -152,7 +152,6 @@ export const authService = {
   },
   getClientProfile: () => api.get('/auth/client-profile'),
   updateClientProfile: (data) => api.put('/auth/client-profile', data),
-  getFeatureFlags: () => api.get('/auth/feature-flags'),
 };
 
 export const orderService = {

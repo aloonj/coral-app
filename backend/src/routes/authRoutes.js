@@ -128,15 +128,5 @@ router.get('/google/callback',
   }
 );
 
-// Feature flag endpoint
-router.get('/feature-flags',
-  (req, res) => {
-    console.log('Feature flags endpoint accessed');
-    console.log('ENABLE_GOOGLE_LOGIN:', process.env.ENABLE_GOOGLE_LOGIN);
-    res.json({
-      googleLoginEnabled: process.env.ENABLE_GOOGLE_LOGIN === 'true'
-    });
-  }
-);
 
 export default router;

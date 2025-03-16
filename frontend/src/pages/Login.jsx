@@ -5,13 +5,12 @@ import AuthForm from '../components/Auth/AuthForm';
 import GoogleButton from 'react-google-button';
 import { Container, Box, Typography, Divider, Fade } from '@mui/material';
 import { PageTitle, ActionButton, FormContainer, FormError } from '../components/StyledComponents';
-import api, { API_URL, authService } from '../services/api';
+import api, { API_URL } from '../services/api';
 
 const Login = () => {
   const { user } = useAuth();
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
-  const [googleLoginEnabled, setGoogleLoginEnabled] = useState(false);
   
   useEffect(() => {
     // Check for registration success message in localStorage
@@ -27,18 +26,6 @@ const Login = () => {
     if (params.get('error') === 'google_auth_failed') {
       setError('Google login failed. No account found with this email.');
     }
-    
-    // Fetch feature flags
-    const fetchFeatureFlags = async () => {
-      try {
-        const response = await authService.getFeatureFlags();
-        setGoogleLoginEnabled(response.data.googleLoginEnabled);
-      } catch (error) {
-        console.error('Error fetching feature flags:', error);
-      }
-    };
-    
-    fetchFeatureFlags();
   }, []);
   
   if (user) {
@@ -98,25 +85,21 @@ const Login = () => {
           
           <AuthForm mode="login" />
           
-          {googleLoginEnabled && (
-            <>
-              <Divider sx={{ my: 3 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ px: 1 }}>
-                  OR
-                </Typography>
-              </Divider>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-                <GoogleButton 
-                  onClick={() => {
-                    // Use the google-login route which redirects to the OAuth flow
-                    window.location.href = `${API_URL}/auth/google-login`;
-                  }}
-                  label="Sign in with Google"
-                />
-              </Box>
-            </>
-          )}
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ px: 1 }}>
+              OR
+            </Typography>
+          </Divider>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+            <GoogleButton 
+              onClick={() => {
+                // Use the google-login route which redirects to the OAuth flow
+                window.location.href = `${API_URL}/auth/google-login`;
+              }}
+              label="Sign in with Google"
+            />
+          </Box>
           
           <Divider sx={{ my: 3 }} />
           
