@@ -91,29 +91,31 @@ router.put('/admins/:id/role', authenticate, authorize('SUPERADMIN'), [
   body('role').isIn(['ADMIN', 'SUPERADMIN']).withMessage('Invalid role')
 ], updateAdminRole);
 
-// Google OAuth routes
-router.get('/google',
+// Google OAuth routes with explicit initialization
+router.get('/google', (req, res, next) => {
+  console.log('Google auth route hit, initializing passport authentication');
   passport.authenticate('google', { 
     scope: ['profile', 'email'],
     state: true // For CSRF protection
-  })
-);
+  })(req, res, next);
+});
 
 // Google login route (GET method for simplicity)
 router.get('/google-login', (req, res) => {
   res.redirect(`${process.env.FRONTEND_URL}/api/auth/google`);
 });
 
-// Google callback route
-router.get('/google/callback',
-  (req, res, next) => {
-    console.log('Google callback route hit with query params:', req.query);
-    console.log('Full callback URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
-    passport.authenticate('google', { 
-      session: false,
-      failWithError: true
-    })(req, res, next);
-  },
+// Google callback route with explicit initialization
+router.get('/google/callback', (req, res, next) => {
+  console.log('Google callback route hit with query params:', req.query);
+  console.log('Full callback URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
+  
+  // Ensure passport authentication is explicitly initialized
+  passport.authenticate('google', { 
+    session: false,
+    failWithError: true
+  })(req, res, next);
+},
   (req, res) => {
     // Authentication successful, generate JWT token
     console.log('Google authentication successful for user:', {

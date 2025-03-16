@@ -10,7 +10,14 @@ const LoginSuccess = () => {
   const [status, setStatus] = useState('Processing login...');
   
   useEffect(() => {
-    const processLogin = async () => {
+    // Add a small delay to ensure the component mounts properly before processing
+    const processLoginTimer = setTimeout(() => {
+      processLogin();
+    }, 100);
+    
+    return () => clearTimeout(processLoginTimer);
+    
+    async function processLogin() {
       try {
         // Get URL parameters
         const params = new URLSearchParams(window.location.search);
@@ -52,18 +59,18 @@ const LoginSuccess = () => {
           
           // Redirect to dashboard
           setStatus('Redirecting to dashboard...');
-          setTimeout(() => navigate('/dashboard'), 500);
+          setTimeout(() => navigate('/dashboard'), 300);
         } else {
           // No token found, redirect to login with error message
           setStatus('Authentication failed, redirecting...');
           const errorMessage = error || 'Authentication failed. Please try again.';
           console.log('LoginSuccess: No token, redirecting with error', errorMessage);
-          setTimeout(() => navigate(`/login?error=${encodeURIComponent(errorMessage)}`), 500);
+          setTimeout(() => navigate(`/login?error=${encodeURIComponent(errorMessage)}`), 300);
         }
       } catch (e) {
         console.error('LoginSuccess: Unexpected error', e);
         setStatus('An error occurred. Redirecting to login...');
-        setTimeout(() => navigate('/login?error=Unexpected+error+during+login'), 500);
+        setTimeout(() => navigate('/login?error=Unexpected+error+during+login'), 300);
       }
     };
     
