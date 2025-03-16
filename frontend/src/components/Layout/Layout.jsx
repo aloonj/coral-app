@@ -1,6 +1,7 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
+import { config } from '../../config';
 import { 
   AppBar,
   Toolbar,
@@ -334,6 +335,22 @@ const LayoutWithThemeToggle = ({ children }) => {
                 transition: 'transform 0.3s ease',
               }}
             />
+            {import.meta.env.DEV && (
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  ml: 1, 
+                  backgroundColor: 'error.main', 
+                  color: 'error.contrastText',
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  fontWeight: 'bold'
+                }}
+              >
+                *test version*
+              </Typography>
+            )}
           </Box>
           
           <Box sx={{ flexGrow: 1 }} />
