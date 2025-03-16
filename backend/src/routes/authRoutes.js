@@ -107,6 +107,7 @@ router.get('/google-login', (req, res) => {
 // Google callback route
 router.get('/google/callback',
   (req, res, next) => {
+    console.log('Google callback route hit');
     passport.authenticate('google', { 
       session: false,
       failWithError: true
@@ -114,6 +115,13 @@ router.get('/google/callback',
   },
   (req, res) => {
     // Authentication successful, generate JWT token
+    console.log('Google authentication successful for user:', {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      name: req.user.name
+    });
+    
     const token = jwt.sign(
       { 
         id: req.user.id, 
@@ -125,20 +133,29 @@ router.get('/google/callback',
       { expiresIn: '24h' }
     );
     
+    console.log('JWT token generated successfully');
+    
     // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL}/login/success?token=${token}`);
+    const redirectUrl = `${process.env.FRONTEND_URL}/login/success?token=${token}`;
+    console.log('Redirecting to:', redirectUrl);
+    res.redirect(redirectUrl);
   },
   (err, req, res, next) => {
     // Authentication failed
+    console.error('Google authentication error:', err);
+    
     let errorMessage = 'Google authentication failed';
     
     // Check if there's a specific error message
     if (err && err.message) {
       errorMessage = err.message;
+      console.log('Error message:', errorMessage);
     }
     
     // Redirect to frontend with error
-    res.redirect(`${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent(errorMessage)}`);
+    const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent(errorMessage)}`;
+    console.log('Redirecting to error URL:', redirectUrl);
+    res.redirect(redirectUrl);
   }
 );
 

@@ -104,6 +104,7 @@ const Login = () => {
             <GoogleButton 
               onClick={() => {
                 // Use the google-login route which redirects to the OAuth flow
+                console.log('Initiating Google login, redirecting to:', `${API_URL}/auth/google-login`);
                 window.location.href = `${API_URL}/auth/google-login`;
               }}
               label="Sign in with Google"

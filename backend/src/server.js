@@ -27,8 +27,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Trust proxy - needed for Cloudflare
-app.set('trust proxy', 1);
+// Trust proxy - needed for Cloudflare and OAuth callbacks
+app.set('trust proxy', true);
 
 // Security middleware
 app.use(securityMiddleware);
