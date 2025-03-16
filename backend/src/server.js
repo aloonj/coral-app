@@ -97,12 +97,21 @@ app.get('/api/auth/google/callback', (req, res, next) => {
 });
 
 // Handle the actual callback processing in a separate function for reuse
-function handleGoogleCallback(req, res) {
+async function handleGoogleCallback(req, res) {
   console.log('🔄 Processing Google callback:', req.url);
   
   // Retry mechanism with exponential backoff
   let retryCount = 0;
   const maxRetries = 3;
+  
+  // First, ensure the Google strategy is initialized
+  if (!passport._strategies.google) {
+    console.log('Google strategy not found in server handler, initializing...');
+    configurePassport();
+    
+    // Small delay to ensure initialization completes
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
   
   // Force a small delay before processing the callback
   // This gives the Google strategy time to fully initialize
@@ -112,11 +121,6 @@ function handleGoogleCallback(req, res) {
       console.log(`⚡ Attempt ${retryCount}/${maxRetries} processing Google callback`);
       
       try {
-        // Ensure passport is properly initialized before proceeding
-        if (!passport._strategies.google) {
-          console.log('Google strategy not found, reinitializing passport...');
-          configurePassport();
-        }
         
         // Try to authenticate with Google strategy
         passport.authenticate('google', { 

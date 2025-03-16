@@ -93,7 +93,7 @@ router.put('/admins/:id/role', authenticate, authorize('SUPERADMIN'), [
 ], updateAdminRole);
 
 // Special handler for preflight requests and Google OAuth routes
-router.get('/google', (req, res, next) => {
+router.get('/google', async (req, res, next) => {
   console.log('Google auth route hit with query:', req.query);
   
   // Handle preflight checks from the frontend
@@ -102,11 +102,37 @@ router.get('/google', (req, res, next) => {
     return res.status(200).json({ ready: true });
   }
   
-  // Direct approach without Promise waiting - proceed immediately
-  console.log('Initializing passport authentication directly');
+  console.log('Ensuring Passport Google strategy is fully initialized...');
   
   try {
-    // Force immediate authentication with no delay
+    // First, ensure the Google strategy is initialized
+    if (!passport._strategies.google) {
+      console.log('Google strategy not found, initializing...');
+      configurePassport();
+    }
+    
+    // Warm up the strategy by accessing it
+    if (passport._strategies.google) {
+      console.log('Google strategy found, warming up...');
+      const authUrlParams = {
+        response_type: 'code',
+        redirect_uri: process.env.FRONTEND_URL ? 
+          `${process.env.FRONTEND_URL}/api/auth/google/callback` : 
+          '/api/auth/google/callback',
+        scope: 'profile email'
+      };
+      
+      // This will initialize the strategy without actually redirecting
+      passport._strategies.google.authorizationParams(authUrlParams);
+      console.log('Google strategy warm-up complete');
+    }
+    
+    // Add a small delay to ensure everything is ready
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    console.log('Passport initialization complete, proceeding with authentication');
+    
+    // Now proceed with authentication
     passport.authenticate('google', { 
       scope: ['profile', 'email'],
       state: true // For CSRF protection
@@ -122,15 +148,24 @@ router.get('/google-login', (req, res) => {
   res.redirect(`${process.env.FRONTEND_URL}/api/auth/google`);
 });
 
-// Google callback route with direct initialization (server.js has a failsafe handler for this)
-router.get('/google/callback', (req, res, next) => {
+// Google callback route with enhanced initialization
+router.get('/google/callback', async (req, res, next) => {
   console.log('Google callback route hit with query params:', req.query);
   console.log('Full callback URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
   
-  // Proceed immediately without waiting
-  console.log('Proceeding with callback authentication immediately');
-  
+  // Ensure the Google strategy is initialized before proceeding
   try {
+    // First, ensure the Google strategy is initialized
+    if (!passport._strategies.google) {
+      console.log('Google strategy not found in callback, reinitializing...');
+      configurePassport();
+      
+      // Small delay to ensure initialization completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    console.log('Google strategy is ready, proceeding with callback authentication');
+    
     // Ensure passport authentication is explicitly initialized
     passport.authenticate('google', { 
       session: false,
