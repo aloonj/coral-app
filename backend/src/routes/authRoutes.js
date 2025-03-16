@@ -99,6 +99,11 @@ router.get('/google',
   })
 );
 
+// Google login route (POST method to hide URL from browser history)
+router.post('/google-login', (req, res) => {
+  res.redirect('/api/auth/google');
+});
+
 // Google callback route
 router.get('/google/callback',
   passport.authenticate('google', { 

@@ -108,7 +108,15 @@ const Login = () => {
               
               <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                 <GoogleButton 
-                  onClick={() => window.location.href = `${API_URL}/auth/google`}
+                  onClick={() => {
+                    // Create a form and submit it to handle the redirect server-side
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `${API_URL}/auth/google-login`;
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                  }}
                   label="Sign in with Google"
                 />
               </Box>
