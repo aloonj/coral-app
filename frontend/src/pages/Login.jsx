@@ -1,9 +1,10 @@
 import { Navigate, Link as RouterLink } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import AuthForm from '../components/Auth/AuthForm';
 import GoogleButton from 'react-google-button';
-import { Container, Box, Typography, Divider, Fade } from '@mui/material';
+import { Container, Box, Typography, Divider, Fade, CircularProgress } from '@mui/material';
 import { PageTitle, ActionButton, FormContainer, FormError } from '../components/StyledComponents';
 import api, { API_URL } from '../services/api';
 
@@ -11,35 +12,70 @@ const Login = () => {
   const { user } = useAuth();
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
-  const [googleLoginAttempt, setGoogleLoginAttempt] = useState(0);
-  const googleLoginTimerRef = useRef(null);
+  const [isLoggingInWithGoogle, setIsLoggingInWithGoogle] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+  const pollingTimerRef = useRef(null);
   
-  // Effect to handle Google auth retry logic
-  useEffect(() => {
-    if (googleLoginAttempt > 0) {
-      // Clear any existing timer
-      if (googleLoginTimerRef.current) {
-        clearTimeout(googleLoginTimerRef.current);
-      }
-      
-      // Set a timer to check if we're still on the login page (which would indicate failure)
-      googleLoginTimerRef.current = setTimeout(() => {
-        // If we're still on the login page, retry the Google login
-        if (window.location.pathname.includes('/login')) {
-          console.log(`Google login attempt ${googleLoginAttempt} failed or timed out, retrying...`);
-          // Retry the login with a forced reload parameter to bypass any caching
-          window.location.href = `${API_URL}/auth/google?retry=${Date.now()}`;
+  // Function to handle Google login with pre-flight check and auto-retry
+  const handleGoogleLogin = useCallback(async () => {
+    if (isLoggingInWithGoogle) return;
+    
+    setIsLoggingInWithGoogle(true);
+    console.log('Starting Google login process...');
+    
+    // Generate a unique session ID to track this login attempt
+    const sessionId = Date.now().toString();
+    
+    // Function to attempt the redirect to Google auth
+    const attemptGoogleRedirect = () => {
+      console.log(`Redirecting to Google auth (Attempt ${retryCount + 1}/${maxRetries})...`);
+      // Add both a timestamp and retry counter to prevent caching
+      window.location.href = `${API_URL}/auth/google?t=${Date.now()}&session=${sessionId}&retry=${retryCount}`;
+    };
+    
+    try {
+      // Make a HEAD request to check if the endpoint is actually available
+      console.log('Pre-flight checking Google auth endpoint...');
+      await axios.head(`${API_URL}/auth/google?preflight=true`, { 
+        timeout: 2000,
+        validateStatus: function (status) {
+          // Consider any response (even 404) as "available" since we're just checking reachability
+          return status >= 200 && status < 500;
         }
-      }, 800); // 800ms is enough time to detect a failed request but not so long that it feels slow
+      });
+      
+      console.log('Pre-flight check succeeded, proceeding with redirect');
+      attemptGoogleRedirect();
+    } catch (error) {
+      console.error('Pre-flight check failed, starting polling retries:', error);
+      
+      // If we can't reach the endpoint at all, start polling
+      setRetryCount(prev => prev + 1);
+      
+      // Set up polling to retry automatically
+      pollingTimerRef.current = setTimeout(() => {
+        if (retryCount < maxRetries) {
+          console.log(`Auto-retrying Google login (${retryCount + 1}/${maxRetries})...`);
+          attemptGoogleRedirect();
+        } else {
+          console.log('Maximum retry attempts reached');
+          setError('Unable to connect to Google login. Please try again later.');
+          setIsLoggingInWithGoogle(false);
+          setRetryCount(0);
+        }
+      }, 1000); // Retry after 1 second
     }
-
-    // Cleanup function to clear the timer if component unmounts
+  }, [isLoggingInWithGoogle, retryCount, API_URL]);
+  
+  // Cleanup polling timer on unmount
+  useEffect(() => {
     return () => {
-      if (googleLoginTimerRef.current) {
-        clearTimeout(googleLoginTimerRef.current);
+      if (pollingTimerRef.current) {
+        clearTimeout(pollingTimerRef.current);
       }
     };
-  }, [googleLoginAttempt]);
+  }, []);
 
   useEffect(() => {
     // Check for registration success message in localStorage
@@ -131,22 +167,19 @@ const Login = () => {
           
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3, flexDirection: 'column', alignItems: 'center' }}>
             <GoogleButton 
-              onClick={() => {
-                // Increment the attempt counter to trigger the retry effect
-                setGoogleLoginAttempt(prev => prev + 1);
-                
-                // Use the google route directly to start the OAuth flow
-                // Add a unique timestamp to prevent caching
-                console.log('Initiating Google login, redirecting to:', `${API_URL}/auth/google?t=${Date.now()}`);
-                window.location.href = `${API_URL}/auth/google?t=${Date.now()}`;
-              }}
+              onClick={handleGoogleLogin}
               label="Sign in with Google"
-              disabled={googleLoginAttempt > 0}
+              disabled={isLoggingInWithGoogle}
             />
-            {googleLoginAttempt > 0 && (
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-                Connecting to Google...
-              </Typography>
+            {isLoggingInWithGoogle && (
+              <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                <CircularProgress size={16} sx={{ mr: 1 }} />
+                <Typography variant="caption" color="text.secondary">
+                  {retryCount > 0 
+                    ? `Connecting to Google (attempt ${retryCount}/${maxRetries})...` 
+                    : 'Connecting to Google...'}
+                </Typography>
+              </Box>
             )}
           </Box>
           
