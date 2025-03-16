@@ -196,22 +196,15 @@ app.get('/', (req, res) => {
 // Global error handling middleware
 app.use(errorHandler);
 
-// Serve static files from the frontend build directory
-const frontendBuildPath = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(frontendBuildPath));
-
-// Catch-all route to serve index.html for any unmatched routes that aren't API routes
-app.get('*', (req, res, next) => {
-  // Skip if it's an API route - those should hit the 404 handler if not found
-  if (req.url.startsWith('/api/')) {
-    return next();
-  }
-  
-  console.log('Serving frontend for route:', req.url);
-  res.sendFile(path.join(frontendBuildPath, 'index.html'));
+// Special handler for the Google OAuth callback URL specifically
+// This catches the exact URL pattern that's causing issues
+app.get('/api/auth/google/callback', (req, res) => {
+  console.log('Explicit catch-all handler for Google callback URL');
+  // Redirect to the frontend's callback handler
+  res.redirect(`${process.env.FRONTEND_URL}/login/success${req.url.includes('?') ? req._parsedUrl.search : ''}`);
 });
 
-// 404 handler - only for API routes now
+// 404 handler
 app.use((req, res) => {
   console.log('404 Not Found:', req.method, req.url);
   res.status(404).json({
