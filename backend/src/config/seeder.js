@@ -78,10 +78,10 @@ async function seedDatabase() {
         email: env.admin.email,
         password: env.admin.password,
         name: env.admin.name,
-        role: 'ADMIN',
+        role: 'SUPERADMIN',
         status: 'ACTIVE'
       });
-      console.log('Admin user created');
+      console.log('Superadmin user created');
     } else {
       console.log('Admin user already exists');
     }
@@ -133,7 +133,7 @@ async function seedDatabase() {
         await Coral.create({
           ...coral,
           categoryId: category.id,
-          createdBy: (await User.findOne({ where: { role: 'ADMIN' } })).id
+          createdBy: (await User.findOne({ where: { role: ['ADMIN', 'SUPERADMIN'] } })).id
         });
       }
       console.log('Sample corals created');
