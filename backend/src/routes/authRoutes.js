@@ -92,28 +92,21 @@ router.put('/admins/:id/role', authenticate, authorize('SUPERADMIN'), [
   body('role').isIn(['ADMIN', 'SUPERADMIN']).withMessage('Invalid role')
 ], updateAdminRole);
 
-// Get passport configuration with ready state checking
-const passportConfig = configurePassport();
-
 // Special handler for preflight requests and Google OAuth routes
-router.get('/google', async (req, res, next) => {
+router.get('/google', (req, res, next) => {
   console.log('Google auth route hit with query:', req.query);
   
   // Handle preflight checks from the frontend
   if (req.query.preflight === 'true') {
     console.log('Handling preflight request for Google auth');
-    // Check if passport is ready during preflight
-    const isReady = passportConfig.isReady();
-    console.log('Passport ready state during preflight:', isReady);
-    return res.status(200).json({ ready: isReady });
+    return res.status(200).json({ ready: true });
   }
   
-  // Wait for passport to be ready before proceeding
-  console.log('Waiting for passport to be ready before initializing authentication');
+  // Direct approach without Promise waiting - proceed immediately
+  console.log('Initializing passport authentication directly');
+  
   try {
-    await passportConfig.waitForReady();
-    console.log('Passport is ready, proceeding with authentication');
-    
+    // Force immediate authentication with no delay
     passport.authenticate('google', { 
       scope: ['profile', 'email'],
       state: true // For CSRF protection
@@ -129,17 +122,15 @@ router.get('/google-login', (req, res) => {
   res.redirect(`${process.env.FRONTEND_URL}/api/auth/google`);
 });
 
-// Google callback route with explicit initialization and timing protection
-router.get('/google/callback', async (req, res, next) => {
+// Google callback route with direct initialization (server.js has a failsafe handler for this)
+router.get('/google/callback', (req, res, next) => {
   console.log('Google callback route hit with query params:', req.query);
   console.log('Full callback URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
   
-  // Wait for passport to be ready before proceeding with callback
+  // Proceed immediately without waiting
+  console.log('Proceeding with callback authentication immediately');
+  
   try {
-    console.log('Waiting for passport to be ready before processing callback');
-    await passportConfig.waitForReady();
-    console.log('Passport is ready, proceeding with callback authentication');
-    
     // Ensure passport authentication is explicitly initialized
     passport.authenticate('google', { 
       session: false,
