@@ -77,6 +77,56 @@ const Login = () => {
     };
   }, []);
 
+  // Listen for Google callback URL 404 errors and automatically reload the page
+  useEffect(() => {
+    // Create a function to intercept Google callback navigation events
+    // This is needed because the backend might initially return 404 for callback URLs
+    function handleCallbackDetection(event) {
+      const url = event.target.location?.href || '';
+      
+      // Check if this is a callback URL returning from Google
+      if (url.includes('/api/auth/google/callback') && url.includes('code=')) {
+        console.log('Detected Google callback URL:', url);
+        
+        // We need to give the page a chance to load first to see if it fails
+        // If it's a 404, we'll detect it via the next check
+        localStorage.setItem('google_callback_detected', url);
+      }
+    }
+    
+    // Listen for page load events to detect 404s on callback URLs
+    function handlePageLoad() {
+      // Check if we recently detected a callback URL
+      const callbackUrl = localStorage.getItem('google_callback_detected');
+      if (callbackUrl) {
+        // Clean up immediately
+        localStorage.removeItem('google_callback_detected');
+        
+        // Check if current page might be a 404 (we're back at login with no token)
+        if (window.location.pathname.includes('/login') && !window.location.search.includes('token=')) {
+          console.log('Detected 404 on Google callback - reloading callback URL:', callbackUrl);
+          // Force reload of the callback URL to retry
+          window.location.href = callbackUrl;
+        }
+      }
+    }
+    
+    // Set up event listeners
+    window.addEventListener('hashchange', handleCallbackDetection);
+    window.addEventListener('popstate', handleCallbackDetection);
+    window.addEventListener('load', handlePageLoad);
+    
+    // Initial check on component mount
+    handlePageLoad();
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('hashchange', handleCallbackDetection);
+      window.removeEventListener('popstate', handleCallbackDetection);
+      window.removeEventListener('load', handlePageLoad);
+    };
+  }, []);
+  
   useEffect(() => {
     // Check for registration success message in localStorage
     const message = localStorage.getItem('registrationSuccess');
