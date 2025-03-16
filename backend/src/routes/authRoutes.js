@@ -1,5 +1,7 @@
 import express from 'express';
 import { body } from 'express-validator';
+import passport from 'passport';
+import jwt from 'jsonwebtoken';
 import { 
   register, 
   login, 
@@ -88,5 +90,46 @@ router.delete('/admins/:id', authenticate, authorize('ADMIN', 'SUPERADMIN'), rem
 router.put('/admins/:id/role', authenticate, authorize('SUPERADMIN'), [
   body('role').isIn(['ADMIN', 'SUPERADMIN']).withMessage('Invalid role')
 ], updateAdminRole);
+
+// Google OAuth routes
+router.get('/google',
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    state: true // For CSRF protection
+  })
+);
+
+// Google callback route
+router.get('/google/callback',
+  passport.authenticate('google', { 
+    failureRedirect: '/login?error=google_auth_failed',
+    session: false
+  }),
+  (req, res) => {
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: req.user.id, 
+        email: req.user.email, 
+        role: req.user.role,
+        name: req.user.name
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+    
+    // Redirect to frontend with token
+    res.redirect(`${process.env.FRONTEND_URL}/login/success?token=${token}`);
+  }
+);
+
+// Feature flag endpoint
+router.get('/feature-flags',
+  (req, res) => {
+    res.json({
+      googleLoginEnabled: process.env.ENABLE_GOOGLE_LOGIN === 'true'
+    });
+  }
+);
 
 export default router;

@@ -8,6 +8,14 @@ const User = sequelize.define('User', {
     primaryKey: true,
     autoIncrement: true
   },
+  googleId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  authProvider: {
+    type: DataTypes.ENUM('local', 'google'),
+    defaultValue: 'local'
+  },
   email: {
     type: DataTypes.STRING,
     unique: true,
@@ -75,9 +83,15 @@ const User = sequelize.define('User', {
   },
   password: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true, // Allow null for Google auth users
     validate: {
       isStrongPassword(value) {
+        // Skip validation if using Google auth
+        if (this.authProvider === 'google') return;
+        
+        // Skip validation if value is null (should only happen for Google auth)
+        if (!value) return;
+        
         const minLength = 8;
         const hasNumber = /\d/.test(value);
         const hasSymbol = /[!@#$%^&*(),.?":{}|<>_-]/.test(value);

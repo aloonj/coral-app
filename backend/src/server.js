@@ -6,6 +6,8 @@ import './models/associations.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
+import passport from 'passport';
+import configurePassport from './config/passport.js';
 import { securityMiddleware, errorHandler } from './middleware/security.js';
 import authRoutes from './routes/authRoutes.js';
 import coralRoutes from './routes/coralRoutes.js';
@@ -56,6 +58,10 @@ const uploadsDir = path.join(__dirname, '../uploads');
 fs.mkdir(uploadsDir, { recursive: true })
   .then(() => console.log('Uploads directory ready'))
   .catch(err => console.error('Error creating uploads directory:', err));
+
+// Initialize passport
+app.use(passport.initialize());
+configurePassport();
 
 // Auth routes
 app.use('/api/auth', authRoutes);

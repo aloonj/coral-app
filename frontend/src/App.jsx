@@ -7,6 +7,7 @@ import Corals from './pages/Corals';
 import StockLevels from './pages/StockLevels';
 import QuickOrder from './pages/QuickOrder';
 import Login from './pages/Login';
+import LoginSuccess from './pages/LoginSuccess';
 import Register from './pages/Register';
 import EditCoral from './pages/EditCoral';
 import AddCoral from './pages/AddCoral';
@@ -85,6 +86,7 @@ function App() {
               } 
             />
             <Route path="/login" element={<Login />} />
+            <Route path="/login/success" element={<LoginSuccess />} />
             <Route path="/register" element={<Register />} />
             <Route 
               path="/corals/add" 

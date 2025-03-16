@@ -2,12 +2,16 @@ import { Navigate, Link as RouterLink } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import AuthForm from '../components/Auth/AuthForm';
+import GoogleButton from 'react-google-button';
 import { Container, Box, Typography, Divider, Fade } from '@mui/material';
 import { PageTitle, ActionButton, FormContainer, FormError } from '../components/StyledComponents';
+import api, { API_URL } from '../services/api';
 
 const Login = () => {
   const { user } = useAuth();
   const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState('');
+  const [googleLoginEnabled, setGoogleLoginEnabled] = useState(false);
   
   useEffect(() => {
     // Check for registration success message in localStorage
@@ -17,6 +21,24 @@ const Login = () => {
       // Remove the message from localStorage to prevent it from showing again
       localStorage.removeItem('registrationSuccess');
     }
+    
+    // Check for error parameter in URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'google_auth_failed') {
+      setError('Google login failed. No account found with this email.');
+    }
+    
+    // Fetch feature flags
+    const fetchFeatureFlags = async () => {
+      try {
+        const response = await api.get('/auth/feature-flags');
+        setGoogleLoginEnabled(response.data.googleLoginEnabled);
+      } catch (error) {
+        console.error('Error fetching feature flags:', error);
+      }
+    };
+    
+    fetchFeatureFlags();
   }, []);
   
   if (user) {
@@ -63,7 +85,35 @@ const Login = () => {
             </Box>
           </Fade>
           
+          {/* Error message */}
+          <Fade in={!!error} timeout={500}>
+            <Box sx={{ mb: error ? 3 : 0 }}>
+              {error && (
+                <FormError severity="error">
+                  {error}
+                </FormError>
+              )}
+            </Box>
+          </Fade>
+          
           <AuthForm mode="login" />
+          
+          {googleLoginEnabled && (
+            <>
+              <Divider sx={{ my: 3 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ px: 1 }}>
+                  OR
+                </Typography>
+              </Divider>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                <GoogleButton 
+                  onClick={() => window.location.href = `${API_URL}/auth/google`}
+                  label="Sign in with Google"
+                />
+              </Box>
+            </>
+          )}
           
           <Divider sx={{ my: 3 }} />
           
