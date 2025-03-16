@@ -2,6 +2,7 @@ import express from 'express';
 import { body } from 'express-validator';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
+import configurePassport from '../config/passport.js';
 import { 
   register, 
   login, 
@@ -91,29 +92,36 @@ router.put('/admins/:id/role', authenticate, authorize('SUPERADMIN'), [
   body('role').isIn(['ADMIN', 'SUPERADMIN']).withMessage('Invalid role')
 ], updateAdminRole);
 
+// Get passport configuration with ready state checking
+const passportConfig = configurePassport();
+
 // Special handler for preflight requests and Google OAuth routes
-router.get('/google', (req, res, next) => {
+router.get('/google', async (req, res, next) => {
   console.log('Google auth route hit with query:', req.query);
   
   // Handle preflight checks from the frontend
   if (req.query.preflight === 'true') {
     console.log('Handling preflight request for Google auth');
-    return res.status(200).send('OK');
+    // Check if passport is ready during preflight
+    const isReady = passportConfig.isReady();
+    console.log('Passport ready state during preflight:', isReady);
+    return res.status(200).json({ ready: isReady });
   }
   
-  // Add delay to ensure passport is fully initialized (2ms is enough to push to next event loop tick)
-  setTimeout(() => {
-    console.log('Initializing passport authentication after delay');
-    try {
-      passport.authenticate('google', { 
-        scope: ['profile', 'email'],
-        state: true // For CSRF protection
-      })(req, res, next);
-    } catch (error) {
-      console.error('Error initializing passport:', error);
-      res.status(500).json({ message: 'Authentication service error' });
-    }
-  }, 2);
+  // Wait for passport to be ready before proceeding
+  console.log('Waiting for passport to be ready before initializing authentication');
+  try {
+    await passportConfig.waitForReady();
+    console.log('Passport is ready, proceeding with authentication');
+    
+    passport.authenticate('google', { 
+      scope: ['profile', 'email'],
+      state: true // For CSRF protection
+    })(req, res, next);
+  } catch (error) {
+    console.error('Error initializing passport:', error);
+    res.status(500).json({ message: 'Authentication service error' });
+  }
 });
 
 // Google login route (GET method for simplicity)
@@ -122,26 +130,27 @@ router.get('/google-login', (req, res) => {
 });
 
 // Google callback route with explicit initialization and timing protection
-router.get('/google/callback', (req, res, next) => {
+router.get('/google/callback', async (req, res, next) => {
   console.log('Google callback route hit with query params:', req.query);
   console.log('Full callback URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
   
-  // Add a slight delay to ensure passport is fully initialized (2ms is enough to push to next event loop tick)
-  setTimeout(() => {
-    console.log('Initializing passport authentication for callback after delay');
-    try {
-      // Ensure passport authentication is explicitly initialized
-      passport.authenticate('google', { 
-        session: false,
-        failWithError: true
-      })(req, res, next);
-    } catch (error) {
-      console.error('Error initializing passport for callback:', error);
-      // Explicitly handle any initialization errors
-      const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Authentication service error')}`;
-      res.status(302).location(redirectUrl).send();
-    }
-  }, 2);
+  // Wait for passport to be ready before proceeding with callback
+  try {
+    console.log('Waiting for passport to be ready before processing callback');
+    await passportConfig.waitForReady();
+    console.log('Passport is ready, proceeding with callback authentication');
+    
+    // Ensure passport authentication is explicitly initialized
+    passport.authenticate('google', { 
+      session: false,
+      failWithError: true
+    })(req, res, next);
+  } catch (error) {
+    console.error('Error initializing passport for callback:', error);
+    // Explicitly handle any initialization errors
+    const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Authentication service error')}`;
+    res.status(302).location(redirectUrl).send();
+  }
 },
   (req, res) => {
     // Authentication successful, generate JWT token

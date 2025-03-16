@@ -4,6 +4,8 @@ import User from '../models/User.js';
 
 // Define a global variable to track initialization state
 let googleStrategyInitialized = false;
+let passportReadyPromise = null;
+let isPassportReady = false;
 
 export default function configurePassport() {
   // Force a full refresh of the Google strategy every time
@@ -31,6 +33,7 @@ export default function configurePassport() {
     if (!googleStrategyInitialized) {
       console.log('Google strategy initialized successfully');
       googleStrategyInitialized = true;
+      isPassportReady = true;
     }
     // Log useful debugging information
     console.log('Google auth callback triggered');
@@ -38,8 +41,8 @@ export default function configurePassport() {
     console.log('Request headers:', req.headers);
     
     try {
-      // Add additional timing safety
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Add additional timing safety - increased to 50ms for better reliability
+      await new Promise(resolve => setTimeout(resolve, 50));
       
       console.log('Google auth profile received:', {
         id: profile.id,
@@ -89,39 +92,60 @@ export default function configurePassport() {
     }
   }));
 
-  // Add a verification routine to check if initialization is complete
-  const checkInitialization = () => {
-    if (!googleStrategyInitialized) {
-      console.log('Performing Google strategy warm-up...');
-      
-      // Force initialization by calling a method on the strategy
-      try {
-        if (passport._strategies.google) {
-          const authUrlParams = {
-            response_type: 'code',
-            redirect_uri: callbackURL,
-            scope: 'profile email'
-          };
-          
-          // This will initialize the strategy without actually redirecting
-          passport._strategies.google.authorizationParams(authUrlParams);
-          console.log('Google strategy warm-up complete');
-          googleStrategyInitialized = true;
-        } else {
-          console.warn('Google strategy not found during warm-up');
+  // Create a promise that resolves when the passport strategy is ready
+  passportReadyPromise = new Promise((resolve) => {
+    // Add a verification routine to check if initialization is complete
+    const checkInitialization = () => {
+      if (!googleStrategyInitialized) {
+        console.log('Performing Google strategy warm-up...');
+        
+        // Force initialization by calling a method on the strategy
+        try {
+          if (passport._strategies.google) {
+            const authUrlParams = {
+              response_type: 'code',
+              redirect_uri: callbackURL,
+              scope: 'profile email'
+            };
+            
+            // This will initialize the strategy without actually redirecting
+            passport._strategies.google.authorizationParams(authUrlParams);
+            console.log('Google strategy warm-up complete');
+            googleStrategyInitialized = true;
+            isPassportReady = true;
+            resolve(true);
+          } else {
+            console.warn('Google strategy not found during warm-up');
+          }
+        } catch (error) {
+          console.error('Error during Google strategy warm-up:', error);
         }
-      } catch (error) {
-        console.error('Error during Google strategy warm-up:', error);
+      } else {
+        isPassportReady = true;
+        resolve(true);
       }
-    }
-  };
-  
-  // Run a few warm-up checks
-  setTimeout(checkInitialization, 100);
-  setTimeout(checkInitialization, 1000);
-  setTimeout(checkInitialization, 3000);
+    };
+    
+    // More aggressive warm-up schedule with immediate first check
+    checkInitialization();
+    setTimeout(checkInitialization, 100);
+    setTimeout(checkInitialization, 500);
+    setTimeout(checkInitialization, 1000);
+    setTimeout(checkInitialization, 3000);
+    
+    // Ensure the promise resolves eventually even if warm-up fails
+    setTimeout(() => {
+      if (!isPassportReady) {
+        console.log('Forcing passport ready state after timeout');
+        isPassportReady = true;
+        resolve(true);
+      }
+    }, 5000);
+  });
   
   return {
-    isInitialized: () => googleStrategyInitialized
+    isInitialized: () => googleStrategyInitialized,
+    waitForReady: () => passportReadyPromise,
+    isReady: () => isPassportReady
   };
 }

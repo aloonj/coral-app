@@ -17,7 +17,7 @@ const Login = () => {
   const maxRetries = 3;
   const pollingTimerRef = useRef(null);
   
-  // Function to handle Google login with pre-flight check and auto-retry
+  // Function to handle Google login with enhanced pre-flight check and adaptive retry
   const handleGoogleLogin = useCallback(async () => {
     if (isLoggingInWithGoogle) return;
     
@@ -30,41 +30,56 @@ const Login = () => {
     // Function to attempt the redirect to Google auth
     const attemptGoogleRedirect = () => {
       console.log(`Redirecting to Google auth (Attempt ${retryCount + 1}/${maxRetries})...`);
-      // Add both a timestamp and retry counter to prevent caching
+      // Add timestamp, session and retry counter to prevent caching and track the attempt
       window.location.href = `${API_URL}/auth/google?t=${Date.now()}&session=${sessionId}&retry=${retryCount}`;
     };
     
+    // Calculate backoff delay with exponential increase
+    const getBackoffDelay = (attempt) => {
+      const baseDelay = 500; // 500ms base
+      return Math.min(baseDelay * Math.pow(1.5, attempt), 5000); // Max 5 seconds
+    };
+    
     try {
-      // Make a HEAD request to check if the endpoint is actually available
-      console.log('Pre-flight checking Google auth endpoint...');
-      await axios.head(`${API_URL}/auth/google?preflight=true`, { 
-        timeout: 2000,
+      // Make a GET request to check if the passport initialization is ready
+      console.log('Pre-flight checking Google auth endpoint readiness...');
+      const response = await axios.get(`${API_URL}/auth/google?preflight=true`, { 
+        timeout: 3000,
         validateStatus: function (status) {
-          // Consider any response (even 404) as "available" since we're just checking reachability
           return status >= 200 && status < 500;
         }
       });
       
-      console.log('Pre-flight check succeeded, proceeding with redirect');
-      attemptGoogleRedirect();
+      // Check if backend indicates the passport strategy is ready
+      if (response.data && response.data.ready === true) {
+        console.log('Pre-flight check succeeded - passport is ready, proceeding with redirect');
+        attemptGoogleRedirect();
+      } else {
+        console.log('Pre-flight check - passport not ready yet, will retry');
+        throw new Error('Passport strategy not ready');
+      }
     } catch (error) {
-      console.error('Pre-flight check failed, starting polling retries:', error);
+      console.error('Pre-flight check failed or passport not ready:', error);
       
-      // If we can't reach the endpoint at all, start polling
+      // Update retry count
       setRetryCount(prev => prev + 1);
       
-      // Set up polling to retry automatically
+      // Set up polling to retry automatically with exponential backoff
+      const currentRetry = retryCount + 1;
+      const delay = getBackoffDelay(currentRetry);
+      
+      console.log(`Scheduling retry ${currentRetry}/${maxRetries} in ${delay}ms`);
       pollingTimerRef.current = setTimeout(() => {
-        if (retryCount < maxRetries) {
-          console.log(`Auto-retrying Google login (${retryCount + 1}/${maxRetries})...`);
-          attemptGoogleRedirect();
+        if (currentRetry < maxRetries) {
+          console.log(`Auto-retrying Google login (attempt ${currentRetry}/${maxRetries})...`);
+          handleGoogleLogin();
         } else {
           console.log('Maximum retry attempts reached');
           setError('Unable to connect to Google login. Please try again later.');
           setIsLoggingInWithGoogle(false);
           setRetryCount(0);
         }
-      }, 1000); // Retry after 1 second
+      }, delay);
     }
   }, [isLoggingInWithGoogle, retryCount, API_URL]);
   

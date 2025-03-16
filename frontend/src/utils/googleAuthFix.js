@@ -1,8 +1,9 @@
 /**
- * GoogleAuthFix - A utility to handle the race condition in Google OAuth callbacks
+ * GoogleAuthFix - An enhanced utility to handle race conditions in Google OAuth callbacks
  * 
- * This script detects Google callback URLs and automatically retries them
- * when they fail with a 404 error.
+ * This script detects Google callback URLs and automatically retries them when they fail,
+ * with improved error handling, adaptive retry timing, and better synchronization with
+ * the backend's readiness state.
  */
 
 // Initialize the fix when the module is imported
@@ -78,32 +79,62 @@ function handleCallbackUrl() {
     return;
   }
   
-  // Set up an AJAX request to check the callback URL
-  const xhr = new XMLHttpRequest();
-  xhr.open('GET', callbackUrl);
+  // Calculate adaptive delay based on retry count with exponential backoff
+  const getBackoffDelay = (attempt) => {
+    const baseDelay = 300; // Start with 300ms
+    return Math.min(baseDelay * Math.pow(1.5, attempt), 3000); // Cap at 3 seconds
+  };
   
-  // Add a unique timestamp to prevent caching
-  xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  xhr.setRequestHeader('Pragma', 'no-cache');
-  xhr.setRequestHeader('Expires', '0');
+  // Set up a fetch request to check the callback URL
+  console.log('🔐 Google Auth Fix: Making request to callback URL');
   
-  xhr.onload = function() {
-    if (xhr.status === 200) {
+  // First make a HEAD request to check server readiness
+  fetch(callbackUrl.split('?')[0], {
+    method: 'HEAD',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  })
+  .then(headResponse => {
+    console.log(`🔐 Google Auth Fix: HEAD request status: ${headResponse.status}`);
+    
+    // Now make the actual GET request for the callback
+    return fetch(callbackUrl, {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+  })
+  .then(response => {
+    console.log(`🔐 Google Auth Fix: Callback response status: ${response.status}`);
+    
+    if (response.ok) {
       console.log('🔐 Google Auth Fix: Callback URL processed successfully');
       // Success - clean up
       localStorage.removeItem('google_auth_callback_url');
       localStorage.removeItem('google_auth_callback_time');
       localStorage.removeItem('google_auth_callback_retries');
       
-      // If we got HTML back and it seems to be a success page, we're done
-      if (xhr.responseText.includes('success') || xhr.responseText.includes('token')) {
-        console.log('🔐 Google Auth Fix: Authentication successful');
-      } else {
-        // Otherwise, reload the page to process the response
-        window.location.reload();
-      }
-    } else if (xhr.status === 404) {
-      console.log('🔐 Google Auth Fix: 404 detected, applying automatic retry');
+      return response.text().then(text => {
+        // If we got HTML back and it seems to be a success page, we're done
+        if (text.includes('success') || text.includes('token')) {
+          console.log('🔐 Google Auth Fix: Authentication successful');
+        } else {
+          // Otherwise, reload the page to process the response
+          window.location.reload();
+        }
+      });
+    } else if (response.status === 404 || response.status === 503) {
+      // 404 Not Found or 503 Service Unavailable - retry with backoff
+      console.log(`🔐 Google Auth Fix: ${response.status} detected, applying automatic retry with backoff`);
+      
+      const delay = getBackoffDelay(retryCount);
+      console.log(`🔐 Google Auth Fix: Retrying in ${delay}ms (attempt ${retryCount + 1})`);
       
       // Wait a moment and reload the exact same URL
       setTimeout(() => {
@@ -113,22 +144,21 @@ function handleCallbackUrl() {
         
         console.log('🔐 Google Auth Fix: Retrying with URL:', retryUrl);
         window.location.href = retryUrl;
-      }, 500);
+      }, delay);
     } else {
-      console.log('🔐 Google Auth Fix: Unexpected status:', xhr.status);
+      console.log('🔐 Google Auth Fix: Unexpected status:', response.status);
       // For other errors, just reload after a short delay
       setTimeout(() => window.location.reload(), 1000);
     }
-  };
+  })
+  .catch(error => {
+    console.log('🔐 Google Auth Fix: Network error, retrying', error);
+    // For network errors, retry with backoff
+    const delay = getBackoffDelay(retryCount);
+    setTimeout(() => window.location.reload(), delay);
+  });
   
-  xhr.onerror = function() {
-    console.log('🔐 Google Auth Fix: Network error, retrying');
-    // For network errors, reload after a short delay
-    setTimeout(() => window.location.reload(), 1000);
-  };
-  
-  // Send the request
-  xhr.send();
+  // No need for xhr.send() as we're using fetch now
 }
 
 // Check on page load if we're returning from a failed callback
