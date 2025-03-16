@@ -78,36 +78,40 @@ app.use((req, res, next) => {
   next();
 });
 
-// CRITICAL: Register this special route handler BEFORE any other routes
-// to absolutely ensure it's checked first and can never fall through to 404
-// This is our bulletproof handler for Google OAuth callbacks
-app.use((req, res, next) => {
-  // Only intercept GET requests to the callback URL
-  if (req.method !== 'GET' || !req.url.includes('/api/auth/google/callback')) {
-    return next();
+// CRITICAL: Register explicit route handler for callback URL BEFORE the middleware
+// This ensures the route exists in Express's route table and can NEVER 404
+app.get('/api/auth/google/callback', (req, res, next) => {
+  console.log('🚨 PRIMARY CALLBACK HANDLER: Caught Google callback:', req.url);
+  
+  // First, check if there are other query parameters - if not, add a dummy one
+  // This can help with certain edge cases where empty callbacks cause issues
+  if (!req.url.includes('?')) {
+    return res.redirect(`/api/auth/google/callback?_=${Date.now()}`);
   }
   
-  console.log('🚨 CRITICAL INTERCEPT: Caught Google callback in failsafe middleware:', req.url);
-  console.log('Request headers:', req.headers);
+  // Always process through the failsafe handler
+  handleGoogleCallback(req, res);
+});
+
+// Handle the actual callback processing in a separate function for reuse
+function handleGoogleCallback(req, res) {
+  console.log('🔄 Processing Google callback:', req.url);
+  console.log('Headers:', req.headers);
   
-  // Retry mechanism with exponential backoff for callback processing
+  // Retry mechanism with exponential backoff
   let retryCount = 0;
   const maxRetries = 3;
   
   const processCallback = () => {
     retryCount++;
-    console.log(`Attempt ${retryCount}/${maxRetries} processing Google callback`);
-    console.log('Initializing passport with explicit delay...');
+    console.log(`⚡ Attempt ${retryCount}/${maxRetries} processing Google callback`);
     
-    // Ensure passport is initialized before proceeding
     try {
-      // Make absolutely sure passport is ready
-      const authenticate = passport.authenticate('google', { 
+      // Try to authenticate with Google strategy
+      passport.authenticate('google', { 
         session: false,
         failWithError: true
-      });
-      
-      authenticate(req, res, (err) => {
+      })(req, res, (err) => {
         // If we hit an error but have retries left, try again
         if (err && retryCount < maxRetries) {
           console.log(`Authentication error, retrying (${retryCount}/${maxRetries}):`, err.message);
@@ -170,15 +174,31 @@ app.use((req, res, next) => {
     }
   };
   
-  // Start the process with a slight delay
-  setTimeout(processCallback, 10);
+  // Start the process immediately
+  processCallback();
+}
+
+// Additional failsafe middleware that catches any requests that somehow missed the explicit route
+app.use((req, res, next) => {
+  // Only intercept GET requests to the callback URL
+  if (req.method === 'GET' && req.url.includes('/api/auth/google/callback')) {
+    console.log('🚨 BACKUP CATCH: Callback reached middleware fallback, processing');
+    return handleGoogleCallback(req, res);
+  }
   
-  // This is critical - don't pass to next middleware
-  // We've taken full responsibility for handling this request
+  // For all other requests, continue to next middleware
+  next();
 });
 
-// Auth routes - register AFTER our special callback handler
-app.use('/api/auth', authRoutes);
+// Auth routes - register AFTER our special callback handlers
+app.use('/api/auth', (req, res, next) => {
+  // Special check for callback URL in case it somehow got through to here
+  if (req.method === 'GET' && req.path.includes('/google/callback')) {
+    console.log('🔴 LAST CHANCE CATCH: Callback reached auth routes, redirecting to handler');
+    return handleGoogleCallback(req, res);
+  }
+  next();
+}, authRoutes);
 app.use('/api/corals', coralRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/orders', orderRoutes);
@@ -196,12 +216,10 @@ app.get('/', (req, res) => {
 // Global error handling middleware
 app.use(errorHandler);
 
-// Special handler for the Google OAuth callback URL specifically
-// This catches the exact URL pattern that's causing issues
+// Redundant safety - final catch-all for the callback URL in case all other handlers failed
 app.get('/api/auth/google/callback', (req, res) => {
-  console.log('Explicit catch-all handler for Google callback URL');
-  // Redirect to the frontend's callback handler
-  res.redirect(`${process.env.FRONTEND_URL}/login/success${req.url.includes('?') ? req._parsedUrl.search : ''}`);
+  console.log('⚠️ FINAL FALLBACK: Callback reached last-resort handler');
+  handleGoogleCallback(req, res);
 });
 
 // 404 handler
