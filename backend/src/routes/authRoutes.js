@@ -102,7 +102,7 @@ router.get('/google',
 // Google callback route
 router.get('/google/callback',
   passport.authenticate('google', { 
-    failureRedirect: '/login?error=google_auth_failed',
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed`,
     session: false
   }),
   (req, res) => {
