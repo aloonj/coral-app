@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 module.exports = {
   apps: [
     // Production app
@@ -9,7 +12,10 @@ module.exports = {
       autorestart: true,
       watch: false,
       env: {
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        // Add any frontend-specific environment variables here
+        VITE_API_URL: process.env.VITE_API_URL || 'http://localhost:5000',
+        VITE_APP_TITLE: process.env.VITE_APP_TITLE || 'Coral Management System'
       },
       error_file: 'logs/err.log',
       out_file: 'logs/out.log',
@@ -26,9 +32,12 @@ module.exports = {
       args: 'dev --port 3001 --host localhost',
       instances: 1,
       autorestart: true,
-      watch: true,
+      watch: false,
       env: {
-        NODE_ENV: 'development'
+        NODE_ENV: 'development',
+        // Add any frontend-specific environment variables here
+        VITE_API_URL: process.env.VITE_API_URL || 'http://localhost:5001',
+        VITE_APP_TITLE: process.env.VITE_APP_TITLE || 'Coral Management System (Dev)'
       },
       error_file: 'logs/dev-err.log',
       out_file: 'logs/dev-out.log',

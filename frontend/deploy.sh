@@ -108,7 +108,7 @@ fi
 if pm2 list | grep -q "$APP_NAME"; then
     echo "Restarting existing PM2 process: $APP_NAME"
     # Use eval to properly handle the environment variables
-    eval "pm2 restart $APP_NAME $ENV_VARS"
+    eval "pm2 restart ecosystem.config.cjs --only $APP_NAME --env $ENV $ENV_VARS"
 else
     echo "Starting new PM2 process: $APP_NAME"
     # Use eval to properly handle the environment variables
