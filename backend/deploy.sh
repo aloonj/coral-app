@@ -96,7 +96,9 @@ fi
 
 # Load environment variables from .env file to pass to PM2
 echo "Loading environment variables from .env file..."
-ENV_VARS=""
+# Create a JSON object to hold all environment variables
+ENV_JSON="{"
+first=true
 while IFS= read -r line || [[ -n "$line" ]]; do
     # Skip comments and empty lines
     if [[ ! "$line" =~ ^# && -n "$line" ]]; then
@@ -109,22 +111,31 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             VAR_VALUE="${VAR_VALUE#\"}"
             VAR_VALUE="${VAR_VALUE%\'}"
             VAR_VALUE="${VAR_VALUE#\'}"
-            # Add to environment variables string
-            ENV_VARS="$ENV_VARS --env $VAR_NAME=\"$VAR_VALUE\""
+            
+            # Add comma if not the first entry
+            if [ "$first" = true ]; then
+                first=false
+            else
+                ENV_JSON="$ENV_JSON,"
+            fi
+            
+            # Add to JSON object
+            ENV_JSON="$ENV_JSON \"$VAR_NAME\":\"$VAR_VALUE\""
         fi
     fi
 done < .env
+ENV_JSON="$ENV_JSON}"
 
 # Start or restart the apps for the selected environment
 for APP_NAME in "${APP_NAMES[@]}"; do
     if pm2 list | grep -q "$APP_NAME"; then
         echo "Restarting existing PM2 process: $APP_NAME"
         # Use eval to properly handle the environment variables
-        eval "pm2 restart ecosystem.config.cjs --only $APP_NAME --env $ENV $ENV_VARS"
+        eval "pm2 restart ecosystem.config.cjs --only $APP_NAME --env $ENV --env-json '$ENV_JSON'"
     else
         echo "Starting new PM2 process: $APP_NAME"
         # Use eval to properly handle the environment variables
-        eval "pm2 start ecosystem.config.cjs --only $APP_NAME --env $ENV $ENV_VARS"
+        eval "pm2 start ecosystem.config.cjs --only $APP_NAME --env $ENV --env-json '$ENV_JSON'"
     fi
 done
 
