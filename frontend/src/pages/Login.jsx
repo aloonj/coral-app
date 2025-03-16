@@ -77,6 +77,22 @@ const Login = () => {
     };
   }, []);
 
+  // Preload/warm up the Google callback endpoint to prevent 404 errors
+  useEffect(() => {
+    console.log('Warming up Google callback endpoint...');
+    // Use HEAD to avoid loading actual response data
+    fetch(`${API_URL}/auth/google/callback`, { 
+      method: 'HEAD',
+      credentials: 'same-origin',
+      cache: 'no-store' // Ensure we don't use a cached response
+    }).then(() => {
+      console.log('Google callback endpoint warmed up successfully');
+    }).catch(error => {
+      // Ignore errors, even 404s are fine here as we just want the server to load the handler
+      console.log('Google callback endpoint preloaded (endpoint may have returned error)');
+    });
+  }, [API_URL]);
+
   // Listen for Google callback URL 404 errors and automatically reload the page
   useEffect(() => {
     // Create a function to intercept Google callback navigation events
