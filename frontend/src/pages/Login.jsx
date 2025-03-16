@@ -23,8 +23,17 @@ const Login = () => {
     
     // Check for error parameter in URL
     const params = new URLSearchParams(window.location.search);
-    if (params.get('error') === 'google_auth_failed') {
-      setError('Google login failed. No account found with this email.');
+    const errorParam = params.get('error');
+    
+    if (errorParam) {
+      if (errorParam === 'google_auth_failed') {
+        setError('Google login failed. No account found with this email.');
+      } else if (errorParam.includes('pending approval')) {
+        setError('Your account is pending approval. Please contact an administrator.');
+      } else {
+        // Use the error message directly from the URL if available
+        setError(decodeURIComponent(errorParam));
+      }
     }
   }, []);
   

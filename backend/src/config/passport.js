@@ -23,6 +23,12 @@ export default function configurePassport() {
           await user.save();
           console.log(`Linked Google account for user: ${email}`);
         }
+        
+        // Check if user is active
+        if (user.status !== 'ACTIVE') {
+          return done(null, false, { message: 'Your account is pending approval' });
+        }
+        
         return done(null, user);
       } else {
         // No user with this email - reject login

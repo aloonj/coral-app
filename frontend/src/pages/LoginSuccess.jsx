@@ -8,6 +8,7 @@ const LoginSuccess = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
+    const error = params.get('error');
     
     if (token) {
       // Store token
@@ -15,8 +16,9 @@ const LoginSuccess = () => {
       // Redirect to dashboard
       navigate('/dashboard');
     } else {
-      // No token found, redirect to login
-      navigate('/login');
+      // No token found, redirect to login with error message
+      const errorMessage = error || 'Authentication failed. Please try again.';
+      navigate(`/login?error=${encodeURIComponent(errorMessage)}`);
     }
   }, [navigate]);
   
