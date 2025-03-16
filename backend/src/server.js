@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import passport from 'passport';
+import jwt from 'jsonwebtoken';
 import configurePassport from './config/passport.js';
 import { securityMiddleware, errorHandler } from './middleware/security.js';
 import authRoutes from './routes/authRoutes.js';
@@ -82,8 +83,67 @@ app.get('/', (req, res) => {
 // Global error handling middleware
 app.use(errorHandler);
 
+// Special handler for OAuth callback URLs to catch potential timing issues
+// This ensures requests to Google OAuth callback URLs are never treated as 404s
+app.get('/api/auth/google/callback', (req, res, next) => {
+  console.log('Intercepted Google callback URL in special middleware:', req.url);
+  
+  // Retry mechanism for callback processing
+  const processCallback = () => {
+    console.log('Processing Google callback with passport...');
+    
+    // Explicitly initialize passport authentication
+    try {
+      passport.authenticate('google', { 
+        session: false,
+        failWithError: true
+      })(req, res, (err) => {
+        if (err) {
+          console.error('Passport authentication error in special handler:', err);
+          // Redirect to frontend with error
+          const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Authentication failed, please try again')}`;
+          return res.status(302).location(redirectUrl).send();
+        }
+        
+        // If we get here without error but no user, handle that case too
+        if (!req.user) {
+          console.error('No user after authentication in special handler');
+          const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Authentication failed, no user found')}`;
+          return res.status(302).location(redirectUrl).send();
+        }
+        
+        // Authentication successful, generate JWT token
+        console.log('Google authentication successful in special handler for user:', req.user.email);
+        
+        const token = jwt.sign(
+          { 
+            id: req.user.id, 
+            email: req.user.email, 
+            role: req.user.role,
+            name: req.user.name
+          },
+          process.env.JWT_SECRET || 'your-secret-key',
+          { expiresIn: '24h' }
+        );
+        
+        // Redirect to frontend with token
+        const redirectUrl = `${process.env.FRONTEND_URL}/login/success?token=${token}`;
+        return res.status(302).location(redirectUrl).send();
+      });
+    } catch (error) {
+      console.error('Critical error in special callback handler:', error);
+      const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Critical authentication error')}`;
+      return res.status(302).location(redirectUrl).send();
+    }
+  };
+  
+  // Add a slight delay for timing issues
+  setTimeout(processCallback, 10);
+});
+
 // 404 handler
 app.use((req, res) => {
+  console.log('404 Not Found:', req.method, req.url);
   res.status(404).json({
     message: 'Resource not found'
   });
