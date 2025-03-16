@@ -10,7 +10,7 @@ const config = {
     host: env.database.host,
     port: env.database.port,
     dialect: 'mysql',
-    logging: env.isDevelopment,
+    logging: env.isDevelopment ? console.log : false,
     pool: {
       max: 10,
       min: 2,
