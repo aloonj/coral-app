@@ -101,13 +101,14 @@ router.get('/google',
 
 // Google login route (GET method for simplicity)
 router.get('/google-login', (req, res) => {
-  res.redirect('./google');
+  res.redirect(`${process.env.FRONTEND_URL}/api/auth/google`);
 });
 
 // Google callback route
 router.get('/google/callback',
   (req, res, next) => {
-    console.log('Google callback route hit');
+    console.log('Google callback route hit with query params:', req.query);
+    console.log('Full callback URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
     passport.authenticate('google', { 
       session: false,
       failWithError: true
@@ -135,10 +136,11 @@ router.get('/google/callback',
     
     console.log('JWT token generated successfully');
     
-    // Redirect to frontend with token
+    // Redirect to frontend with token - ensure full URL
     const redirectUrl = `${process.env.FRONTEND_URL}/login/success?token=${token}`;
     console.log('Redirecting to:', redirectUrl);
-    res.redirect(redirectUrl);
+    // Use 302 status code to ensure proper redirect
+    res.status(302).location(redirectUrl).send();
   },
   (err, req, res, next) => {
     // Authentication failed
@@ -152,10 +154,11 @@ router.get('/google/callback',
       console.log('Error message:', errorMessage);
     }
     
-    // Redirect to frontend with error
+    // Redirect to frontend with error - ensure full URL
     const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent(errorMessage)}`;
     console.log('Redirecting to error URL:', redirectUrl);
-    res.redirect(redirectUrl);
+    // Use 302 status code to ensure proper redirect
+    res.status(302).location(redirectUrl).send();
   }
 );
 

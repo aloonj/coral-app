@@ -103,9 +103,9 @@ const Login = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
             <GoogleButton 
               onClick={() => {
-                // Use the google-login route which redirects to the OAuth flow
-                console.log('Initiating Google login, redirecting to:', `${API_URL}/auth/google-login`);
-                window.location.href = `${API_URL}/auth/google-login`;
+                // Use the google route directly to start the OAuth flow
+                console.log('Initiating Google login, redirecting to:', `${API_URL}/auth/google`);
+                window.location.href = `${API_URL}/auth/google`;
               }}
               label="Sign in with Google"
             />
