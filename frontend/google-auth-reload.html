@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Auth Automatic Reload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .processing {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Google Auth Helper</h1>
+        <div id="status" class="status processing">
+            <p>Processing your Google OAuth login...</p>
+        </div>
+        <div id="debug-info" style="text-align: left; font-size: 12px; margin-top: 20px; display: none;">
+            <h3>Debug Information:</h3>
+            <pre id="debug-content"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Helper function to update status
+        function updateStatus(message, type) {
+            const statusElement = document.getElementById('status');
+            statusElement.innerHTML = `<p>${message}</p>`;
+            statusElement.className = `status ${type}`;
+        }
+
+        // Helper function to log debug info
+        function logDebug(message) {
+            const debugContent = document.getElementById('debug-content');
+            const timestamp = new Date().toISOString();
+            debugContent.textContent += `[${timestamp}] ${message}\n`;
+            document.getElementById('debug-info').style.display = 'block';
+        }
+
+        // Function to handle the Google OAuth callback
+        function handleCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+
+            if (error) {
+                updateStatus(`Error: ${error}`, 'error');
+                logDebug(`OAuth error received: ${error}`);
+                return;
+            }
+
+            if (!code) {
+                updateStatus('No authorization code received from Google', 'error');
+                logDebug('No authorization code in URL');
+                return;
+            }
+
+            // We have a code, let's extract the callback URL
+            const callbackUrl = window.location.href;
+            logDebug(`Detected callback URL: ${callbackUrl}`);
+
+            // Try to fetch the callback URL
+            updateStatus('Processing Google authentication...', 'processing');
+            
+            // Create a hidden iframe to load the callback URL
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            // Set up a timeout to reload if it takes too long
+            const timeoutId = setTimeout(() => {
+                logDebug('Timeout reached, reloading callback URL directly');
+                
+                // Remove iframe and try direct fetch
+                if (document.body.contains(iframe)) {
+                    document.body.removeChild(iframe);
+                }
+                
+                // First try fetch
+                fetch(callbackUrl, { 
+                    method: 'GET',
+                    credentials: 'include',
+                    redirect: 'follow',
+                })
+                .then(response => {
+                    logDebug(`Fetch response: ${response.status} ${response.statusText}`);
+                    if (response.redirected) {
+                        logDebug(`Redirected to: ${response.url}`);
+                        window.location.href = response.url;
+                    } else if (response.ok) {
+                        logDebug('Response OK but no redirect, trying window.location');
+                        // If we get a success but no redirect, try reloading the page
+                        window.location.reload();
+                    } else {
+                        // If fetch fails (e.g., 404), try direct window reload
+                        logDebug(`Fetch failed with status ${response.status}, forcing page reload`);
+                        window.location.reload();
+                    }
+                })
+                .catch(err => {
+                    logDebug(`Fetch error: ${err.message}`);
+                    // On fetch error, just reload the page
+                    window.location.reload();
+                });
+            }, 2000);
+
+            // Set up message event listener for communication from iframe
+            window.addEventListener('message', function handleMessage(event) {
+                if (event.data && event.data.type === 'oauth_callback_result') {
+                    clearTimeout(timeoutId);
+                    window.removeEventListener('message', handleMessage);
+                    
+                    if (event.data.success) {
+                        updateStatus('Authentication successful, redirecting...', 'success');
+                        if (event.data.redirectUrl) {
+                            window.location.href = event.data.redirectUrl;
+                        }
+                    } else {
+                        updateStatus(`Authentication failed: ${event.data.error || 'Unknown error'}`, 'error');
+                    }
+                }
+            });
+
+            // Load the URL in the iframe
+            iframe.src = callbackUrl;
+            logDebug('Loading callback URL in hidden iframe');
+        }
+
+        // On page load, process the callback
+        window.onload = function() {
+            // Allow showing the debug panel
+            window.addEventListener('keydown', function(e) {
+                // Show debug with Ctrl+D
+                if (e.ctrlKey && e.key === 'd') {
+                    document.getElementById('debug-info').style.display = 'block';
+                }
+            });
+            
+            try {
+                handleCallback();
+            } catch (err) {
+                updateStatus(`Error processing callback: ${err.message}`, 'error');
+                logDebug(`Error in handleCallback: ${err.stack || err.message}`);
+            }
+        };
+    </script>
+</body>
+</html>

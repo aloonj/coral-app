@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
+import './utils/googleAuthFix'; // Import Google Auth Fix for automatic callback retries
 import LayoutWithThemeToggle from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Corals from './pages/Corals';
