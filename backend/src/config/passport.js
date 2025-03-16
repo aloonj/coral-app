@@ -2,16 +2,46 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from '../models/User.js';
 
+// Define a global variable to track initialization state
+let googleStrategyInitialized = false;
+
 export default function configurePassport() {
+  // Force a full refresh of the Google strategy every time
+  if (passport._strategies.google) {
+    console.log('Removing existing Google strategy for clean initialization');
+    delete passport._strategies.google;
+  }
+  
+  // Create a new strategy with absolute URLs
+  const callbackURL = process.env.FRONTEND_URL
+    ? `${process.env.FRONTEND_URL}/api/auth/google/callback`
+    : '/api/auth/google/callback';
+    
+  console.log('Configuring Google strategy with callback URL:', callbackURL);
+  
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/api/auth/google/callback',
+    callbackURL: callbackURL,
     proxy: true,
+    passReqToCallback: true,
     scope: ['profile', 'email']
-  }, async (accessToken, refreshToken, profile, done) => {
+  }, async (req, accessToken, refreshToken, profile, done) => {
+    // Mark the strategy as initialized after first use
+    if (!googleStrategyInitialized) {
+      console.log('Google strategy initialized successfully');
+      googleStrategyInitialized = true;
+    }
+    // Log useful debugging information
+    console.log('Google auth callback triggered');
+    console.log('Request URL:', req.originalUrl);
+    console.log('Request headers:', req.headers);
+    
     try {
-      console.log('Google auth callback triggered for profile:', {
+      // Add additional timing safety
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      console.log('Google auth profile received:', {
         id: profile.id,
         displayName: profile.displayName,
         emails: profile.emails ? profile.emails.map(e => e.value) : 'No emails'
@@ -58,4 +88,40 @@ export default function configurePassport() {
       return done(error);
     }
   }));
+
+  // Add a verification routine to check if initialization is complete
+  const checkInitialization = () => {
+    if (!googleStrategyInitialized) {
+      console.log('Performing Google strategy warm-up...');
+      
+      // Force initialization by calling a method on the strategy
+      try {
+        if (passport._strategies.google) {
+          const authUrlParams = {
+            response_type: 'code',
+            redirect_uri: callbackURL,
+            scope: 'profile email'
+          };
+          
+          // This will initialize the strategy without actually redirecting
+          passport._strategies.google.authorizationParams(authUrlParams);
+          console.log('Google strategy warm-up complete');
+          googleStrategyInitialized = true;
+        } else {
+          console.warn('Google strategy not found during warm-up');
+        }
+      } catch (error) {
+        console.error('Error during Google strategy warm-up:', error);
+      }
+    }
+  };
+  
+  // Run a few warm-up checks
+  setTimeout(checkInitialization, 100);
+  setTimeout(checkInitialization, 1000);
+  setTimeout(checkInitialization, 3000);
+  
+  return {
+    isInitialized: () => googleStrategyInitialized
+  };
 }

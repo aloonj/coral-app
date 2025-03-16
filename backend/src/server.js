@@ -60,9 +60,23 @@ fs.mkdir(uploadsDir, { recursive: true })
   .then(() => console.log('Uploads directory ready'))
   .catch(err => console.error('Error creating uploads directory:', err));
 
-// Initialize passport
+// Initialize passport and get initialization status checker
 app.use(passport.initialize());
-configurePassport();
+const passportConfig = configurePassport();
+
+// Global middleware to check passport initialization status
+app.use((req, res, next) => {
+  // Only check for Google auth related routes
+  if (req.path.includes('/api/auth/google')) {
+    // Log the status of the Google strategy
+    const isInitialized = passportConfig.isInitialized();
+    console.log(`Passport Google Strategy initialized: ${isInitialized}`);
+    
+    // Add initialization status to the request for route handlers
+    req.googleStrategyInitialized = isInitialized;
+  }
+  next();
+});
 
 // CRITICAL: Register this special route handler BEFORE any other routes
 // to absolutely ensure it's checked first and can never fall through to 404
