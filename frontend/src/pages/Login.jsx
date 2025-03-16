@@ -5,7 +5,7 @@ import AuthForm from '../components/Auth/AuthForm';
 import GoogleButton from 'react-google-button';
 import { Container, Box, Typography, Divider, Fade } from '@mui/material';
 import { PageTitle, ActionButton, FormContainer, FormError } from '../components/StyledComponents';
-import api, { API_URL } from '../services/api';
+import api, { API_URL, authService } from '../services/api';
 
 const Login = () => {
   const { user } = useAuth();
@@ -31,7 +31,7 @@ const Login = () => {
     // Fetch feature flags
     const fetchFeatureFlags = async () => {
       try {
-        const response = await api.get('/auth/feature-flags');
+        const response = await authService.getFeatureFlags();
         setGoogleLoginEnabled(response.data.googleLoginEnabled);
       } catch (error) {
         console.error('Error fetching feature flags:', error);
