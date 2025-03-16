@@ -108,7 +108,7 @@ const Login = () => {
               
               <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                 <GoogleButton 
-                  onClick={() => window.location.href = `${API_URL}/auth/google`}
+                  onClick={() => window.location.href = `${API_URL.replace('/api', '')}/api/auth/google`}
                   label="Sign in with Google"
                 />
               </Box>
