@@ -101,7 +101,7 @@ router.get('/google',
 
 // Google login route (GET method for simplicity)
 router.get('/google-login', (req, res) => {
-  res.redirect('/api/auth/google');
+  res.redirect('./google');
 });
 
 // Google callback route
