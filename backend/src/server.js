@@ -89,6 +89,9 @@ app.get('/api/auth/google/callback', (req, res, next) => {
     return res.redirect(`/api/auth/google/callback?_=${Date.now()}`);
   }
   
+  // Log all headers to help debug the issue
+  console.log('Headers:', req.headers);
+  
   // Always process through the failsafe handler
   handleGoogleCallback(req, res);
 });
@@ -96,86 +99,95 @@ app.get('/api/auth/google/callback', (req, res, next) => {
 // Handle the actual callback processing in a separate function for reuse
 function handleGoogleCallback(req, res) {
   console.log('🔄 Processing Google callback:', req.url);
-  console.log('Headers:', req.headers);
   
   // Retry mechanism with exponential backoff
   let retryCount = 0;
   const maxRetries = 3;
   
-  const processCallback = () => {
-    retryCount++;
-    console.log(`⚡ Attempt ${retryCount}/${maxRetries} processing Google callback`);
-    
-    try {
-      // Try to authenticate with Google strategy
-      passport.authenticate('google', { 
-        session: false,
-        failWithError: true
-      })(req, res, (err) => {
-        // If we hit an error but have retries left, try again
-        if (err && retryCount < maxRetries) {
-          console.log(`Authentication error, retrying (${retryCount}/${maxRetries}):`, err.message);
+  // Force a small delay before processing the callback
+  // This gives the Google strategy time to fully initialize
+  setTimeout(() => {
+    const processCallback = () => {
+      retryCount++;
+      console.log(`⚡ Attempt ${retryCount}/${maxRetries} processing Google callback`);
+      
+      try {
+        // Ensure passport is properly initialized before proceeding
+        if (!passport._strategies.google) {
+          console.log('Google strategy not found, reinitializing passport...');
+          configurePassport();
+        }
+        
+        // Try to authenticate with Google strategy
+        passport.authenticate('google', { 
+          session: false,
+          failWithError: true
+        })(req, res, (err) => {
+          // If we hit an error but have retries left, try again
+          if (err && retryCount < maxRetries) {
+            console.log(`Authentication error, retrying (${retryCount}/${maxRetries}):`, err.message);
+            setTimeout(processCallback, 100 * Math.pow(2, retryCount)); // Exponential backoff
+            return;
+          }
+          
+          // Handle all error cases
+          if (err) {
+            console.error('Final passport authentication error:', err);
+            // Redirect to frontend with error
+            const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Authentication failed, please try again')}`;
+            return res.status(302).location(redirectUrl).send();
+          }
+          
+          // If we get here without error but no user, handle that case too
+          if (!req.user) {
+            console.error('Authentication completed but no user found');
+            const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Authentication failed, no user found')}`;
+            return res.status(302).location(redirectUrl).send();
+          }
+          
+          // Authentication successful, generate JWT token
+          console.log('✅ Google authentication successful for user:', req.user.email);
+          
+          try {
+            const token = jwt.sign(
+              { 
+                id: req.user.id, 
+                email: req.user.email, 
+                role: req.user.role,
+                name: req.user.name
+              },
+              process.env.JWT_SECRET || 'your-secret-key',
+              { expiresIn: '24h' }
+            );
+            
+            // Redirect to frontend with token
+            const redirectUrl = `${process.env.FRONTEND_URL}/login/success?token=${token}`;
+            console.log('Redirecting to:', redirectUrl);
+            return res.status(302).location(redirectUrl).send();
+          } catch (tokenError) {
+            console.error('Error generating token:', tokenError);
+            const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Error creating authentication token')}`;
+            return res.status(302).location(redirectUrl).send();
+          }
+        });
+      } catch (error) {
+        console.error('Critical passport initialization error:', error);
+        
+        if (retryCount < maxRetries) {
+          console.log(`Retrying after error (${retryCount}/${maxRetries})...`);
           setTimeout(processCallback, 100 * Math.pow(2, retryCount)); // Exponential backoff
           return;
         }
         
-        // Handle all error cases
-        if (err) {
-          console.error('Final passport authentication error:', err);
-          // Redirect to frontend with error
-          const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Authentication failed, please try again')}`;
-          return res.status(302).location(redirectUrl).send();
-        }
-        
-        // If we get here without error but no user, handle that case too
-        if (!req.user) {
-          console.error('Authentication completed but no user found');
-          const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Authentication failed, no user found')}`;
-          return res.status(302).location(redirectUrl).send();
-        }
-        
-        // Authentication successful, generate JWT token
-        console.log('✅ Google authentication successful for user:', req.user.email);
-        
-        try {
-          const token = jwt.sign(
-            { 
-              id: req.user.id, 
-              email: req.user.email, 
-              role: req.user.role,
-              name: req.user.name
-            },
-            process.env.JWT_SECRET || 'your-secret-key',
-            { expiresIn: '24h' }
-          );
-          
-          // Redirect to frontend with token
-          const redirectUrl = `${process.env.FRONTEND_URL}/login/success?token=${token}`;
-          console.log('Redirecting to:', redirectUrl);
-          return res.status(302).location(redirectUrl).send();
-        } catch (tokenError) {
-          console.error('Error generating token:', tokenError);
-          const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Error creating authentication token')}`;
-          return res.status(302).location(redirectUrl).send();
-        }
-      });
-    } catch (error) {
-      console.error('Critical passport initialization error:', error);
-      
-      if (retryCount < maxRetries) {
-        console.log(`Retrying after error (${retryCount}/${maxRetries})...`);
-        setTimeout(processCallback, 100 * Math.pow(2, retryCount)); // Exponential backoff
-        return;
+        // All retries failed, send error to user
+        const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Critical authentication system error')}`;
+        return res.status(302).location(redirectUrl).send();
       }
-      
-      // All retries failed, send error to user
-      const redirectUrl = `${process.env.FRONTEND_URL}/login/success?error=${encodeURIComponent('Critical authentication system error')}`;
-      return res.status(302).location(redirectUrl).send();
-    }
-  };
-  
-  // Start the process immediately
-  processCallback();
+    };
+    
+    // Start the process immediately
+    processCallback();
+  }, 50); // Small delay to ensure Google strategy is initialized
 }
 
 // Additional failsafe middleware that catches any requests that somehow missed the explicit route
