@@ -13,7 +13,9 @@ import {
 
 // Card for coral items with stock status styling
 export { Box, Typography };
-export const CoralCard = styled(Card)(({ theme, stockStatus }) => ({
+export const CoralCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'stockStatus'
+})(({ theme, stockStatus }) => ({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
@@ -40,7 +42,9 @@ export const ActionButton = styled(Button)(({ theme, color = 'primary' }) => ({
 }));
 
 // Status badge for orders
-export const StatusBadge = styled(Chip)(({ theme, status }) => {
+export const StatusBadge = styled(Chip, {
+  shouldForwardProp: (prop) => prop !== 'status'
+})(({ theme, status }) => {
   const getStatusColor = () => {
     switch(status) {
       case 'PENDING': return {
@@ -145,7 +149,9 @@ export const FormError = styled(Alert)(({ theme }) => ({
 }));
 
 // Submit button with loading state
-export const SubmitButton = styled(Button)(({ theme, loading }) => ({
+export const SubmitButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'loading'
+})(({ theme, loading }) => ({
   width: '100%',
   padding: theme.spacing(1.2),
   position: 'relative',
@@ -165,7 +171,9 @@ export const LoadingSpinner = styled(CircularProgress)({
 });
 
 // Dashboard stat card
-export const StatCard = styled(Paper)(({ theme, active, color }) => ({
+export const StatCard = styled(Paper, {
+  shouldForwardProp: (prop) => prop !== 'active'
+})(({ theme, active, color }) => ({
   padding: theme.spacing(2),
   borderRadius: theme.shape.borderRadius,
   backgroundColor: active ? theme.palette.action.hover : theme.palette.background.paper,
@@ -187,7 +195,9 @@ export const PriceTag = styled(Typography)(({ theme }) => ({
 }));
 
 // Stock level indicator
-export const StockLevel = styled(Box)(({ theme, status }) => {
+export const StockLevel = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'status'
+})(({ theme, status }) => {
   const getStatusColor = () => {
     switch(status) {
       case 'AVAILABLE': return {
