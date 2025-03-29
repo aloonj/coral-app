@@ -298,6 +298,15 @@ mysql -u coraladmin -p coral_management < backup.sql
      npm rebuild bcrypt --update-binary
      ```
 
+6. If you encounter missing module errors (e.g., passport, passport-google-oauth20):
+   - The deployment script now verifies and installs all required dependencies
+   - If you still encounter issues, you can manually install the missing dependencies:
+     ```bash
+     cd /var/www/coral-app/backend
+     npm install passport passport-google-oauth20
+     ```
+   - Make sure your package.json includes all required dependencies
+
 ### Security Considerations
 
 1. Configure firewall:

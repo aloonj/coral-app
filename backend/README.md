@@ -73,6 +73,7 @@ The deployment script handles:
 - Installing necessary build dependencies
 - Setting up directories and permissions
 - Installing Node.js dependencies
+- Verifying and installing missing dependencies (like passport)
 - Rebuilding native modules (like bcrypt) for compatibility
 - Database initialization
 - PM2 process management

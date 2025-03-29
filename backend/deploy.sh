@@ -61,6 +61,24 @@ fi
 echo "Rebuilding native modules to ensure compatibility..."
 npm rebuild
 
+# Verify all required dependencies are installed
+echo "Verifying all required dependencies..."
+if ! node -e "
+(async () => {
+  try {
+    await import('passport');
+    await import('passport-google-oauth20');
+    console.log('All dependencies verified.');
+  } catch(e) {
+    console.error('Missing dependency:', e.message);
+    process.exit(1);
+  }
+})();
+"; then
+    echo "Installing missing dependencies..."
+    npm install
+fi
+
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
     echo "Creating .env file..."
