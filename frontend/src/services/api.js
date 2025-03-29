@@ -4,6 +4,10 @@ import { tokenStorage } from '../utils/tokenStorage';
 export const API_URL = import.meta.env.VITE_API_URL;
 export const BASE_URL = import.meta.env.VITE_BASE_URL;
 
+// Debug log to check what API URL is being used
+console.log('API URL:', API_URL);
+console.log('Environment variables:', import.meta.env);
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
