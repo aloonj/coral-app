@@ -284,6 +284,20 @@ mysql -u coraladmin -p coral_management < backup.sql
    - Check if port 5000 is in use: `sudo lsof -i :5000`
    - Check Nginx error logs
 
+5. If you encounter native module errors (e.g., bcrypt):
+   - The deployment script has been enhanced to automatically handle native module compilation
+   - It will install necessary build dependencies and rebuild native modules
+   - If you still encounter issues, you can manually rebuild all native modules:
+     ```bash
+     cd /var/www/coral-app/backend
+     npm rebuild
+     ```
+   - For bcrypt-specific issues, you can rebuild just bcrypt:
+     ```bash
+     cd /var/www/coral-app/backend
+     npm rebuild bcrypt --update-binary
+     ```
+
 ### Security Considerations
 
 1. Configure firewall:

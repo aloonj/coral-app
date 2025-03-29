@@ -32,9 +32,34 @@ echo "Setting permissions..."
 chmod 755 logs
 chmod 755 uploads
 
+# Install build essentials if not already installed
+echo "Checking and installing build dependencies..."
+if ! command -v gcc &> /dev/null || ! command -v make &> /dev/null || ! command -v python3 &> /dev/null; then
+    echo "Installing build-essential and python..."
+    sudo apt-get update
+    sudo apt-get install -y build-essential python3
+fi
+
 # Install dependencies
 echo "Installing dependencies..."
+# Remove node_modules/bcrypt if it exists to force recompilation
+if [ -d "node_modules/bcrypt" ]; then
+    echo "Removing existing bcrypt module to force recompilation..."
+    rm -rf node_modules/bcrypt
+fi
+
+# Install dependencies with production flag
 npm install --production
+
+# Verify bcrypt installation
+if [ ! -d "node_modules/bcrypt/lib/binding" ]; then
+    echo "bcrypt binding directory not found. Attempting to rebuild bcrypt..."
+    npm rebuild bcrypt --update-binary
+fi
+
+# Rebuild all native modules to ensure compatibility with the current system
+echo "Rebuilding native modules to ensure compatibility..."
+npm rebuild
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then

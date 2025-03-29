@@ -57,6 +57,29 @@ A comprehensive backend system for managing coral inventory, orders, and client 
    npm run seed
    ```
 
+## Deployment
+
+For production or development deployment, use the enhanced deployment script:
+
+```bash
+# For development environment
+./deploy.sh development
+
+# For production environment
+./deploy.sh production
+```
+
+The deployment script handles:
+- Installing necessary build dependencies
+- Setting up directories and permissions
+- Installing Node.js dependencies
+- Rebuilding native modules (like bcrypt) for compatibility
+- Database initialization
+- PM2 process management
+- Environment-specific configuration
+
+See `DEPLOYMENT.md` for detailed deployment instructions and troubleshooting.
+
 ## Development
 
 Start the development server with hot reload:
