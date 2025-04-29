@@ -70,6 +70,7 @@ const QuickOrder = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [offset, setOffset] = useState(0);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef(null);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
@@ -235,7 +236,8 @@ const QuickOrder = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+        // Don't trigger infinite scrolling if we're submitting an order
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading && !isSubmittingOrder) {
           fetchCorals(offset, false);
         }
       },
@@ -251,7 +253,7 @@ const QuickOrder = () => {
         observer.disconnect();
       }
     };
-  }, [offset, hasMore, loadingMore, loading, fetchCorals]);
+  }, [offset, hasMore, loadingMore, loading, fetchCorals, isSubmittingOrder]);
 
   // Early return for loading and error states
   if (!user) {
@@ -393,6 +395,13 @@ const QuickOrder = () => {
   const isOrderButtonDisabled = isAdmin && !selectedClient;
 
   const handleBulkOrder = async () => {
+    // Prevent multiple submissions
+    if (isSubmittingOrder) return;
+    
+    // Set submitting state to true before starting
+    setIsSubmittingOrder(true);
+    console.log('Submitting order...');
+    
     const orderItems = Object.entries(orderQuantities)
       .filter(([_, quantity]) => quantity > 0)
       .map(([coralId, quantity]) => {
@@ -408,6 +417,7 @@ const QuickOrder = () => {
 
     if (orderItems.length === 0) {
       alert('Please add items to your order');
+      setIsSubmittingOrder(false);
       return;
     }
 
@@ -435,18 +445,22 @@ const QuickOrder = () => {
 
       const response = await orderService.createOrder(orderData);
       const newOrderId = response.data.id;
+      console.log('Order submitted successfully, ID:', newOrderId);
       
       // Dispatch a custom event to show a toast notification
       window.dispatchEvent(new CustomEvent('order-submitted', { 
         detail: { orderId: newOrderId } 
       }));
       
-      // Navigate to dashboard with the new order ID
+      // Only navigate after confirmed success
       navigate('/dashboard', { state: { newOrderId } });
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Failed to submit order. Please try again.';
       alert(errorMessage);
       console.error('Order submission error:', err);
+    } finally {
+      // Always reset submitting state
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -962,11 +976,11 @@ const QuickOrder = () => {
           color="primary"
           size="large"
           onClick={handleBulkOrder}
-          disabled={isOrderButtonDisabled || Object.values(orderQuantities).every(qty => qty === 0)}
-          startIcon={<ShoppingCartIcon />}
+          disabled={isOrderButtonDisabled || Object.values(orderQuantities).every(qty => qty === 0) || isSubmittingOrder}
+          startIcon={isSubmittingOrder ? <CircularProgress size={24} color="inherit" /> : <ShoppingCartIcon />}
           sx={{ minWidth: 200 }}
         >
-          Place Order
+          {isSubmittingOrder ? 'Submitting...' : 'Place Order'}
         </Button>
       </Box>
 
