@@ -945,6 +945,26 @@ const QuickOrder = () => {
         />
       )}
 
+      {/* Order Actions */}
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        mt: 4,
+        mb: 2
+      }}>
+        <Button
+          variant="contained"
+          color="primary"
+          size="large"
+          onClick={handleBulkOrder}
+          disabled={isOrderButtonDisabled || Object.values(orderQuantities).every(qty => qty === 0)}
+          startIcon={<ShoppingCartIcon />}
+          sx={{ minWidth: 200 }}
+        >
+          Place Order
+        </Button>
+      </Box>
+
       {/* Floating Cart Button */}
       <FloatingCartButton />
     </Container>

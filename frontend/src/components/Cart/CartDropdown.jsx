@@ -28,7 +28,7 @@ import {
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { config } from '../../config';
-import api from '../../services/api';
+import api, { orderService } from '../../services/api';
 
 const CartDropdown = ({ 
   anchorEl: externalAnchorEl, 
@@ -144,9 +144,81 @@ const CartDropdown = ({
     fetchClientDiscountRate();
   }, [isAdmin, selectedClient, user]);
 
-  const handleCheckout = () => {
-    navigate('/quickorder');
-    handleClose();
+  const handleCheckout = async () => {
+    // If we're already on the QuickOrder page, just close the cart
+    if (location.pathname === '/quickorder') {
+      handleClose();
+      return;
+    }
+
+    // If cart is empty, just navigate to QuickOrder
+    if (cartItems.length === 0) {
+      navigate('/quickorder');
+      handleClose();
+      return;
+    }
+
+    // Submit the order
+    try {
+      const orderItems = Object.entries(orderQuantities)
+        .filter(([_, quantity]) => quantity > 0)
+        .map(([coralId, quantity]) => {
+          const coral = cartItems.find(c => c.id === parseInt(coralId));
+          const discountedPrice = clientDiscountRate > 0 
+            ? getDiscountedPrice(coral.price, clientDiscountRate) 
+            : coral.price;
+          
+          return {
+            coralId: parseInt(coralId),
+            quantity,
+            priceAtOrder: discountedPrice
+          };
+        });
+
+      if (orderItems.length === 0) {
+        alert('Please add items to your order');
+        return;
+      }
+
+      // Calculate total amount with discounts
+      const totalAmount = cartItems.reduce((total, coral) => {
+        const quantity = orderQuantities[coral.id] || 0;
+        if (quantity === 0) return total;
+        
+        const discountedPrice = clientDiscountRate > 0 
+          ? getDiscountedPrice(coral.price, clientDiscountRate) 
+          : coral.price;
+        return total + (discountedPrice * quantity);
+      }, 0);
+
+      // Validate that admin has selected a client
+      if (isAdmin && !selectedClient) {
+        alert('Please select a client to place an order for');
+        navigate('/quickorder');
+        handleClose();
+        return;
+      }
+      
+      const orderData = {
+        items: orderItems,
+        totalAmount,
+        ...(isAdmin && selectedClient && { clientId: parseInt(selectedClient, 10) })
+      };
+
+      const response = await orderService.createOrder(orderData);
+      const newOrderId = response.data.id;
+      
+      // Clear the cart after successful order
+      clearCart();
+      
+      // Navigate to dashboard with the new order ID
+      navigate('/dashboard', { state: { newOrderId } });
+      handleClose();
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to submit order. Please try again.';
+      alert(errorMessage);
+      console.error('Order submission error:', err);
+    }
   };
   
   // Determine if the Place Order button should be disabled
