@@ -436,6 +436,11 @@ const QuickOrder = () => {
       const response = await orderService.createOrder(orderData);
       const newOrderId = response.data.id;
       
+      // Dispatch a custom event to show a toast notification
+      window.dispatchEvent(new CustomEvent('order-submitted', { 
+        detail: { orderId: newOrderId } 
+      }));
+      
       // Navigate to dashboard with the new order ID
       navigate('/dashboard', { state: { newOrderId } });
     } catch (err) {

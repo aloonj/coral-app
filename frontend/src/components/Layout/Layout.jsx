@@ -123,6 +123,24 @@ const LayoutWithThemeToggle = ({ children }) => {
       window.removeEventListener('client-approval-changed', handleClientApprovalChange);
     };
   }, [fetchPendingCounts]);
+  
+  // Listen for order submission events
+  useEffect(() => {
+    const handleOrderSubmitted = (event) => {
+      const orderId = event.detail?.orderId;
+      setToast({
+        open: true,
+        message: `Order #${orderId} has been successfully submitted!`,
+        severity: 'success'
+      });
+    };
+    
+    window.addEventListener('order-submitted', handleOrderSubmitted);
+    
+    return () => {
+      window.removeEventListener('order-submitted', handleOrderSubmitted);
+    };
+  }, []);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
