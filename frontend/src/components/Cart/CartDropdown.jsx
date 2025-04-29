@@ -48,6 +48,7 @@ const CartDropdown = ({
   const [selectedClient, setSelectedClient] = useState('');
   const [clientDiscountRate, setClientDiscountRate] = useState(0);
   const [animateCart, setAnimateCart] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const prevTotalItemsRef = useRef(totalItems);
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   
@@ -145,18 +146,19 @@ const CartDropdown = ({
   }, [isAdmin, selectedClient, user]);
 
   const handleCheckout = async () => {
-    // If we're already on the QuickOrder page, just close the cart
-    if (location.pathname === '/quickorder') {
-      handleClose();
-      return;
-    }
-
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+    
     // If cart is empty, just navigate to QuickOrder
     if (cartItems.length === 0) {
       navigate('/quickorder');
       handleClose();
       return;
     }
+    
+    // Set submitting state to true before starting
+    setIsSubmitting(true);
+    console.log('Submitting order...');
 
     // Submit the order
     try {
@@ -207,6 +209,7 @@ const CartDropdown = ({
 
       const response = await orderService.createOrder(orderData);
       const newOrderId = response.data.id;
+      console.log('Order submitted successfully, ID:', newOrderId);
       
       // Clear the cart after successful order
       clearCart();
@@ -223,6 +226,9 @@ const CartDropdown = ({
       const errorMessage = err.response?.data?.message || 'Failed to submit order. Please try again.';
       alert(errorMessage);
       console.error('Order submission error:', err);
+    } finally {
+      // Always reset submitting state
+      setIsSubmitting(false);
     }
   };
   
@@ -385,9 +391,9 @@ const CartDropdown = ({
                 onClick={handleCheckout}
                 color="primary"
                 fullWidth
-                disabled={isPlaceOrderDisabled}
+                disabled={isPlaceOrderDisabled || isSubmitting}
               >
-                Place Order
+                {isSubmitting ? 'Submitting...' : 'Place Order'}
               </Button>
             </Box>
           </Box>
