@@ -20,6 +20,11 @@ const AuthForm = ({ mode = 'login' }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [passwordValidation, setPasswordValidation] = useState({
+    minLength: false,
+    hasNumber: false,
+    hasSpecial: false
+  });
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -29,6 +34,21 @@ const AuthForm = ({ mode = 'login' }) => {
       ...prev,
       [name]: value,
     }));
+    
+    // Real-time password validation feedback
+    if (name === 'password' && mode === 'register') {
+      const { minLength, hasNumber, hasSpecial } = validatePassword(value);
+      setPasswordValidation({ minLength, hasNumber, hasSpecial });
+    }
+  };
+
+  // Function to validate password meets requirements
+  const validatePassword = (password) => {
+    const minLength = password.length >= 8;
+    const hasNumber = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>_-]/.test(password);
+    
+    return { minLength, hasNumber, hasSpecial, isValid: minLength && hasNumber && hasSpecial };
   };
 
   const handleSubmit = async (e) => {
@@ -41,6 +61,25 @@ const AuthForm = ({ mode = 'login' }) => {
       setError('Passwords do not match');
       setLoading(false);
       return;
+    }
+    
+    // Validate password requirements for registration
+    if (mode === 'register') {
+      const { isValid, minLength, hasNumber, hasSpecial } = validatePassword(formData.password);
+      
+      if (!isValid) {
+        let errorMsg = 'Password must:';
+        if (!minLength) errorMsg += ' be at least 8 characters long,';
+        if (!hasNumber) errorMsg += ' include at least one number,';
+        if (!hasSpecial) errorMsg += ' include at least one special character (!@#$%^&*(),.?":{}|<>_-),';
+        
+        // Clean up the error message
+        errorMsg = errorMsg.replace(/,$/, '');
+        
+        setError(errorMsg);
+        setLoading(false);
+        return;
+      }
     }
 
     try {
@@ -83,10 +122,24 @@ const AuthForm = ({ mode = 'login' }) => {
         console.error('Error setting up auth request');
       }
       
-      setError(
-        error.response?.data?.message || 
-        (error.request ? 'Unable to reach the server. Please try again later.' : 'Unable to complete request. Please try again.')
-      );
+      // Improved error handling to better display validation errors
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        // Format validation errors from the backend
+        const errorMessages = error.response.data.errors.map(err => err.msg).join('. ');
+        setError(errorMessages);
+      } else if (error.response?.data?.message) {
+        // Use server's error message if available
+        setError(error.response.data.message);
+      } else if (!navigator.onLine) {
+        // Check if user is offline
+        setError('You are currently offline. Please check your internet connection and try again.');
+      } else if (error.request) {
+        // Network error but request was sent
+        setError('Unable to reach the server. Please try again later.');
+      } else {
+        // Something happened in setting up the request
+        setError('Unable to complete request. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -182,9 +235,67 @@ const AuthForm = ({ mode = 'login' }) => {
           />
           
           {mode === 'register' && (
-            <FormHelperText sx={{ mt: 1, mb: 2, color: 'text.secondary' }}>
-              Password must be at least 8 characters long and include at least one number and one special character (!@#$%^&*(),.?":{}|&lt;&gt;_-).
-            </FormHelperText>
+            <>
+              <FormHelperText sx={{ mt: 1, mb: 0.5, color: 'text.secondary' }}>
+                Password requirements:
+              </FormHelperText>
+              <Box sx={{ ml: 2, mb: 2 }}>
+                <FormHelperText 
+                  sx={{ 
+                    color: passwordValidation.minLength ? 'success.main' : 'text.secondary',
+                    display: 'flex',
+                    alignItems: 'center',
+                    '&::before': {
+                      content: '""',
+                      display: 'inline-block',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: passwordValidation.minLength ? 'success.main' : 'text.disabled',
+                      marginRight: '8px'
+                    }
+                  }}
+                >
+                  At least 8 characters long
+                </FormHelperText>
+                <FormHelperText 
+                  sx={{ 
+                    color: passwordValidation.hasNumber ? 'success.main' : 'text.secondary',
+                    display: 'flex',
+                    alignItems: 'center',
+                    '&::before': {
+                      content: '""',
+                      display: 'inline-block',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: passwordValidation.hasNumber ? 'success.main' : 'text.disabled',
+                      marginRight: '8px'
+                    }
+                  }}
+                >
+                  Include at least one number
+                </FormHelperText>
+                <FormHelperText 
+                  sx={{ 
+                    color: passwordValidation.hasSpecial ? 'success.main' : 'text.secondary',
+                    display: 'flex',
+                    alignItems: 'center',
+                    '&::before': {
+                      content: '""',
+                      display: 'inline-block',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: passwordValidation.hasSpecial ? 'success.main' : 'text.disabled',
+                      marginRight: '8px'
+                    }
+                  }}
+                >
+                  Include at least one special character (!@#$%^&*(),.?":{}|&lt;&gt;_-)
+                </FormHelperText>
+              </Box>
+            </>
           )}
         </Box>
 
