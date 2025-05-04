@@ -21,6 +21,8 @@ import ImageManagement from './pages/ImageManagement';
 import Notifications from './pages/Notifications';
 import Backups from './pages/Backups';
 import ThemeGuide from './components/ThemeGuide';
+import XeroAdmin from './pages/XeroAdmin';
+import XeroVerification from './pages/XeroVerification';
 
 const RootRedirect = () => {
   const { user, loading } = useAuth();
@@ -166,6 +168,22 @@ function App() {
               element={
                 <ProtectedRoute requireAdmin>
                   <Backups />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/xero-admin"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <XeroAdmin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/xero-verification"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <XeroVerification />
                 </ProtectedRoute>
               }
             />

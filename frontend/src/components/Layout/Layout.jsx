@@ -39,7 +39,8 @@ import {
   Backup as BackupIcon,
   People as PeopleIcon,
   Inventory as InventoryIcon,
-  Receipt as ReceiptIcon
+  Receipt as ReceiptIcon,
+  CreditCard as CreditCardIcon
 } from '@mui/icons-material';
 import ThemeToggle from '../ThemeToggle';
 import CartDropdown from '../Cart/CartDropdown';
@@ -297,6 +298,17 @@ const LayoutWithThemeToggle = ({ children }) => {
                       <BackupIcon />
                     </ListItemIcon>
                     <ListItemText primary="Backups" />
+                  </ListItem>
+                  
+                  <ListItem 
+                    button 
+                    sx={{ pl: 4 }}
+                    onClick={() => handleNavigation('/xero-admin')}
+                  >
+                    <ListItemIcon>
+                      <CreditCardIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Xero Integration" />
                   </ListItem>
                 </List>
               </Collapse>

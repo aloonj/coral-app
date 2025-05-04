@@ -29,6 +29,7 @@
     "mysql2": "^3.9.2",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.10",
+    "openid-client": "^6.4.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "sequelize": "^6.37.1",
@@ -37,6 +38,7 @@
     "sharp": "^0.33.2",
     "twilio": "^4.22.0",
     "uuid": "^9.0.1",
+    "xero-node": "^11.1.0",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {

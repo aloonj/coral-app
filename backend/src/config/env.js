@@ -57,6 +57,19 @@ const env = {
     monitorSchedule: process.env.BACKUP_MONITOR_SCHEDULE || "0 9 * * *", // Default 9 AM daily
     maxAgeHours: parseInt(process.env.BACKUP_MAX_AGE_HOURS, 10) || 48 // Default 48 hours
   },
+  
+  // Xero Integration
+  xero: {
+    clientId: process.env.XERO_CLIENT_ID,
+    clientSecret: process.env.XERO_CLIENT_SECRET,
+    redirectUri: process.env.XERO_REDIRECT_URI,
+    tenantId: process.env.XERO_TENANT_ID,
+    isConfigured: !!(
+      process.env.XERO_CLIENT_ID &&
+      process.env.XERO_CLIENT_SECRET &&
+      process.env.XERO_REDIRECT_URI
+    )
+  },
 
   // Server
   nodeEnv: process.env.NODE_ENV,
