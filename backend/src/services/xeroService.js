@@ -234,12 +234,19 @@ class XeroService {
             throw new Error("Cannot test API call without a tenant ID.");
         }
         
-        // Create headers object with the proper tenant ID header
+        // Log tenant ID for debugging
+        console.log('Xero tenantId for API call:', this.tenantId);
+        console.log('Xero access token length:', this.tokenSet.access_token ? this.tokenSet.access_token.length : 'undefined');
+        
+        // Create headers object with the proper tenant ID header and accept header
         const headers = {
           'Authorization': `Bearer ${this.tokenSet.access_token}`,
           'Content-Type': 'application/json',
-          'Xero-tenant-id': this.tenantId
+          'Accept': 'application/json',
+          'Xero-Tenant-Id': this.tenantId  // Note: Using proper capitalization
         };
+        
+        console.log('Request headers:', JSON.stringify(headers, null, 2).replace(this.tokenSet.access_token, '[REDACTED]'));
         
         // Call the API directly with the proper headers
         const response = await fetch('https://api.xero.com/api.xro/2.0/Organisation', { 
@@ -468,11 +475,12 @@ class XeroService {
       const contactName = clientData.name || 'Unknown Client';
       const contactEmail = clientData.email;
 
-      // Create headers for API call
+      // Create headers for API call with proper capitalization for header names
       const headers = {
         'Authorization': `Bearer ${this.tokenSet.access_token}`,
         'Content-Type': 'application/json',
-        'Xero-tenant-id': tenantIdString
+        'Accept': 'application/json',
+        'Xero-Tenant-Id': tenantIdString
       };
 
       // Find if contact already exists using direct API call
@@ -730,7 +738,8 @@ class XeroService {
       const headers = {
         'Authorization': `Bearer ${this.tokenSet.access_token}`,
         'Content-Type': 'application/json',
-        'Xero-tenant-id': tenantIdString
+        'Accept': 'application/json',
+        'Xero-Tenant-Id': tenantIdString
       };
       
       // Call the API directly with the proper headers
