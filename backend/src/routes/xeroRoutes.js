@@ -32,12 +32,8 @@ router.post('/callback',
   handleXeroCallback
 );
 
-// Also support GET for the callback (in case Xero redirects with GET)
-router.get('/callback',
-  authenticate,
-  authorize('ADMIN', 'SUPERADMIN'),
-  handleXeroCallback
-);
+// Special route for the callback from Xero (no auth required as it comes directly from Xero)
+router.get('/callback', handleXeroCallback);
 
 // Generate invoice for an order
 router.post('/invoices/order/:orderId',

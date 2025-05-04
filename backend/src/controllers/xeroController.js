@@ -44,12 +44,28 @@ export const handleXeroCallback = async (req, res) => {
     console.log('Xero callback controller called with body:', req.body);
     console.log('Xero callback controller called with query:', req.query);
     
-    // Check if URL is in body (from manual submission) or in query (from redirect)
-    const url = req.body.url || req.query.url;
+    let url;
     
-    if (!url) {
-      console.error('No callback URL provided in request');
-      return res.status(400).json({ message: 'Callback URL is required' });
+    // Case 1: URL is in body (from manual submission)
+    if (req.body && req.body.url) {
+      url = req.body.url;
+    } 
+    // Case 2: URL is in query (from redirect)
+    else if (req.query && req.query.url) {
+      url = req.query.url;
+    }
+    // Case 3: Xero redirected with code and other params directly in the query
+    else if (req.query && req.query.code) {
+      // Construct the full URL from the original request
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      const originalUrl = req.originalUrl;
+      
+      url = `${protocol}://${host}${originalUrl}`;
+      console.log('Constructed callback URL from request:', url);
+    } else {
+      console.error('No callback parameters provided in request');
+      return res.status(400).json({ message: 'Callback URL or code is required' });
     }
     
     console.log('Processing Xero callback with URL:', url);
@@ -57,14 +73,37 @@ export const handleXeroCallback = async (req, res) => {
     
     if (result.error) {
       console.error('Error from Xero service:', result.error, result.details || '');
-      return res.status(400).json({ 
-        message: result.error,
-        details: result.details
-      });
+      
+      // Check if this is a browser redirect (GET request) or API call (POST request)
+      if (req.method === 'GET') {
+        // For browser redirects, redirect to the verification page with error
+        const frontendUrl = process.env.FRONTEND_URL || 'https://dev.fragglerock.shop';
+        const errorMessage = encodeURIComponent(result.error);
+        const redirectUrl = `${frontendUrl}/xero-verification?error=${errorMessage}`;
+        console.log('Redirecting to frontend error page:', redirectUrl);
+        return res.redirect(redirectUrl);
+      } else {
+        // For API calls, return JSON error
+        return res.status(400).json({ 
+          message: result.error,
+          details: result.details
+        });
+      }
     }
     
     console.log('Xero authentication successful, tenant:', result.tenant);
-    res.json({ message: 'Xero authentication successful', tenant: result.tenant });
+    
+    // Check if this is a browser redirect (GET request) or API call (POST request)
+    if (req.method === 'GET') {
+      // For browser redirects, redirect to the admin page
+      const frontendUrl = process.env.FRONTEND_URL || 'https://dev.fragglerock.shop';
+      const redirectUrl = `${frontendUrl}/xero-admin?success=true`;
+      console.log('Redirecting to frontend:', redirectUrl);
+      return res.redirect(redirectUrl);
+    } else {
+      // For API calls (like manual callback URL submission), return JSON
+      res.json({ message: 'Xero authentication successful', tenant: result.tenant });
+    }
   } catch (error) {
     console.error('Error handling Xero callback:', error);
     console.error('Error details:', error.message, error.stack);
