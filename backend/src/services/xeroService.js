@@ -182,24 +182,48 @@ class XeroService {
       this.tokenSet = await this.client.apiCallback(callbackUrl);
       console.log('Received token set:', this.tokenSet ? 'Token received' : 'No token received');
       
-      // If tenant ID is not set, get connected tenants
-      if (!this.tenantId) {
-        console.log('No tenant ID set, fetching connected tenants');
+      if (!this.tokenSet) {
+        console.error('No token received from Xero callback');
+        return { error: 'No token received from Xero' };
+      }
+      
+      // ALWAYS update tenants and get the latest tenant ID when connecting
+      console.log('Fetching connected tenants with access token');
+      console.log('Access token available:', !!this.tokenSet.access_token);
+      
+      try {
         const tenants = await this.client.updateTenants(this.tokenSet.access_token);
-        console.log('Connected tenants:', tenants);
+        console.log('Connected tenants:', JSON.stringify(tenants, null, 2));
         
-        if (tenants.length > 0) {
-          this.tenantId = tenants[0].tenantId;
-          console.log('Using Xero tenant ID:', this.tenantId);
-        } else {
-          console.log('No Xero organizations connected');
+        if (!tenants || tenants.length === 0) {
+          console.error('No Xero organizations connected');
           return { error: 'No Xero organizations connected' };
         }
+        
+        // Always use the first tenant ID from the latest connection
+        this.tenantId = tenants[0].tenantId;
+        console.log('Using Xero tenant ID:', this.tenantId);
+      } catch (tenantError) {
+        console.error('Error fetching tenants:', tenantError);
+        return { error: 'Failed to get Xero organization details', details: tenantError.message };
       }
       
       // Store the token set with tenant ID
       console.log('Saving token set to database');
       await this.saveTokenSet(this.tokenSet);
+      
+      // Verify the connection by making a test API call
+      try {
+        console.log('Testing connection with API call');
+        const org = await this.client.accountingApi.getOrganisations(
+          this.tokenSet.access_token,
+          this.tenantId
+        );
+        console.log('Connected to organization:', org.body.organisations[0].name);
+      } catch (apiError) {
+        console.error('API test call failed:', apiError);
+        // Continue anyway as the connection might still be valid
+      }
       
       return { success: true, tenant: this.tenantId };
     } catch (error) {
@@ -300,9 +324,35 @@ class XeroService {
       
       // Check if token refresh is needed
       if (this.client.readTokenSet(this.tokenSet).expired()) {
-        console.log('Refreshing Xero token');
-        this.tokenSet = await this.client.refreshToken();
-        await this.saveTokenSet(this.tokenSet);
+        try {
+          console.log('Refreshing Xero token');
+          const oldRefreshToken = this.tokenSet.refresh_token;
+          this.tokenSet = await this.client.refreshToken(this.tokenSet);
+          console.log('Token refreshed successfully');
+          
+          // If for some reason refresh_token is missing from the refreshed token,
+          // use the old one (some OAuth providers don't always return a new refresh token)
+          if (!this.tokenSet.refresh_token && oldRefreshToken) {
+            console.log('No refresh token in response, using previous refresh token');
+            this.tokenSet.refresh_token = oldRefreshToken;
+          }
+          
+          await this.saveTokenSet(this.tokenSet);
+        } catch (refreshError) {
+          console.error('Token refresh failed, forcing re-authentication:', refreshError);
+          // Force re-auth by clearing everything and returning error
+          this.tokenSet = null;
+          this.tenantId = null;
+          
+          // Deactivate tokens in DB since they're invalid
+          await XeroToken.update(
+            { active: false },
+            { where: { active: true } }
+          );
+          
+          const authUrlResult = await this.getAuthUrl();
+          return { error: 'Authentication required (token expired)', authUrl: authUrlResult };
+        }
       }
       
       return { success: true };
