@@ -485,39 +485,44 @@ const Clients = () => {
                 {client.email}
               </Typography>
 
-              <Box mt={2}>
-                <Typography variant="body2">
-                  <strong>Orders:</strong> {client.orderCount || 0}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Address:</strong> {client.address || 'N/A'}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Join Date:</strong> {formatDate(client.createdAt)}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Status:</strong> {client.status === 'INACTIVE' ? 
-                    <Chip 
-                      size="small"
-                      label="Pending Approval" 
-                      color="warning"
-                      icon={<HourglassEmptyIcon />}
-                      sx={{ ml: 1 }}
-                    /> : 
-                    <Chip 
-                      size="small"
-                      label="Active" 
-                      color="success"
-                      icon={<CheckCircleIcon />}
-                      sx={{ ml: 1 }}
-                    />
-                  }
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Discount Rate:</strong> {client.discountRate ? `${client.discountRate}%` : '0%'}
-                </Typography>
-              </Box>
-
+<Box mt={2}>
+  <Typography variant="body2">
+    <strong>Orders:</strong> {client.orderCount || 0}
+  </Typography>
+  <Typography variant="body2">
+    <strong>Address:</strong> {client.address || 'N/A'}
+  </Typography>
+  <Typography variant="body2">
+    <strong>Join Date:</strong> {formatDate(client.createdAt)}
+  </Typography>
+  
+  {/* Modified status section to fix DOM nesting issue */}
+  <Box display="flex" alignItems="center">
+    <Typography variant="body2" component="span">
+      <strong>Status:</strong>
+    </Typography>
+    {client.status === 'INACTIVE' ?
+      <Chip
+        size="small"
+        label="Pending Approval"
+        color="warning"
+        icon={<HourglassEmptyIcon />}
+        sx={{ ml: 1 }}
+      /> :
+      <Chip
+        size="small"
+        label="Active"
+        color="success"
+        icon={<CheckCircleIcon />}
+        sx={{ ml: 1 }}
+      />
+    }
+  </Box>
+  
+  <Typography variant="body2">
+    <strong>Discount Rate:</strong> {client.discountRate ? `${client.discountRate}%` : '0%'}
+  </Typography>
+</Box>
               <Box display="flex" flexWrap="wrap" gap={1} mt={2}>
                 {client.status === 'INACTIVE' && (
                   <ActionButton

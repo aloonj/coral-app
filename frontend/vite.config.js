@@ -8,7 +8,7 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   
   // Default allowed hosts that work for all environments
-  const defaultAllowedHosts = ['fragglerock.shop', 'localhost', '127.0.0.1']
+  const defaultAllowedHosts = ['dev.fragglerock.shop', 'localhost', '127.0.0.1']
   
   // Add custom hosts from environment variable if defined
   const customHosts = env.ALLOWED_HOSTS ? env.ALLOWED_HOSTS.split(',') : []
