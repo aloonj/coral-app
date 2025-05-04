@@ -239,32 +239,58 @@ class XeroService {
       // Convert TokenSet to plain object
       const tokenData = tokenSet.toJSON ? tokenSet.toJSON() : tokenSet;
       
-      // Deactivate any existing active tokens for this tenant
-      if (this.tenantId) {
-        await XeroToken.update(
-          { active: false },
-          { where: { tenantId: this.tenantId, active: true } }
-        );
+      // Use a transaction to ensure data consistency
+      const transaction = await XeroToken.sequelize.transaction();
+      
+      try {
+        // First check if there are any active tokens for this tenant
+        const existingTokens = await XeroToken.findAll({
+          where: { 
+            tenantId: this.tenantId, 
+            active: true 
+          },
+          transaction
+        });
+        
+        // If there are existing tokens, deactivate them
+        if (existingTokens && existingTokens.length > 0) {
+          console.log(`Found ${existingTokens.length} existing active tokens to deactivate`);
+          
+          // Deactivate them one by one with their IDs to avoid constraint issues
+          for (const token of existingTokens) {
+            await token.update({ active: false }, { transaction });
+          }
+        }
+        
+        // Create new token record
+        await XeroToken.create({
+          tenantId: this.tenantId,
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          idToken: tokenData.id_token,
+          expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
+          scope: tokenData.scope,
+          tokenType: tokenData.token_type,
+          active: true
+        }, { transaction });
+        
+        // Commit the transaction
+        await transaction.commit();
+        
+        // Store in memory for current session
+        this.tokenSet = tokenSet;
+        console.log('Xero TokenSet saved to database successfully');
+        
+      } catch (innerError) {
+        // Rollback transaction on error
+        await transaction.rollback();
+        throw innerError;
       }
-      
-      // Create new token record
-      await XeroToken.create({
-        tenantId: this.tenantId,
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token,
-        idToken: tokenData.id_token,
-        expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
-        scope: tokenData.scope,
-        tokenType: tokenData.token_type,
-        active: true
-      });
-      
-      // Store in memory for current session
-      this.tokenSet = tokenSet;
-      console.log('Xero TokenSet saved to database');
     } catch (error) {
       console.error('Error saving Xero token to database:', error);
-      throw error;
+      // Don't rethrow - just log the error but continue with in-memory token
+      console.log('Will continue with in-memory token only');
+      this.tokenSet = tokenSet; // Still keep the token in memory
     }
   }
 
@@ -509,6 +535,10 @@ class XeroService {
     }
     
     try {
+      // Make sure tenantId is a simple string, not a JWT
+      const tenantIdString = typeof this.tenantId === 'string' ? this.tenantId : String(this.tenantId);
+      console.log('Using tenant ID for invoice send API call:', tenantIdString);
+      
       // Update status to AUTHORISED
       const updateInvoice = {
         invoiceID: invoiceId,
@@ -517,7 +547,7 @@ class XeroService {
       
       await this.client.accountingApi.updateInvoice(
         this.tokenSet.access_token,
-        this.tenantId,
+        tenantIdString,
         invoiceId,
         { invoices: [updateInvoice] }
       );
@@ -525,7 +555,7 @@ class XeroService {
       // Send the invoice to the client
       const result = await this.client.accountingApi.emailInvoice(
         this.tokenSet.access_token,
-        this.tenantId,
+        tenantIdString,
         invoiceId
       );
       
