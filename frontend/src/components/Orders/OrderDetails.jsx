@@ -78,6 +78,9 @@ const OrderDetails = ({ order }) => {
           </Typography>
         </Alert>
       )}
+      <Button variant="contained" color="primary" onClick={() => alert('Implement Xero integration')}>
+        Send Invoice to Xero
+      </Button>
     </Box>
   );
 };
