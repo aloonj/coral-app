@@ -3,6 +3,7 @@ import XeroService from '../services/xeroService.js';
 import { Order } from '../models/Order.js';
 import Coral from '../models/Coral.js';
 import Client from '../models/Client.js';
+import { XeroToken } from '../models/XeroToken.js';
 
 // Get Xero connection status
 export const getXeroStatus = async (req, res) => {
@@ -171,6 +172,30 @@ export const sendInvoice = async (req, res) => {
     console.error('Error sending invoice:', error);
     res.status(500).json({ 
       message: 'Error sending invoice',
+      error: error.message
+    });
+  }
+};
+
+// Disconnect from Xero
+export const disconnectXero = async (req, res) => {
+  try {
+    // Deactivate all Xero tokens
+    await XeroToken.update(
+      { active: false },
+      { where: { active: true } }
+    );
+    
+    // Reset the service
+    await XeroService.disconnect();
+    
+    res.json({
+      message: 'Successfully disconnected from Xero'
+    });
+  } catch (error) {
+    console.error('Error disconnecting from Xero:', error);
+    res.status(500).json({ 
+      message: 'Error disconnecting from Xero',
       error: error.message
     });
   }

@@ -1,6 +1,7 @@
 import { TokenSet } from 'openid-client';
 import { XeroClient } from 'xero-node';
 import dotenv from 'dotenv';
+import { XeroToken } from '../models/XeroToken.js';
 
 dotenv.config();
 
@@ -44,7 +45,29 @@ class XeroService {
     this.client = xeroClient;
     this.tokenSet = null;
     this.tenantId = process.env.XERO_TENANT_ID;
-    this.tokenSetKey = 'xero_token_set';
+    
+    // Load tenant ID from database if not in environment
+    if (!this.tenantId) {
+      this.loadTenantIdFromDatabase();
+    }
+  }
+  
+  // Load tenant ID from database
+  async loadTenantIdFromDatabase() {
+    try {
+      // Find the most recent active token
+      const token = await XeroToken.findOne({
+        where: { active: true },
+        order: [['updatedAt', 'DESC']]
+      });
+      
+      if (token && token.tenantId) {
+        this.tenantId = token.tenantId;
+        console.log('Loaded Xero tenant ID from database:', this.tenantId);
+      }
+    } catch (error) {
+      console.error('Error loading tenant ID from database:', error);
+    }
   }
 
   isConfigured() {
@@ -72,9 +95,6 @@ class XeroService {
       // Exchange authorization code for tokens
       this.tokenSet = await this.client.apiCallback(callbackUrl);
       
-      // Store the token set
-      await this.saveTokenSet(this.tokenSet);
-      
       // If tenant ID is not set, get connected tenants
       if (!this.tenantId) {
         const tenants = await this.client.updateTenants(this.tokenSet.access_token);
@@ -86,6 +106,9 @@ class XeroService {
         }
       }
       
+      // Store the token set with tenant ID
+      await this.saveTokenSet(this.tokenSet);
+      
       return { success: true, tenant: this.tenantId };
     } catch (error) {
       console.error('Error handling Xero callback:', error);
@@ -93,19 +116,77 @@ class XeroService {
     }
   }
 
-  // Save token set to database or other storage
+  // Save token set to database
   async saveTokenSet(tokenSet) {
-    // In production, you would store this securely in a database
-    // For now, we just store it in memory
-    this.tokenSet = tokenSet;
-    console.log('Xero TokenSet saved');
+    try {
+      // Convert TokenSet to plain object
+      const tokenData = tokenSet.toJSON ? tokenSet.toJSON() : tokenSet;
+      
+      // Deactivate any existing active tokens for this tenant
+      if (this.tenantId) {
+        await XeroToken.update(
+          { active: false },
+          { where: { tenantId: this.tenantId, active: true } }
+        );
+      }
+      
+      // Create new token record
+      await XeroToken.create({
+        tenantId: this.tenantId,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        idToken: tokenData.id_token,
+        expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
+        scope: tokenData.scope,
+        tokenType: tokenData.token_type,
+        active: true
+      });
+      
+      // Store in memory for current session
+      this.tokenSet = tokenSet;
+      console.log('Xero TokenSet saved to database');
+    } catch (error) {
+      console.error('Error saving Xero token to database:', error);
+      throw error;
+    }
   }
 
-  // Load token set from storage
+  // Load token set from database
   async loadTokenSet() {
-    // In production, you would retrieve from a database
-    // For now, we just use the memory-stored one
-    return this.tokenSet;
+    try {
+      if (!this.tenantId) {
+        console.log('No tenant ID available, cannot load token');
+        return null;
+      }
+      
+      // Find active token for this tenant
+      const tokenRecord = await XeroToken.findOne({
+        where: { tenantId: this.tenantId, active: true },
+        order: [['updatedAt', 'DESC']]
+      });
+      
+      if (!tokenRecord) {
+        console.log('No active Xero token found in database');
+        return null;
+      }
+      
+      // Convert to TokenSet format
+      const tokenSet = new TokenSet({
+        access_token: tokenRecord.accessToken,
+        refresh_token: tokenRecord.refreshToken,
+        id_token: tokenRecord.idToken,
+        expires_at: Math.floor(new Date(tokenRecord.expiresAt).getTime() / 1000),
+        scope: tokenRecord.scope,
+        token_type: tokenRecord.tokenType
+      });
+      
+      // Store in memory for current session
+      this.tokenSet = tokenSet;
+      return tokenSet;
+    } catch (error) {
+      console.error('Error loading Xero token from database:', error);
+      return null;
+    }
   }
 
   // Ensure we have a valid token before making API calls
@@ -359,6 +440,21 @@ class XeroService {
         error: error.message,
         authUrl: this.getAuthUrl()
       };
+    }
+  }
+  
+  // Disconnect from Xero
+  async disconnect() {
+    try {
+      // Clear in-memory token and tenant ID
+      this.tokenSet = null;
+      this.tenantId = null;
+      
+      console.log('Disconnected from Xero');
+      return { success: true };
+    } catch (error) {
+      console.error('Error disconnecting from Xero:', error);
+      return { error: 'Failed to disconnect from Xero' };
     }
   }
 }
