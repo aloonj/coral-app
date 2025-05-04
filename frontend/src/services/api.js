@@ -214,11 +214,13 @@ export const backupService = {
 
 export const xeroService = {
   getStatus: () => api.get('/xero/status'),
-  startAuth: () => api.get('/xero/auth'),
+  startAuth: (forceNew = false) => api.get(`/xero/auth${forceNew ? '?forceNew=true' : ''}`),
   handleCallback: (url) => api.post('/xero/callback', { url }),
   generateInvoice: (orderId, sendToClient = false) => 
     api.post(`/xero/invoices/order/${orderId}`, { sendToClient }),
   sendInvoice: (invoiceId) => api.post(`/xero/invoices/${invoiceId}/send`),
+  generateTestInvoice: (testData) => api.post('/xero/test/invoice', testData),
+  disconnect: () => api.post('/xero/disconnect', {}),
 };
 
 export default api;

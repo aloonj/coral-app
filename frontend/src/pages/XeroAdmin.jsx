@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, Card, CardContent, TextField, Divider, Grid, Switch, FormControlLabel, Alert, Paper, Link, Snackbar } from '@mui/material';
-import api from '../services/api';
+import api, { xeroService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const XeroAdmin = () => {
@@ -32,7 +32,7 @@ const XeroAdmin = () => {
       setError(null);
       
       console.log('Fetching Xero status...');
-      const response = await api.get('/xero/status');
+      const response = await xeroService.getStatus();
       console.log('Xero status response:', response.data);
       
       // If there was a token refresh, show notification
@@ -61,7 +61,7 @@ const XeroAdmin = () => {
       setError(null);
       
       console.log('Starting Xero auth flow...');
-      const response = await api.get(`/xero/auth${forceNew ? '?forceNew=true' : ''}`);
+      const response = await xeroService.startAuth(forceNew);
       console.log('Auth response:', response.data);
       
       if (response.data.url) {
@@ -101,7 +101,7 @@ const XeroAdmin = () => {
       
       console.log('Submitting callback URL:', callbackUrl);
       
-      const response = await api.post('/xero/callback', { url: callbackUrl });
+      const response = await xeroService.handleCallback(callbackUrl);
       console.log('Callback response:', response.data);
       
       // Show success message
@@ -146,7 +146,7 @@ const XeroAdmin = () => {
       setError(null);
       setTestResult(null);
       
-      const response = await api.post('/xero/test/invoice', testFormData);
+      const response = await xeroService.generateTestInvoice(testFormData);
       setTestResult(response.data);
     } catch (err) {
       console.error('Error generating test invoice:', err);
@@ -268,7 +268,7 @@ const XeroAdmin = () => {
                       setError(null);
                       
                       console.log('Disconnecting from Xero...');
-                      const response = await api.post('/xero/disconnect');
+                      const response = await xeroService.disconnect();
                       console.log('Disconnect response:', response.data);
                       
                       setToast({
