@@ -238,6 +238,39 @@ export const sendInvoice = async (req, res) => {
 };
 
 // Disconnect from Xero
+// Get all invoices for the current tenant
+export const getInvoices = async (req, res) => {
+  try {
+    // Check if Xero is configured
+    const status = await XeroService.getStatus();
+    if (!status.connected) {
+      return res.status(503).json({ 
+        message: 'Xero integration not available', 
+        status 
+      });
+    }
+    
+    // Fetch invoices from Xero
+    const result = await XeroService.getInvoices();
+    
+    if (result.error) {
+      return res.status(400).json({ 
+        message: 'Failed to fetch invoices', 
+        error: result.error,
+        details: result.details
+      });
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching invoices:', error);
+    res.status(500).json({ 
+      message: 'Error fetching invoices',
+      error: error.message
+    });
+  }
+};
+
 export const disconnectXero = async (req, res) => {
   try {
     // Deactivate all Xero tokens

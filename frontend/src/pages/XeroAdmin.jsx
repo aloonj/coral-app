@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Card, CardContent, TextField, Divider, Grid, Switch, FormControlLabel, Alert, Paper, Link, Snackbar } from '@mui/material';
+import { 
+  Box, Typography, Button, Card, CardContent, TextField, Divider, Grid, 
+  Switch, FormControlLabel, Alert, Paper, Link, Snackbar, 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress 
+} from '@mui/material';
 import api, { xeroService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,6 +14,8 @@ const XeroAdmin = () => {
   const [error, setError] = useState(null);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [mockMode, setMockMode] = useState(true);
+  const [invoices, setInvoices] = useState([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [testFormData, setTestFormData] = useState({
     clientName: 'Test Client',
     clientEmail: 'test@example.com',
@@ -156,6 +162,30 @@ const XeroAdmin = () => {
     }
   };
 
+  // Fetch invoices from Xero
+  const fetchInvoices = async () => {
+    if (!xeroStatus?.connected) {
+      return;
+    }
+    
+    try {
+      setLoadingInvoices(true);
+      setError(null);
+      
+      console.log('Fetching Xero invoices...');
+      const response = await xeroService.getInvoices();
+      console.log('Xero invoices response:', response.data);
+      
+      setInvoices(response.data.invoices || []);
+    } catch (err) {
+      console.error('Error fetching Xero invoices:', err);
+      setError('Failed to fetch invoices: ' + 
+               (err.response?.data?.error || err.message));
+    } finally {
+      setLoadingInvoices(false);
+    }
+  };
+
   // Handle test form input changes
   const handleTestFormChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -189,6 +219,13 @@ const XeroAdmin = () => {
     // Load Xero status on component mount
     fetchXeroStatus();
   }, []);
+  
+  // Fetch invoices when component loads and when Xero status changes
+  useEffect(() => {
+    if (xeroStatus?.connected) {
+      fetchInvoices();
+    }
+  }, [xeroStatus?.connected]);
 
   if (!user || !['ADMIN', 'SUPERADMIN'].includes(user.role)) {
     return (
@@ -308,38 +345,128 @@ const XeroAdmin = () => {
         </CardContent>
       </Card>
       
-      {/* Callback URL Submission (for authentication flow) */}
+      {/* Invoices Table */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>Authentication Callback</Typography>
-          <Typography sx={{ mb: 2 }}>
-            After connecting to Xero, you will be redirected to a page with a URL. 
-            Copy that entire URL and paste it here to complete the connection.
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">Invoices</Typography>
+            <Button 
+              variant="outlined" 
+              color="primary" 
+              onClick={fetchInvoices}
+              disabled={loadingInvoices || !xeroStatus?.connected}
+            >
+              Refresh Invoices
+            </Button>
+          </Box>
           
-          <TextField
-            label="Callback URL"
-            fullWidth
-            placeholder="Paste the callback URL here"
-            id="callbackUrl"
-            sx={{ mb: 2 }}
-          />
-          
-          <Button 
-            variant="contained" 
-            color="primary"
-            onClick={() => {
-              const url = document.getElementById('callbackUrl').value;
-              if (url) {
-                submitCallbackUrl(url);
-              } else {
-                setError('Please enter a callback URL');
-              }
-            }}
-            disabled={loading}
-          >
-            Submit Callback
-          </Button>
+          {!xeroStatus?.connected ? (
+            <Alert severity="info">
+              Connect to Xero to view invoices.
+            </Alert>
+          ) : loadingInvoices ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : invoices.length === 0 ? (
+            <Alert severity="info">
+              No invoices found for this tenant.
+            </Alert>
+          ) : (
+            <TableContainer component={Paper}>
+              <Table sx={{ minWidth: 650 }} aria-label="invoices table">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Invoice #</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Due Date</TableCell>
+                    <TableCell>Client</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Total</TableCell>
+                    <TableCell align="right">Due</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {invoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell component="th" scope="row">
+                        {invoice.invoiceNumber}
+                      </TableCell>
+                      <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{invoice.contact?.name}</TableCell>
+                      <TableCell>
+                        <Box 
+                          component="span" 
+                          sx={{ 
+                            px: 1.5, 
+                            py: 0.5, 
+                            borderRadius: 1, 
+                            display: 'inline-block',
+                            fontWeight: 'bold',
+                            color: 'white',
+                            backgroundColor: 
+                              invoice.status === 'PAID' ? 'success.main' :
+                              invoice.status === 'AUTHORISED' ? 'warning.main' :
+                              invoice.status === 'DRAFT' ? 'info.main' : 'error.main',
+                          }}
+                        >
+                          {invoice.status}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">${parseFloat(invoice.total).toFixed(2)}</TableCell>
+                      <TableCell align="right">${parseFloat(invoice.amountDue || 0).toFixed(2)}</TableCell>
+                      <TableCell>
+                        {invoice.url && (
+                          <Button 
+                            variant="text" 
+                            color="primary" 
+                            href={invoice.url} 
+                            target="_blank"
+                            size="small"
+                          >
+                            View
+                          </Button>
+                        )}
+                        {invoice.status === 'DRAFT' && (
+                          <Button 
+                            variant="text" 
+                            color="secondary" 
+                            size="small"
+                            onClick={async () => {
+                              try {
+                                setLoading(true);
+                                const response = await xeroService.sendInvoice(invoice.id);
+                                
+                                if (response.data.success) {
+                                  setToast({
+                                    open: true,
+                                    message: 'Invoice sent to client!',
+                                    severity: 'success'
+                                  });
+                                  
+                                  // Refresh the invoices
+                                  fetchInvoices();
+                                }
+                              } catch (err) {
+                                setError('Failed to send invoice: ' + 
+                                        (err.response?.data?.error || err.message));
+                              } finally {
+                                setLoading(false);
+                              }
+                            }}
+                          >
+                            Send
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </CardContent>
       </Card>
       

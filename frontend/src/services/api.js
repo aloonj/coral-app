@@ -219,6 +219,7 @@ export const xeroService = {
   generateInvoice: (orderId, sendToClient = false) => 
     api.post(`/xero/invoices/order/${orderId}`, { sendToClient }),
   sendInvoice: (invoiceId) => api.post(`/xero/invoices/${invoiceId}/send`),
+  getInvoices: () => api.get('/xero/invoices'),
   generateTestInvoice: (testData) => {
     // Instead of using a non-existent test endpoint, we'll use the regular invoice endpoint
     // We'll handle this as a mock operation entirely in the frontend

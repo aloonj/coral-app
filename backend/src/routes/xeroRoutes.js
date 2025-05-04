@@ -6,7 +6,8 @@ import {
   handleXeroCallback,
   generateInvoice,
   sendInvoice,
-  disconnectXero
+  disconnectXero,
+  getInvoices
 } from '../controllers/xeroController.js';
 
 const router = express.Router();
@@ -47,6 +48,13 @@ router.post('/invoices/:invoiceId/send',
   authenticate,
   authorize('ADMIN', 'SUPERADMIN'),
   sendInvoice
+);
+
+// Get all invoices for current tenant
+router.get('/invoices',
+  authenticate,
+  authorize('ADMIN', 'SUPERADMIN'),
+  getInvoices
 );
 
 // Disconnect from Xero

@@ -811,6 +811,82 @@ class XeroService {
     }
   }
 
+  // Get all invoices for the current tenant
+  async getInvoices() {
+    if (!this.client) return { error: 'Xero not configured' };
+    if (!this.tenantId) return { error: 'Xero tenant ID not configured' };
+
+    // Ensure we have a valid token
+    const tokenStatus = await this.ensureToken();
+    if (tokenStatus.error) {
+      return tokenStatus;
+    }
+
+    try {
+      // Use the stored plain tenant ID directly
+      const tenantIdString = this.tenantId;
+      if (!tenantIdString) {
+        return { error: 'Xero tenant ID not available for fetching invoices' };
+      }
+      console.log('Using stored tenant ID for fetching invoices:', tenantIdString);
+
+      // Create headers for API call with proper capitalization
+      const headers = {
+        'Authorization': `Bearer ${this.tokenSet.access_token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Xero-Tenant-Id': tenantIdString
+      };
+
+      // Get invoices using direct API call
+      const response = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
+        method: 'GET',
+        headers: headers
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API call failed with status ${response.status}: ${errorText}`);
+      }
+      
+      const invoicesData = await response.json();
+      
+      // Transform the response to a more frontend-friendly format
+      const invoices = invoicesData.Invoices.map(invoice => ({
+        id: invoice.InvoiceID,
+        invoiceNumber: invoice.InvoiceNumber,
+        reference: invoice.Reference,
+        date: invoice.Date,
+        dueDate: invoice.DueDate,
+        status: invoice.Status,
+        total: invoice.Total,
+        amountDue: invoice.AmountDue,
+        contact: {
+          id: invoice.Contact.ContactID,
+          name: invoice.Contact.Name
+        },
+        url: invoice.OnlineInvoiceUrl || null,
+        lineItems: (invoice.LineItems || []).map(item => ({
+          description: item.Description,
+          quantity: item.Quantity,
+          unitAmount: item.UnitAmount,
+          lineAmount: item.LineAmount
+        }))
+      }));
+
+      return {
+        success: true,
+        invoices: invoices
+      };
+    } catch (error) {
+      console.error('Error fetching Xero invoices:', error);
+      return {
+        error: 'Failed to fetch invoices',
+        details: error.message
+      };
+    }
+  }
+
   // Disconnect from Xero
   async disconnect() {
     try {
