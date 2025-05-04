@@ -191,36 +191,75 @@ class XeroService {
         return { error: 'No token received from Xero' };
       }
 
-      // Decode the access token to get the tenant ID directly, DO NOT call updateTenants()
+      // Get the actual tenant ID by calling the connections endpoint
+      // DO NOT use xero_userid from the token, as it's the user's ID, not the tenant ID
       try {
-        const decodedToken = jwtDecode(this.tokenSet.access_token);
-        console.log('Decoded Access Token:', decodedToken);
-
-        // Extract tenant ID - Prioritize 'xero_userid'
-        let extractedTenantId = null;
-        if (decodedToken.xero_userid && typeof decodedToken.xero_userid === 'string' && decodedToken.xero_userid.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)) {
-           extractedTenantId = decodedToken.xero_userid;
-           console.log('Extracted tenant ID from xero_userid claim:', extractedTenantId);
-        } else {
-           // Fallback: Look for any UUID in the token claims
-           const uuidMatch = JSON.stringify(decodedToken).match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-           if (uuidMatch) {
-               extractedTenantId = uuidMatch[0];
-               console.warn('Extracted tenant ID using UUID pattern fallback:', extractedTenantId);
-           }
+        console.log('Fetching actual Xero tenant ID from connections API');
+        
+        // Create headers for the connections API call
+        const headers = {
+          'Authorization': `Bearer ${this.tokenSet.access_token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        };
+        
+        // Call the connections API to get the tenant(s) this user has access to
+        const connectionsResponse = await fetch('https://api.xero.com/connections', {
+          method: 'GET',
+          headers: headers
+        });
+        
+        if (!connectionsResponse.ok) {
+          const errorText = await connectionsResponse.text();
+          throw new Error(`Failed to get connections: ${connectionsResponse.status}: ${errorText}`);
         }
-
-        if (!extractedTenantId) {
-          console.error('Could not extract tenant ID from access token claims.');
-          return { error: 'Failed to determine Xero tenant ID from token' };
+        
+        const connections = await connectionsResponse.json();
+        console.log('Available Xero connections:', JSON.stringify(connections, null, 2));
+        
+        if (!connections || connections.length === 0) {
+          throw new Error('No Xero organizations connected to this account');
         }
-
-        this.tenantId = extractedTenantId;
-        console.log('Stored Tenant ID from decoded token:', this.tenantId);
-
-      } catch (decodeError) {
-        console.error('Error decoding access token:', decodeError);
-        return { error: 'Failed to decode access token', details: decodeError.message };
+        
+        // Use the first tenant ID or match with environment variable if specified
+        let selectedTenantId = null;
+        const envTenantId = process.env.XERO_TENANT_ID;
+        
+        if (envTenantId) {
+          // Try to find a matching tenant ID from the connections if env var is set
+          const matchingTenant = connections.find(conn => conn.tenantId === envTenantId);
+          if (matchingTenant) {
+            selectedTenantId = matchingTenant.tenantId;
+            console.log(`Found matching tenant ID from environment variable: ${selectedTenantId}`);
+          } else {
+            console.warn(`Tenant ID ${envTenantId} from environment not found in connections`);
+          }
+        }
+        
+        // If no match or no env var, use the first tenant
+        if (!selectedTenantId) {
+          selectedTenantId = connections[0].tenantId;
+          console.log(`Using first available tenant ID: ${selectedTenantId}`);
+        }
+        
+        // Use a hardcoded override if needed for testing
+        // Comment out this section in production
+        const hardcodedTenantId = "a82188c3-15ba-4255-bce8-89aab78af038";
+        if (hardcodedTenantId) {
+          console.log(`OVERRIDE: Using hardcoded tenant ID: ${hardcodedTenantId}`);
+          selectedTenantId = hardcodedTenantId;
+        }
+        
+        if (!selectedTenantId) {
+          throw new Error('Failed to determine tenant ID from connections');
+        }
+        
+        this.tenantId = selectedTenantId;
+        console.log('Final tenant ID selected for API calls:', this.tenantId);
+        
+      } catch (connectionError) {
+        console.error('Error getting Xero connections:', connectionError);
+        return { error: 'Failed to get Xero organizations', details: connectionError.message };
       }
 
       // Store the token set with the extracted tenant ID
@@ -644,11 +683,12 @@ class XeroService {
       }
       console.log('Using stored tenant ID for invoice send API call:', tenantIdString);
 
-      // Create headers for API call
+      // Create headers for API call with proper capitalization
       const headers = {
         'Authorization': `Bearer ${this.tokenSet.access_token}`,
         'Content-Type': 'application/json',
-        'Xero-tenant-id': tenantIdString
+        'Accept': 'application/json',
+        'Xero-Tenant-Id': tenantIdString
       };
 
       // First update the invoice to AUTHORISED status
