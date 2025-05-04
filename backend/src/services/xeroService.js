@@ -204,10 +204,27 @@ class XeroService {
         }
         
         // Always use the first tenant ID from the latest connection
-        this.tenantId = tenants[0].tenantId;
-        console.log('Using Xero tenant ID:', this.tenantId);
+        const rawTenantId = tenants[0].tenantId;
+        const tenantType = tenants[0].tenantType; // e.g., "ORGANISATION"
+        console.log(`Raw Tenant ID received: ${rawTenantId}, Type: ${tenantType}`);
+
+        // Ensure we store the plain UUID
+        if (typeof rawTenantId === 'string' && rawTenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)) {
+            this.tenantId = rawTenantId;
+            console.log('Stored plain Tenant ID:', this.tenantId);
+        } else {
+            // Fallback or if the structure is different - log a warning
+            console.warn('Could not directly identify plain UUID tenant ID from tenants array. Storing raw value:', rawTenantId);
+            this.tenantId = rawTenantId; // Store whatever was received, might need adjustment
+        }
+
       } catch (tenantError) {
         console.error('Error fetching tenants:', tenantError);
+        // Check if the error response contains tenant info (e.g., if token is valid but no tenants linked)
+        if (tenantError.response && tenantError.response.statusCode === 403) {
+             console.error('Tenant fetch failed with 403 - possible scope issue or no organization linked.');
+             return { error: 'Failed to access Xero organization details. Check API scopes and linked organizations.', details: tenantError.message };
+        }
         return { error: 'Failed to get Xero organization details', details: tenantError.message };
       }
       
@@ -215,43 +232,25 @@ class XeroService {
       console.log('Saving token set to database');
       await this.saveTokenSet(this.tokenSet);
       
-      // Verify the connection by making a test API call
+      // Verify the connection by making a test API call using the stored plain tenant ID
       try {
-        console.log('Testing connection with API call');
-        
-        // Extract the plain tenant ID
-        let tenantIdString;
-        if (typeof this.tenantId === 'string') {
-          if (this.tenantId.includes('.')) {
-            console.log('Detected JWT-like tenant ID, attempting to extract plain tenant ID');
-            const uuidMatch = this.tenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-            if (uuidMatch) {
-              tenantIdString = uuidMatch[0];
-              console.log('Extracted UUID from tenant ID:', tenantIdString);
-            } else {
-              tenantIdString = this.tenantId;
-            }
-          } else {
-            tenantIdString = this.tenantId;
-          }
-        } else if (this.tenantId && typeof this.tenantId === 'object') {
-          tenantIdString = this.tenantId.tenantId || this.tenantId.id || String(this.tenantId);
-        } else {
-          tenantIdString = String(this.tenantId || '');
+        console.log('Testing connection with API call using stored tenant ID:', this.tenantId);
+        if (!this.tenantId) {
+            throw new Error("Cannot test API call without a tenant ID.");
         }
-        
-        console.log('Using plain tenant ID for test API call:', tenantIdString);
-        
         const org = await this.client.accountingApi.getOrganisations(
           this.tokenSet.access_token,
-          tenantIdString
+          this.tenantId // Use the stored plain tenant ID directly
         );
         console.log('Connected to organization:', org.body.organisations[0].name);
       } catch (apiError) {
         console.error('API test call failed:', apiError);
-        // Continue anyway as the connection might still be valid
+        // If the test call fails immediately after connection, it's a significant issue.
+        // Return an error here instead of continuing silently.
+        return { error: 'Xero API test call failed after connection', details: apiError.message || apiError };
       }
-      
+
+      // If test call succeeded
       return { success: true, tenant: this.tenantId };
     } catch (error) {
       console.error('Error handling Xero callback:', error);
@@ -432,28 +431,12 @@ class XeroService {
     }
     
     try {
-      // Extract the plain tenant ID using the same approach as in getStatus
-      let tenantIdString;
-      if (typeof this.tenantId === 'string') {
-        if (this.tenantId.includes('.')) {
-          console.log('Detected JWT-like tenant ID, attempting to extract plain tenant ID');
-          const uuidMatch = this.tenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-          if (uuidMatch) {
-            tenantIdString = uuidMatch[0];
-            console.log('Extracted UUID from tenant ID:', tenantIdString);
-          } else {
-            tenantIdString = this.tenantId;
-          }
-        } else {
-          tenantIdString = this.tenantId;
-        }
-      } else if (this.tenantId && typeof this.tenantId === 'object') {
-        tenantIdString = this.tenantId.tenantId || this.tenantId.id || String(this.tenantId);
-      } else {
-        tenantIdString = String(this.tenantId || '');
+      // Use the stored plain tenant ID directly
+      const tenantIdString = this.tenantId;
+      if (!tenantIdString) {
+        return { error: 'Xero tenant ID not available for invoice generation' };
       }
-      
-      console.log('Using plain tenant ID for invoice API call:', tenantIdString);
+      console.log('Using stored tenant ID for invoice API call:', tenantIdString);
       
       // Prepare client contact
       let contact;
@@ -586,28 +569,12 @@ class XeroService {
     }
     
     try {
-      // Extract the plain tenant ID using the same approach as in getStatus
-      let tenantIdString;
-      if (typeof this.tenantId === 'string') {
-        if (this.tenantId.includes('.')) {
-          console.log('Detected JWT-like tenant ID, attempting to extract plain tenant ID');
-          const uuidMatch = this.tenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-          if (uuidMatch) {
-            tenantIdString = uuidMatch[0];
-            console.log('Extracted UUID from tenant ID:', tenantIdString);
-          } else {
-            tenantIdString = this.tenantId;
-          }
-        } else {
-          tenantIdString = this.tenantId;
-        }
-      } else if (this.tenantId && typeof this.tenantId === 'object') {
-        tenantIdString = this.tenantId.tenantId || this.tenantId.id || String(this.tenantId);
-      } else {
-        tenantIdString = String(this.tenantId || '');
+      // Use the stored plain tenant ID directly
+      const tenantIdString = this.tenantId;
+       if (!tenantIdString) {
+        return { error: 'Xero tenant ID not available for sending invoice' };
       }
-      
-      console.log('Using plain tenant ID for invoice send API call:', tenantIdString);
+      console.log('Using stored tenant ID for invoice send API call:', tenantIdString);
       
       // Update status to AUTHORISED
       const updateInvoice = {
@@ -671,36 +638,22 @@ class XeroService {
         };
       }
       
-      // Get organization info to verify connection
-      // Extract the plain tenant ID, not a JWT or complex object
-      let tenantIdString;
-      if (typeof this.tenantId === 'string') {
-        // If it's a string but looks like a JWT (contains periods), extract just the tenant ID part
-        if (this.tenantId.includes('.')) {
-          console.log('Detected JWT-like tenant ID, attempting to extract plain tenant ID');
-          // Try to find a UUID pattern in the string
-          const uuidMatch = this.tenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-          if (uuidMatch) {
-            tenantIdString = uuidMatch[0];
-            console.log('Extracted UUID from tenant ID:', tenantIdString);
-          } else {
-            tenantIdString = this.tenantId;
-          }
-        } else {
-          tenantIdString = this.tenantId;
-        }
-      } else if (this.tenantId && typeof this.tenantId === 'object') {
-        // If it's an object, try to extract tenantId property
-        tenantIdString = this.tenantId.tenantId || this.tenantId.id || String(this.tenantId);
-      } else {
-        tenantIdString = String(this.tenantId || '');
+      // Get organization info to verify connection using the stored plain tenant ID
+      const tenantIdString = this.tenantId;
+       if (!tenantIdString) {
+        // This case should ideally be caught earlier, but double-check
+         const authUrlResult = await this.getAuthUrl();
+         return {
+           connected: false,
+           message: 'Xero tenant ID not available for status check',
+           authUrl: authUrlResult
+         };
       }
-      
-      console.log('Using plain tenant ID for API call:', tenantIdString);
+      console.log('Using stored tenant ID for status API call:', tenantIdString);
       
       const org = await this.client.accountingApi.getOrganisations(
         this.tokenSet.access_token,
-        tenantIdString
+        tenantIdString // Use the stored plain tenant ID directly
       );
       
       return {
