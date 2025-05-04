@@ -242,13 +242,12 @@ class XeroService {
           console.log(`Using first available tenant ID: ${selectedTenantId}`);
         }
         
-        // Use a hardcoded override if needed for testing
-        // Comment out this section in production
-        const hardcodedTenantId = "a82188c3-15ba-4255-bce8-89aab78af038";
-        if (hardcodedTenantId) {
-          console.log(`OVERRIDE: Using hardcoded tenant ID: ${hardcodedTenantId}`);
-          selectedTenantId = hardcodedTenantId;
-        }
+        // Hardcoded tenant ID override is commented out to allow selection of the Demo Company
+        // const hardcodedTenantId = "a82188c3-15ba-4255-bce8-89aab78af038";
+        // if (hardcodedTenantId) {
+        //   console.log(`OVERRIDE: Using hardcoded tenant ID: ${hardcodedTenantId}`);
+        //   selectedTenantId = hardcodedTenantId;
+        // }
         
         if (!selectedTenantId) {
           throw new Error('Failed to determine tenant ID from connections');
