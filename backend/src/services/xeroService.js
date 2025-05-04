@@ -239,29 +239,23 @@ class XeroService {
       // Convert TokenSet to plain object
       const tokenData = tokenSet.toJSON ? tokenSet.toJSON() : tokenSet;
       
-      // Use a transaction to ensure data consistency
-      const transaction = await XeroToken.sequelize.transaction();
-      
-      try {
-        // First check if there are any active tokens for this tenant
-        const existingTokens = await XeroToken.findAll({
-          where: { 
-            tenantId: this.tenantId, 
-            active: true 
-          },
-          transaction
-        });
-        
-        // If there are existing tokens, deactivate them
-        if (existingTokens && existingTokens.length > 0) {
-          console.log(`Found ${existingTokens.length} existing active tokens to deactivate`);
-          
-          // Deactivate them one by one with their IDs to avoid constraint issues
-          for (const token of existingTokens) {
-            await token.update({ active: false }, { transaction });
+      // First deactivate all existing active tokens for this tenant
+      // Do this in a separate transaction to ensure it completes before creating new token
+      await XeroToken.sequelize.transaction(async (deactivateTransaction) => {
+        await XeroToken.update(
+          { active: false },
+          { 
+            where: { 
+              tenantId: this.tenantId, 
+              active: true 
+            },
+            transaction: deactivateTransaction
           }
-        }
-        
+        );
+      });
+      
+      // Now create the new token in a separate transaction
+      await XeroToken.sequelize.transaction(async (createTransaction) => {
         // Create new token record
         await XeroToken.create({
           tenantId: this.tenantId,
@@ -272,20 +266,12 @@ class XeroService {
           scope: tokenData.scope,
           tokenType: tokenData.token_type,
           active: true
-        }, { transaction });
-        
-        // Commit the transaction
-        await transaction.commit();
-        
-        // Store in memory for current session
-        this.tokenSet = tokenSet;
-        console.log('Xero TokenSet saved to database successfully');
-        
-      } catch (innerError) {
-        // Rollback transaction on error
-        await transaction.rollback();
-        throw innerError;
-      }
+        }, { transaction: createTransaction });
+      });
+      
+      // Store in memory for current session
+      this.tokenSet = tokenSet;
+      console.log('Xero TokenSet saved to database successfully');
     } catch (error) {
       console.error('Error saving Xero token to database:', error);
       // Don't rethrow - just log the error but continue with in-memory token
