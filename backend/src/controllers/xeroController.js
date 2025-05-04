@@ -19,7 +19,11 @@ export const getXeroStatus = async (req, res) => {
 // Start Xero OAuth flow
 export const startXeroAuth = async (req, res) => {
   try {
-    const { url, error } = XeroService.getAuthUrl();
+    // Check if we should force a new authentication flow
+    const forceNew = req.query.forceNew === 'true';
+    console.log('Starting Xero auth with forceNew:', forceNew);
+    
+    const { url, error } = XeroService.getAuthUrl(forceNew);
     
     if (error) {
       return res.status(500).json({ message: error });
@@ -35,22 +39,37 @@ export const startXeroAuth = async (req, res) => {
 // Handle Xero OAuth callback
 export const handleXeroCallback = async (req, res) => {
   try {
-    const { url } = req.query;
+    console.log('Xero callback controller called with body:', req.body);
+    console.log('Xero callback controller called with query:', req.query);
+    
+    // Check if URL is in body (from manual submission) or in query (from redirect)
+    const url = req.body.url || req.query.url;
     
     if (!url) {
+      console.error('No callback URL provided in request');
       return res.status(400).json({ message: 'Callback URL is required' });
     }
     
+    console.log('Processing Xero callback with URL:', url);
     const result = await XeroService.handleCallback(url);
     
     if (result.error) {
-      return res.status(400).json({ message: result.error });
+      console.error('Error from Xero service:', result.error, result.details || '');
+      return res.status(400).json({ 
+        message: result.error,
+        details: result.details
+      });
     }
     
+    console.log('Xero authentication successful, tenant:', result.tenant);
     res.json({ message: 'Xero authentication successful', tenant: result.tenant });
   } catch (error) {
     console.error('Error handling Xero callback:', error);
-    res.status(500).json({ message: 'Error handling Xero callback' });
+    console.error('Error details:', error.message, error.stack);
+    res.status(500).json({ 
+      message: 'Error handling Xero callback',
+      error: error.message
+    });
   }
 };
 

@@ -25,8 +25,15 @@ router.get('/auth',
   startXeroAuth
 );
 
-// Handle OAuth callback
+// Handle OAuth callback - both POST and GET for flexibility
 router.post('/callback',
+  authenticate,
+  authorize('ADMIN', 'SUPERADMIN'),
+  handleXeroCallback
+);
+
+// Also support GET for the callback (in case Xero redirects with GET)
+router.get('/callback',
   authenticate,
   authorize('ADMIN', 'SUPERADMIN'),
   handleXeroCallback

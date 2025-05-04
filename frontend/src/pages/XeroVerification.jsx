@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, Alert, Button } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Alert, Button, TextField } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
@@ -7,25 +7,67 @@ const XeroVerification = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+  const [callbackUrl, setCallbackUrl] = useState('');
 
   useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const success = queryParams.get('success');
-    const error = queryParams.get('error');
-
-    if (success === 'true') {
-      setSuccess(true);
-      setLoading(false);
-    } else if (error) {
-      setError(decodeURIComponent(error));
-      setLoading(false);
+    // Check if this is a callback from Xero
+    const fullUrl = window.location.href;
+    console.log('Current URL:', fullUrl);
+    
+    // If the URL contains 'code=' it's likely a Xero callback
+    if (fullUrl.includes('code=')) {
+      setCallbackUrl(fullUrl);
+      handleXeroCallback(fullUrl);
     } else {
-      setLoading(false);
-      setError('No verification status found in URL');
+      // Check for simple success/error params
+      const queryParams = new URLSearchParams(location.search);
+      const success = queryParams.get('success');
+      const error = queryParams.get('error');
+
+      if (success === 'true') {
+        setSuccess(true);
+        setLoading(false);
+      } else if (error) {
+        setError(decodeURIComponent(error));
+        setLoading(false);
+      } else {
+        setLoading(false);
+        setError('No verification status found in URL');
+      }
     }
   }, [location]);
+
+  const handleXeroCallback = async (url) => {
+    try {
+      setProcessing(true);
+      console.log('Processing Xero callback URL:', url);
+      
+      const response = await api.post('/xero/callback', { url });
+      console.log('Callback response:', response.data);
+      
+      setSuccess(true);
+      setError(null);
+    } catch (err) {
+      console.error('Error processing Xero callback:', err);
+      setError(err.response?.data?.message || 'Failed to process Xero callback');
+      setSuccess(false);
+    } finally {
+      setLoading(false);
+      setProcessing(false);
+    }
+  };
+
+  const handleManualSubmit = async () => {
+    if (!callbackUrl) {
+      setError('Please enter the callback URL');
+      return;
+    }
+    
+    await handleXeroCallback(callbackUrl);
+  };
 
   const handleReturn = () => {
     navigate('/xero-admin');
@@ -38,9 +80,12 @@ const XeroVerification = () => {
           Xero Verification
         </Typography>
 
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-            <CircularProgress />
+        {loading || processing ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4, flexDirection: 'column', alignItems: 'center' }}>
+            <CircularProgress sx={{ mb: 2 }} />
+            <Typography>
+              {processing ? 'Processing Xero authentication...' : 'Loading...'}
+            </Typography>
           </Box>
         ) : success ? (
           <>
@@ -57,14 +102,33 @@ const XeroVerification = () => {
               {error || 'Failed to connect to Xero'}
             </Alert>
             <Typography paragraph>
-              There was a problem connecting to your Xero account. Please try again or contact support.
+              There was a problem connecting to your Xero account. You can try manually entering the callback URL below.
             </Typography>
+            
+            <TextField
+              label="Callback URL"
+              fullWidth
+              value={callbackUrl}
+              onChange={(e) => setCallbackUrl(e.target.value)}
+              placeholder="Paste the full callback URL here"
+              sx={{ mb: 2 }}
+            />
+            
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleManualSubmit}
+              disabled={!callbackUrl || processing}
+              sx={{ mb: 2 }}
+            >
+              Submit Callback URL
+            </Button>
           </>
         )}
 
         <Button
           variant="contained"
-          color="primary"
+          color={success ? 'primary' : 'secondary'}
           onClick={handleReturn}
           sx={{ mt: 2 }}
         >

@@ -55,18 +55,22 @@ const XeroAdmin = () => {
   };
 
   // Start Xero auth flow
-  const startXeroAuth = async () => {
+  const startXeroAuth = async (forceNew = false) => {
     try {
       setLoading(true);
       setError(null);
       
       console.log('Starting Xero auth flow...');
-      const response = await api.get('/xero/auth');
+      const response = await api.get(`/xero/auth${forceNew ? '?forceNew=true' : ''}`);
       console.log('Auth response:', response.data);
       
       if (response.data.url) {
+        // Store the current timestamp to detect if we're redirected back without completing auth
+        localStorage.setItem('xero_auth_started', Date.now().toString());
+        
         // Directly redirect to Xero auth URL in the same window
         // This avoids issues with popup blockers and tracking the flow
+        console.log('Redirecting to Xero auth URL:', response.data.url);
         window.location.href = response.data.url;
       } else if (response.data.error) {
         console.error('Error response from server:', response.data);
@@ -228,14 +232,65 @@ const XeroAdmin = () => {
               )}
               
               {!xeroStatus?.connected && (
+                <>
+                  <Box sx={{ mt: 2 }}>
+                    <Button 
+                      variant="contained" 
+                      color="primary" 
+                      onClick={() => startXeroAuth(false)}
+                      sx={{ mr: 2 }}
+                      disabled={loading}
+                    >
+                      Connect to Xero
+                    </Button>
+                    <Button 
+                      variant="outlined" 
+                      color="primary" 
+                      onClick={() => startXeroAuth(true)}
+                      disabled={loading}
+                    >
+                      Force New Connection
+                    </Button>
+                  </Box>
+                  <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
+                    Use "Force New Connection" if you're having trouble connecting or if you want to connect to a different Xero organization.
+                  </Typography>
+                </>
+              )}
+              
+              {xeroStatus?.connected && (
                 <Button 
                   variant="contained" 
-                  color="primary" 
-                  onClick={startXeroAuth}
-                  sx={{ mt: 2 }}
+                  color="error" 
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      setError(null);
+                      
+                      console.log('Disconnecting from Xero...');
+                      const response = await api.post('/xero/disconnect');
+                      console.log('Disconnect response:', response.data);
+                      
+                      setToast({
+                        open: true,
+                        message: 'Successfully disconnected from Xero',
+                        severity: 'success'
+                      });
+                      
+                      // Refresh status after disconnecting
+                      await fetchXeroStatus();
+                    } catch (err) {
+                      console.error('Error disconnecting from Xero:', err);
+                      setError('Failed to disconnect from Xero: ' + 
+                              (err.response?.data?.error || err.message));
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  sx={{ mt: 2, mr: 2 }}
                   disabled={loading}
                 >
-                  Connect to Xero
+                  Disconnect from Xero
                 </Button>
               )}
               
