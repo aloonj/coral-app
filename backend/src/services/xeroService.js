@@ -133,8 +133,35 @@ class XeroService {
         scopes: this.client.scopes
       });
       
-      const consentUrl = this.client.buildConsentUrl();
-      console.log('Generated Xero consent URL:', consentUrl);
+      const rawConsentUrl = this.client.buildConsentUrl();
+      console.log('Raw Xero consent URL:', rawConsentUrl, 'Type:', typeof rawConsentUrl);
+      
+      // Ensure we return a string URL
+      let consentUrl;
+      if (typeof rawConsentUrl === 'object' && rawConsentUrl !== null) {
+        // If it's an object, extract the URL property if it exists
+        if (rawConsentUrl.url) {
+          consentUrl = rawConsentUrl.url;
+          console.log('Extracted URL from object.url property:', consentUrl);
+        } else {
+          // Try to find a string URL property in the object
+          const urlProp = Object.entries(rawConsentUrl)
+            .find(([_, v]) => typeof v === 'string' && v.startsWith('http'));
+          
+          if (urlProp) {
+            consentUrl = urlProp[1];
+            console.log('Found URL property:', urlProp[0], consentUrl);
+          } else {
+            // Last resort fallback
+            consentUrl = String(rawConsentUrl);
+            console.log('Converted object to string:', consentUrl);
+          }
+        }
+      } else {
+        consentUrl = rawConsentUrl;
+      }
+      
+      console.log('Final Xero consent URL:', consentUrl);
       return { url: consentUrl };
     } catch (error) {
       console.error('Error generating Xero auth URL:', error);
