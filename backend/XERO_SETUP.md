@@ -19,6 +19,7 @@ This guide walks you through setting up the Xero integration for the Coral Manag
      - openid
      - profile
      - email
+     - accounting.settings
      - accounting.transactions
      - accounting.contacts
      - offline_access
