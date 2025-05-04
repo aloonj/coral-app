@@ -276,7 +276,7 @@ class XeroService {
         await XeroToken.create({
           tenantId: this.tenantId,
           accessToken: tokenData.access_token,
-          refreshToken: tokenData.refreshToken,
+          refreshToken: tokenData.refresh_token, // Fixed: Using refresh_token instead of refreshToken
           idToken: tokenData.id_token,
           expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
           scope: tokenData.scope,
@@ -295,7 +295,7 @@ class XeroService {
           await XeroToken.create({
             tenantId: `${this.tenantId}-${Date.now().toString().slice(-4)}`,
             accessToken: tokenData.access_token,
-            refreshToken: tokenData.refreshToken,
+            refreshToken: tokenData.refresh_token, // Fixed: Using refresh_token instead of refreshToken
             idToken: tokenData.id_token,
             expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
             scope: tokenData.scope,
@@ -343,7 +343,7 @@ class XeroService {
       // Convert to TokenSet format
       const tokenSet = new TokenSet({
         access_token: tokenRecord.accessToken,
-        refreshToken: tokenRecord.refreshToken,
+        refresh_token: tokenRecord.refreshToken, // Fixed: Using refresh_token instead of refreshToken
         id_token: tokenRecord.idToken,
         expires_at: Math.floor(new Date(tokenRecord.expiresAt).getTime() / 1000),
         scope: tokenRecord.scope,
@@ -389,6 +389,11 @@ class XeroService {
             console.log('No refresh token in response, using previous refresh token');
             this.tokenSet.refresh_token = oldRefreshToken;
           }
+
+          // Debug log to check token structure after refresh
+          console.log('Token structure after refresh:', 
+            Object.keys(this.tokenSet).join(', '), 
+            'Has refresh_token:', !!this.tokenSet.refresh_token);
 
           await this.saveTokenSet(this.tokenSet);
         } catch (refreshError) {
