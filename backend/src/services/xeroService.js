@@ -2,6 +2,7 @@ import * as openid from 'openid-client';
 const { TokenSet } = openid;
 import { XeroClient } from 'xero-node';
 import dotenv from 'dotenv';
+import { jwtDecode } from 'jwt-decode'; // Import jwt-decode
 import { XeroToken } from '../models/XeroToken.js';
 
 dotenv.config();
@@ -193,43 +194,43 @@ class XeroService {
       // ALWAYS update tenants and get the latest tenant ID when connecting
       console.log('Fetching connected tenants with access token');
       console.log('Access token available:', !!this.tokenSet.access_token);
-      
+
+      // Decode the access token to get the tenant ID directly
       try {
-        const tenants = await this.client.updateTenants(this.tokenSet.access_token);
-        console.log('Connected tenants:', JSON.stringify(tenants, null, 2));
-        
-        if (!tenants || tenants.length === 0) {
-          console.error('No Xero organizations connected');
-          return { error: 'No Xero organizations connected' };
-        }
-        
-        // Always use the first tenant ID from the latest connection
-        const rawTenantId = tenants[0].tenantId;
-        const tenantType = tenants[0].tenantType; // e.g., "ORGANISATION"
-        console.log(`Raw Tenant ID received: ${rawTenantId}, Type: ${tenantType}`);
+        const decodedToken = jwtDecode(this.tokenSet.access_token);
+        console.log('Decoded Access Token:', decodedToken);
 
-        // Ensure we store the plain UUID
-        if (typeof rawTenantId === 'string' && rawTenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)) {
-            this.tenantId = rawTenantId;
-            console.log('Stored plain Tenant ID:', this.tenantId);
+        // Extract tenant ID - Xero often uses 'xero_userid' or it might be within 'authentication_event_id'
+        // Adjust the claim name based on actual token structure if needed.
+        // Let's prioritize 'xero_userid' if available, otherwise look for a UUID pattern.
+        let extractedTenantId = null;
+        if (decodedToken.xero_userid && typeof decodedToken.xero_userid === 'string' && decodedToken.xero_userid.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)) {
+           extractedTenantId = decodedToken.xero_userid;
+           console.log('Extracted tenant ID from xero_userid claim:', extractedTenantId);
         } else {
-            // Fallback or if the structure is different - log a warning
-            console.warn('Could not directly identify plain UUID tenant ID from tenants array. Storing raw value:', rawTenantId);
-            this.tenantId = rawTenantId; // Store whatever was received, might need adjustment
+           // Fallback: Look for any UUID in the token claims (less reliable)
+           const uuidMatch = JSON.stringify(decodedToken).match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+           if (uuidMatch) {
+               extractedTenantId = uuidMatch[0];
+               console.warn('Extracted tenant ID using UUID pattern fallback:', extractedTenantId);
+           }
         }
 
-      } catch (tenantError) {
-        console.error('Error fetching tenants:', tenantError);
-        // Check if the error response contains tenant info (e.g., if token is valid but no tenants linked)
-        if (tenantError.response && tenantError.response.statusCode === 403) {
-             console.error('Tenant fetch failed with 403 - possible scope issue or no organization linked.');
-             return { error: 'Failed to access Xero organization details. Check API scopes and linked organizations.', details: tenantError.message };
+        if (!extractedTenantId) {
+          console.error('Could not extract tenant ID from access token claims.');
+          return { error: 'Failed to determine Xero tenant ID from token' };
         }
-        return { error: 'Failed to get Xero organization details', details: tenantError.message };
+
+        this.tenantId = extractedTenantId;
+        console.log('Stored Tenant ID from decoded token:', this.tenantId);
+
+      } catch (decodeError) {
+        console.error('Error decoding access token:', decodeError);
+        return { error: 'Failed to decode access token', details: decodeError.message };
       }
-      
-      // Store the token set with tenant ID
-      console.log('Saving token set to database');
+
+      // Store the token set with the extracted tenant ID
+      console.log('Saving token set to database with extracted tenant ID');
       await this.saveTokenSet(this.tokenSet);
       
       // Verify the connection by making a test API call using the stored plain tenant ID
