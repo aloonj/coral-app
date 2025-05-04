@@ -374,6 +374,10 @@ class XeroService {
     }
     
     try {
+      // Make sure tenantId is a simple string, not a JWT
+      const tenantIdString = typeof this.tenantId === 'string' ? this.tenantId : String(this.tenantId);
+      console.log('Using tenant ID for invoice API call:', tenantIdString);
+      
       // Prepare client contact
       let contact;
       
@@ -391,7 +395,7 @@ class XeroService {
       // Find if contact already exists
       const contactResponse = await this.client.accountingApi.getContacts(
         this.tokenSet.access_token,
-        this.tenantId,
+        tenantIdString,
         undefined,
         `Name=="${contactName}" OR EmailAddress=="${contactEmail}"`
       );
@@ -416,7 +420,7 @@ class XeroService {
         
         const newContactResponse = await this.client.accountingApi.createContacts(
           this.tokenSet.access_token,
-          this.tenantId,
+          tenantIdString,
           { contacts: [newContact] }
         );
         
@@ -467,7 +471,7 @@ class XeroService {
       // Create invoice in Xero
       const invoiceResponse = await this.client.accountingApi.createInvoices(
         this.tokenSet.access_token,
-        this.tenantId,
+        tenantIdString,
         { invoices: [invoice] }
       );
       
@@ -568,9 +572,13 @@ class XeroService {
       }
       
       // Get organization info to verify connection
+      // Make sure tenantId is a simple string, not a JWT
+      const tenantIdString = typeof this.tenantId === 'string' ? this.tenantId : String(this.tenantId);
+      console.log('Using tenant ID for API call:', tenantIdString);
+      
       const org = await this.client.accountingApi.getOrganisations(
         this.tokenSet.access_token,
-        this.tenantId
+        tenantIdString
       );
       
       return {
