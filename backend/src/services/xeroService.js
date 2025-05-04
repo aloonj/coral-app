@@ -1,4 +1,5 @@
-import { Issuer, TokenSet } from 'openid-client';
+import openid from 'openid-client';
+const { TokenSet } = openid;
 import { XeroClient } from 'xero-node';
 import dotenv from 'dotenv';
 import { XeroToken } from '../models/XeroToken.js';
