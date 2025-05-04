@@ -212,4 +212,13 @@ export const backupService = {
   deleteBackup: (id) => api.delete(`/backups/${id}`),
 };
 
+export const xeroService = {
+  getStatus: () => api.get('/xero/status'),
+  startAuth: () => api.get('/xero/auth'),
+  handleCallback: (url) => api.post('/xero/callback', { url }),
+  generateInvoice: (orderId, sendToClient = false) => 
+    api.post(`/xero/invoices/order/${orderId}`, { sendToClient }),
+  sendInvoice: (invoiceId) => api.post(`/xero/invoices/${invoiceId}/send`),
+};
+
 export default api;

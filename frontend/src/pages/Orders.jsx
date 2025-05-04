@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { formatDate } from '../utils/dateUtils';
-import { orderService } from '../services/api';
+import { orderService, xeroService } from '../services/api';
 import { useTheme } from '@mui/material/styles';
 import {
   Container,
@@ -24,7 +24,8 @@ import {
 import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Receipt as ReceiptIcon
 } from '@mui/icons-material';
 import { StatusBadge } from '../components/StyledComponents';
 import OrderDetails from '../components/Orders/OrderDetails';
@@ -43,9 +44,47 @@ const Orders = () => {
   const [expandedOrders, setExpandedOrders] = useState(new Set());
   const [collapsedSections, setCollapsedSections] = useState(new Set(['completed', 'cancelled', 'archived']));
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [xeroStatus, setXeroStatus] = useState({ connected: false });
+  const [invoiceLoading, setInvoiceLoading] = useState({});
+
+  // Check Xero connection status
+  const checkXeroStatus = async () => {
+    try {
+      const response = await xeroService.getStatus();
+      setXeroStatus(response.data);
+    } catch (err) {
+      console.error('Error checking Xero status:', err);
+      setXeroStatus({ connected: false });
+    }
+  };
+
+  // Generate invoice for an order
+  const handleGenerateInvoice = async (orderId, sendToClient = false) => {
+    try {
+      setInvoiceLoading(prev => ({ ...prev, [orderId]: true }));
+      
+      const response = await xeroService.generateInvoice(orderId, sendToClient);
+      
+      // Show success message
+      const successMessage = sendToClient 
+        ? 'Invoice generated and sent to client' 
+        : 'Invoice generated successfully';
+      
+      alert(`${successMessage}: ${response.data.invoice.invoiceNumber}`);
+      
+      // Refresh orders to update UI
+      fetchOrders();
+    } catch (err) {
+      console.error('Error generating invoice:', err);
+      alert('Failed to generate invoice: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setInvoiceLoading(prev => ({ ...prev, [orderId]: false }));
+    }
+  };
 
   useEffect(() => {
     fetchOrders();
+    checkXeroStatus();
 
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -563,6 +602,27 @@ const Orders = () => {
               Move to Archived
             </Button>
           )}
+          
+          {/* Xero Invoice Button - Show for paid orders that are not cancelled */}
+          {xeroStatus.connected && order.paid && order.status !== 'CANCELLED' && (
+            <Button
+              variant="outlined"
+              startIcon={<ReceiptIcon />}
+              onClick={() => handleGenerateInvoice(order.id, true)}
+              disabled={invoiceLoading[order.id]}
+              sx={{
+                bgcolor: '#2ca01c',
+                color: 'white',
+                borderColor: '#2ca01c',
+                '&:hover': {
+                  bgcolor: '#1f7b13',
+                  borderColor: '#1f7b13'
+                }
+              }}
+            >
+              {invoiceLoading[order.id] ? 'Generating...' : 'Generate Invoice'}
+            </Button>
+          )}
         </Box>
       )}
     </Paper>
@@ -570,9 +630,28 @@ const Orders = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Typography variant="h4" component="h1" fontWeight="bold" sx={{ mb: 3 }}>
-        Order Management
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" fontWeight="bold">
+          Order Management
+        </Typography>
+        
+        {/* Xero Status Indicator */}
+        {xeroStatus.connected ? (
+          <Chip 
+            icon={<ReceiptIcon />}
+            label={`Xero Connected: ${xeroStatus.organization || ''}`}
+            color="success"
+            variant="outlined"
+          />
+        ) : (
+          <Chip 
+            label="Xero Not Connected"
+            color="default"
+            variant="outlined"
+            onClick={checkXeroStatus}
+          />
+        )}
+      </Box>
 
       <Box sx={{ mb: 4 }}>
         <Paper 
