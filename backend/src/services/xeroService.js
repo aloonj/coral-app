@@ -218,9 +218,33 @@ class XeroService {
       // Verify the connection by making a test API call
       try {
         console.log('Testing connection with API call');
+        
+        // Extract the plain tenant ID
+        let tenantIdString;
+        if (typeof this.tenantId === 'string') {
+          if (this.tenantId.includes('.')) {
+            console.log('Detected JWT-like tenant ID, attempting to extract plain tenant ID');
+            const uuidMatch = this.tenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+            if (uuidMatch) {
+              tenantIdString = uuidMatch[0];
+              console.log('Extracted UUID from tenant ID:', tenantIdString);
+            } else {
+              tenantIdString = this.tenantId;
+            }
+          } else {
+            tenantIdString = this.tenantId;
+          }
+        } else if (this.tenantId && typeof this.tenantId === 'object') {
+          tenantIdString = this.tenantId.tenantId || this.tenantId.id || String(this.tenantId);
+        } else {
+          tenantIdString = String(this.tenantId || '');
+        }
+        
+        console.log('Using plain tenant ID for test API call:', tenantIdString);
+        
         const org = await this.client.accountingApi.getOrganisations(
           this.tokenSet.access_token,
-          this.tenantId
+          tenantIdString
         );
         console.log('Connected to organization:', org.body.organisations[0].name);
       } catch (apiError) {
@@ -408,9 +432,28 @@ class XeroService {
     }
     
     try {
-      // Make sure tenantId is a simple string, not a JWT
-      const tenantIdString = typeof this.tenantId === 'string' ? this.tenantId : String(this.tenantId);
-      console.log('Using tenant ID for invoice API call:', tenantIdString);
+      // Extract the plain tenant ID using the same approach as in getStatus
+      let tenantIdString;
+      if (typeof this.tenantId === 'string') {
+        if (this.tenantId.includes('.')) {
+          console.log('Detected JWT-like tenant ID, attempting to extract plain tenant ID');
+          const uuidMatch = this.tenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+          if (uuidMatch) {
+            tenantIdString = uuidMatch[0];
+            console.log('Extracted UUID from tenant ID:', tenantIdString);
+          } else {
+            tenantIdString = this.tenantId;
+          }
+        } else {
+          tenantIdString = this.tenantId;
+        }
+      } else if (this.tenantId && typeof this.tenantId === 'object') {
+        tenantIdString = this.tenantId.tenantId || this.tenantId.id || String(this.tenantId);
+      } else {
+        tenantIdString = String(this.tenantId || '');
+      }
+      
+      console.log('Using plain tenant ID for invoice API call:', tenantIdString);
       
       // Prepare client contact
       let contact;
@@ -543,9 +586,28 @@ class XeroService {
     }
     
     try {
-      // Make sure tenantId is a simple string, not a JWT
-      const tenantIdString = typeof this.tenantId === 'string' ? this.tenantId : String(this.tenantId);
-      console.log('Using tenant ID for invoice send API call:', tenantIdString);
+      // Extract the plain tenant ID using the same approach as in getStatus
+      let tenantIdString;
+      if (typeof this.tenantId === 'string') {
+        if (this.tenantId.includes('.')) {
+          console.log('Detected JWT-like tenant ID, attempting to extract plain tenant ID');
+          const uuidMatch = this.tenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+          if (uuidMatch) {
+            tenantIdString = uuidMatch[0];
+            console.log('Extracted UUID from tenant ID:', tenantIdString);
+          } else {
+            tenantIdString = this.tenantId;
+          }
+        } else {
+          tenantIdString = this.tenantId;
+        }
+      } else if (this.tenantId && typeof this.tenantId === 'object') {
+        tenantIdString = this.tenantId.tenantId || this.tenantId.id || String(this.tenantId);
+      } else {
+        tenantIdString = String(this.tenantId || '');
+      }
+      
+      console.log('Using plain tenant ID for invoice send API call:', tenantIdString);
       
       // Update status to AUTHORISED
       const updateInvoice = {
@@ -610,9 +672,31 @@ class XeroService {
       }
       
       // Get organization info to verify connection
-      // Make sure tenantId is a simple string, not a JWT
-      const tenantIdString = typeof this.tenantId === 'string' ? this.tenantId : String(this.tenantId);
-      console.log('Using tenant ID for API call:', tenantIdString);
+      // Extract the plain tenant ID, not a JWT or complex object
+      let tenantIdString;
+      if (typeof this.tenantId === 'string') {
+        // If it's a string but looks like a JWT (contains periods), extract just the tenant ID part
+        if (this.tenantId.includes('.')) {
+          console.log('Detected JWT-like tenant ID, attempting to extract plain tenant ID');
+          // Try to find a UUID pattern in the string
+          const uuidMatch = this.tenantId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+          if (uuidMatch) {
+            tenantIdString = uuidMatch[0];
+            console.log('Extracted UUID from tenant ID:', tenantIdString);
+          } else {
+            tenantIdString = this.tenantId;
+          }
+        } else {
+          tenantIdString = this.tenantId;
+        }
+      } else if (this.tenantId && typeof this.tenantId === 'object') {
+        // If it's an object, try to extract tenantId property
+        tenantIdString = this.tenantId.tenantId || this.tenantId.id || String(this.tenantId);
+      } else {
+        tenantIdString = String(this.tenantId || '');
+      }
+      
+      console.log('Using plain tenant ID for API call:', tenantIdString);
       
       const org = await this.client.accountingApi.getOrganisations(
         this.tokenSet.access_token,
