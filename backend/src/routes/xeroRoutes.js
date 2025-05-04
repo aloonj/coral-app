@@ -6,7 +6,7 @@ import {
   handleXeroCallback,
   generateInvoice,
   sendInvoice,
-  generateTestInvoice
+  disconnectXero
 } from '../controllers/xeroController.js';
 
 const router = express.Router();
@@ -25,15 +25,10 @@ router.get('/auth',
   startXeroAuth
 );
 
-// Handle OAuth callback via POST (from frontend)
+// Handle OAuth callback
 router.post('/callback',
   authenticate,
   authorize('ADMIN', 'SUPERADMIN'),
-  handleXeroCallback
-);
-
-// Handle OAuth callback via GET (direct from Xero)
-router.get('/callback',
   handleXeroCallback
 );
 
@@ -51,11 +46,11 @@ router.post('/invoices/:invoiceId/send',
   sendInvoice
 );
 
-// Generate a test invoice with sample data
-router.post('/test/invoice',
+// Disconnect from Xero
+router.post('/disconnect',
   authenticate,
   authorize('ADMIN', 'SUPERADMIN'),
-  generateTestInvoice
+  disconnectXero
 );
 
 export default router;

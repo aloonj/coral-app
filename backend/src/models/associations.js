@@ -5,6 +5,7 @@ import { Order } from './Order.js';
 import Client from './Client.js';
 import Backup from './Backup.js';
 import NotificationQueue from './NotificationQueue.js';
+import XeroToken from './XeroToken.js';
 
 // Define associations
 Coral.belongsTo(User, {
@@ -46,4 +47,4 @@ Order.belongsTo(Client, {
   as: 'client'
 });
 
-export { Category, Coral, User, Order, Client, Backup, NotificationQueue };
+export { Category, Coral, User, Order, Client, Backup, NotificationQueue, XeroToken };
