@@ -107,7 +107,7 @@ class XeroService {
   }
 
   // Generate authorization URL for OAuth flow
-  getAuthUrl(forceNew = false) {
+  async getAuthUrl(forceNew = false) {
     if (!this.client) return { error: 'Xero not configured' };
     
     try {
@@ -115,7 +115,7 @@ class XeroService {
       if (forceNew) {
         console.log('Forcing new Xero authentication flow');
         // Deactivate all tokens in the database
-        XeroToken.update(
+        await XeroToken.update(
           { active: false },
           { where: { active: true } }
         ).catch(err => {
@@ -133,7 +133,8 @@ class XeroService {
         scopes: this.client.scopes
       });
       
-      const rawConsentUrl = this.client.buildConsentUrl();
+      // Await the Promise returned by buildConsentUrl()
+      const rawConsentUrl = await this.client.buildConsentUrl();
       console.log('Raw Xero consent URL:', rawConsentUrl, 'Type:', typeof rawConsentUrl);
       
       // Ensure we return a string URL
@@ -292,7 +293,8 @@ class XeroService {
         
         // If still no token, auth is required
         if (!this.tokenSet) {
-          return { error: 'Authentication required', authUrl: this.getAuthUrl() };
+          const authUrlResult = await this.getAuthUrl();
+          return { error: 'Authentication required', authUrl: authUrlResult };
         }
       }
       
@@ -496,20 +498,22 @@ class XeroService {
     }
     
     if (!this.tenantId) {
+      const authUrlResult = await this.getAuthUrl();
       return {
         connected: false,
         message: 'Xero tenant not connected',
-        authUrl: this.getAuthUrl()
+        authUrl: authUrlResult
       };
     }
     
     try {
       const tokenStatus = await this.ensureToken();
       if (tokenStatus.error) {
+        const authUrlResult = await this.getAuthUrl();
         return {
           connected: false,
           message: tokenStatus.error,
-          authUrl: this.getAuthUrl()
+          authUrl: authUrlResult
         };
       }
       
@@ -526,11 +530,12 @@ class XeroService {
       };
     } catch (error) {
       console.error('Error checking Xero status:', error);
+      const authUrlResult = await this.getAuthUrl();
       return {
         connected: false,
         message: 'Error connecting to Xero',
         error: error.message,
-        authUrl: this.getAuthUrl()
+        authUrl: authUrlResult
       };
     }
   }

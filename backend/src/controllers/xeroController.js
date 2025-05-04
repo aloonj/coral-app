@@ -23,12 +23,14 @@ export const startXeroAuth = async (req, res) => {
     const forceNew = req.query.forceNew === 'true';
     console.log('Starting Xero auth with forceNew:', forceNew);
     
-    const { url, error } = XeroService.getAuthUrl(forceNew);
+    // Properly await the async getAuthUrl method
+    const { url, error } = await XeroService.getAuthUrl(forceNew);
     
     if (error) {
       return res.status(500).json({ message: error });
     }
     
+    console.log('Sending Xero auth URL to frontend:', url);
     res.json({ url });
   } catch (error) {
     console.error('Error starting Xero auth:', error);
