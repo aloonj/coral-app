@@ -233,11 +233,27 @@ class XeroService {
         if (!this.tenantId) {
             throw new Error("Cannot test API call without a tenant ID.");
         }
-        const org = await this.client.accountingApi.getOrganisations(
-          this.tokenSet.access_token,
-          this.tenantId // Use the stored plain tenant ID directly
-        );
-        console.log('Connected to organization:', org.body.organisations[0].name);
+        
+        // Create headers object with the proper tenant ID header
+        const headers = {
+          'Authorization': `Bearer ${this.tokenSet.access_token}`,
+          'Content-Type': 'application/json',
+          'Xero-tenant-id': this.tenantId
+        };
+        
+        // Call the API directly with the proper headers
+        const response = await fetch('https://api.xero.com/api.xro/2.0/Organisation', { 
+          method: 'GET',
+          headers: headers
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API call failed with status ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Connected to organization:', data.Organisations[0].Name);
       } catch (apiError) {
         console.error('API test call failed:', apiError);
         // If the test call fails immediately after connection, it's a significant issue.
@@ -452,39 +468,67 @@ class XeroService {
       const contactName = clientData.name || 'Unknown Client';
       const contactEmail = clientData.email;
 
-      // Find if contact already exists
-      const contactResponse = await this.client.accountingApi.getContacts(
-        this.tokenSet.access_token,
-        tenantIdString,
-        undefined,
-        `Name=="${contactName}" OR EmailAddress=="${contactEmail}"`
-      );
+      // Create headers for API call
+      const headers = {
+        'Authorization': `Bearer ${this.tokenSet.access_token}`,
+        'Content-Type': 'application/json',
+        'Xero-tenant-id': tenantIdString
+      };
+
+      // Find if contact already exists using direct API call
+      let contactsUrl = `https://api.xero.com/api.xro/2.0/Contacts?where=Name=="${encodeURIComponent(contactName)}"`;
+      if (contactEmail) {
+        contactsUrl += ` OR EmailAddress=="${encodeURIComponent(contactEmail)}"`;
+      }
+      
+      const contactsResponse = await fetch(contactsUrl, {
+        method: 'GET',
+        headers: headers
+      });
+      
+      if (!contactsResponse.ok) {
+        const errorText = await contactsResponse.text();
+        throw new Error(`API call failed with status ${contactsResponse.status}: ${errorText}`);
+      }
+      
+      const contactsData = await contactsResponse.json();
 
       // Use existing contact or create new one
-      if (contactResponse.body.contacts && contactResponse.body.contacts.length > 0) {
-        contact = contactResponse.body.contacts[0];
+      if (contactsData.Contacts && contactsData.Contacts.length > 0) {
+        contact = contactsData.Contacts[0];
       } else {
-        // Create new contact
+        // Create new contact using direct API
         const newContact = {
-          name: contactName,
-          firstName: contactName.split(' ')[0],
-          lastName: contactName.split(' ').slice(1).join(' ') || ' ',
-          emailAddress: contactEmail,
-          phones: clientData.phone ? [
-            {
-              phoneType: 'MOBILE',
-              phoneNumber: clientData.phone
-            }
-          ] : undefined
+          Name: contactName,
+          FirstName: contactName.split(' ')[0],
+          LastName: contactName.split(' ').slice(1).join(' ') || ' ',
+          EmailAddress: contactEmail
         };
-
-        const newContactResponse = await this.client.accountingApi.createContacts(
-          this.tokenSet.access_token,
-          tenantIdString,
-          { contacts: [newContact] }
-        );
-
-        contact = newContactResponse.body.contacts[0];
+        
+        // Add phone if available
+        if (clientData.phone) {
+          newContact.Phones = [
+            {
+              PhoneType: "MOBILE",
+              PhoneNumber: clientData.phone
+            }
+          ];
+        }
+        
+        // Create contact via direct API call
+        const createContactResponse = await fetch('https://api.xero.com/api.xro/2.0/Contacts', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ Contacts: [newContact] })
+        });
+        
+        if (!createContactResponse.ok) {
+          const errorText = await createContactResponse.text();
+          throw new Error(`Contact creation failed with status ${createContactResponse.status}: ${errorText}`);
+        }
+        
+        const createContactData = await createContactResponse.json();
+        contact = createContactData.Contacts[0];
       }
 
       // Prepare line items
@@ -515,28 +559,44 @@ class XeroService {
         });
       }
 
-      // Prepare invoice object
+      // Prepare line items in Xero API format with proper capitalization
+      const xeroLineItems = lineItems.map(item => ({
+        Description: item.description,
+        Quantity: item.quantity,
+        UnitAmount: item.unitAmount,
+        AccountCode: item.accountCode,
+        TaxType: item.taxType
+      }));
+      
+      // Prepare invoice object with proper field capitalization for Xero API
       const invoice = {
-        type: 'ACCREC',
-        contact: {
-          contactID: contact.contactID
+        Type: 'ACCREC',
+        Contact: {
+          ContactID: contact.ContactID
         },
-        date: new Date().toISOString().split('T')[0],
-        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        lineItems,
-        reference: `Order #${order.id}`,
-        status: 'DRAFT'
+        Date: new Date().toISOString().split('T')[0],
+        DueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        LineItems: xeroLineItems,
+        Reference: `Order #${order.id}`,
+        Status: 'DRAFT'
       };
 
-      // Create invoice in Xero
-      const invoiceResponse = await this.client.accountingApi.createInvoices(
-        this.tokenSet.access_token,
-        tenantIdString,
-        { invoices: [invoice] }
-      );
-
+      // Create invoice using direct API call
+      const invoiceResponse = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ Invoices: [invoice] })
+      });
+      
+      if (!invoiceResponse.ok) {
+        const errorText = await invoiceResponse.text();
+        throw new Error(`Invoice creation failed with status ${invoiceResponse.status}: ${errorText}`);
+      }
+      
+      const invoiceData = await invoiceResponse.json();
+      
       // Return the created invoice
-      const createdInvoice = invoiceResponse.body.invoices[0];
+      const createdInvoice = invoiceData.Invoices[0];
 
       return {
         success: true,
@@ -576,25 +636,40 @@ class XeroService {
       }
       console.log('Using stored tenant ID for invoice send API call:', tenantIdString);
 
-      // Update status to AUTHORISED
-      const updateInvoice = {
-        invoiceID: invoiceId,
-        status: 'AUTHORISED'
+      // Create headers for API call
+      const headers = {
+        'Authorization': `Bearer ${this.tokenSet.access_token}`,
+        'Content-Type': 'application/json',
+        'Xero-tenant-id': tenantIdString
       };
 
-      await this.client.accountingApi.updateInvoice(
-        this.tokenSet.access_token,
-        tenantIdString,
-        invoiceId,
-        { invoices: [updateInvoice] }
-      );
+      // First update the invoice to AUTHORISED status
+      const updateInvoice = {
+        InvoiceID: invoiceId,
+        Status: 'AUTHORISED'
+      };
 
-      // Send the invoice to the client
-      const result = await this.client.accountingApi.emailInvoice(
-        this.tokenSet.access_token,
-        tenantIdString,
-        invoiceId
-      );
+      const updateResponse = await fetch(`https://api.xero.com/api.xro/2.0/Invoices/${invoiceId}`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ Invoices: [updateInvoice] })
+      });
+      
+      if (!updateResponse.ok) {
+        const errorText = await updateResponse.text();
+        throw new Error(`Invoice update failed with status ${updateResponse.status}: ${errorText}`);
+      }
+      
+      // Then email the invoice
+      const emailResponse = await fetch(`https://api.xero.com/api.xro/2.0/Invoices/${invoiceId}/Email`, {
+        method: 'POST',
+        headers: headers
+      });
+      
+      if (!emailResponse.ok) {
+        const errorText = await emailResponse.text();
+        throw new Error(`Invoice email failed with status ${emailResponse.status}: ${errorText}`);
+      }
 
       return {
         success: true,
@@ -651,14 +726,29 @@ class XeroService {
       }
       console.log('Using stored tenant ID for status API call:', tenantIdString);
 
-      const org = await this.client.accountingApi.getOrganisations(
-        this.tokenSet.access_token,
-        tenantIdString // Use the stored plain tenant ID directly
-      );
-
+      // Create headers object with the proper tenant ID header
+      const headers = {
+        'Authorization': `Bearer ${this.tokenSet.access_token}`,
+        'Content-Type': 'application/json',
+        'Xero-tenant-id': tenantIdString
+      };
+      
+      // Call the API directly with the proper headers
+      const response = await fetch('https://api.xero.com/api.xro/2.0/Organisation', { 
+        method: 'GET',
+        headers: headers
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API call failed with status ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
       return {
         connected: true,
-        organization: org.body.organisations[0].name,
+        organization: data.Organisations[0].Name,
         tenantId: this.tenantId
       };
     } catch (error) {
