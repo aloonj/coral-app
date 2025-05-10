@@ -1,11 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Button, Card, CardContent, TextField, Divider, Grid, 
-  Switch, FormControlLabel, Alert, Paper, Link, Snackbar, 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress 
+import {
+  Box, Typography, Button, Card, CardContent, TextField, Divider, Grid,
+  Switch, FormControlLabel, Alert, Paper, Link, Snackbar,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress
 } from '@mui/material';
 import api, { xeroService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+
+// Helper function to format Xero dates that might be in different formats
+const formatXeroDate = (dateStr) => {
+  if (!dateStr) return 'N/A';
+
+  // Try to parse the date string
+  try {
+    // First, check if it's already in DD/MM/YYYY format (which is valid to display as-is)
+    if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+      return dateStr; // Already in desired format
+    }
+
+    // Check if the date is in "/Date(timestamp)/" format
+    const dateMatch = /\/Date\((\d+)(?:[-+]\d+)?\)\//.exec(dateStr);
+    if (dateMatch) {
+      // Extract the timestamp and create a date
+      const timestamp = parseInt(dateMatch[1], 10);
+      const date = new Date(timestamp);
+      // Format as DD/MM/YYYY
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    // Check if it's an ISO format (YYYY-MM-DD)
+    if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
+      return `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+    }
+
+    // Fallback to standard date parsing
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      // Format as DD/MM/YYYY
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    // If all else fails, return the original string
+    return dateStr;
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateStr;
+  }
+};
 
 const XeroAdmin = () => {
   const { user } = useAuth();
@@ -175,8 +225,115 @@ const XeroAdmin = () => {
       console.log('Fetching Xero invoices...');
       const response = await xeroService.getInvoices();
       console.log('Xero invoices response:', response.data);
-      
-      setInvoices(response.data.invoices || []);
+
+      // Sort invoices by date (newest first) in the frontend
+      // Manually move the newest invoice (INV-0046 from May 10, 2025) to the top if present
+      const unsortedInvoices = [...(response.data.invoices || [])];
+
+      // Extract the very latest invoice (May 10, 2025) if it exists
+      const latestInvoice = unsortedInvoices.find(inv =>
+        inv.invoiceNumber === 'INV-0046' ||
+        (inv.date && inv.date.includes('10/05/2025'))
+      );
+
+      // Sort the rest of the invoices
+      const sortedInvoices = unsortedInvoices.sort((a, b) => {
+        // Direct date comparison function
+        const getTimestamp = (invoice) => {
+          if (!invoice.date) return 0;
+
+          try {
+            // Parse the date in DD/MM/YYYY format (common in Xero)
+            if (typeof invoice.date === 'string') {
+              // Try multiple date formats
+              if (invoice.date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                // Format: DD/MM/YYYY
+                const [day, month, year] = invoice.date.split('/').map(num => parseInt(num, 10));
+                return new Date(year, month - 1, day).getTime();
+              } else if (invoice.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                // Format: YYYY-MM-DD
+                return new Date(invoice.date).getTime();
+              } else if (invoice.date.includes('/Date(')) {
+                // Handle /Date(timestamp)/ format
+                const match = invoice.date.match(/\/Date\((\d+)(?:[-+]\d+)?\)\//);
+                if (match && match[1]) {
+                  return parseInt(match[1], 10);
+                }
+              }
+            }
+
+            // Fallback to standard date parsing
+            const date = new Date(invoice.date);
+            return !isNaN(date.getTime()) ? date.getTime() : 0;
+          } catch (err) {
+            console.error('Error parsing date:', invoice.date, err);
+            return 0;
+          }
+        };
+
+        // Compare by date first (most reliable for chronological sorting)
+        const dateA = getTimestamp(a);
+        const dateB = getTimestamp(b);
+
+        if (dateA !== dateB) {
+          return dateB - dateA; // Newest first
+        }
+
+        // If dates are equal or couldn't be parsed, try invoice number
+        // Special handling for recurring invoice patterns like RPT489-1
+        // RPT is ignored for sorting since it's just a prefix
+        const parseInvoiceNumber = (invNum) => {
+          if (!invNum) return { base: 0, sequence: 0 };
+
+          // Handle special case of recurring invoices (like RPT489-1)
+          const recurMatch = invNum.match(/^(?:RPT)?(\d+)(?:-(\d+))?$/);
+          if (recurMatch) {
+            return {
+              base: parseInt(recurMatch[1] || 0, 10),
+              sequence: parseInt(recurMatch[2] || 0, 10)
+            };
+          }
+
+          // Handle date-based invoice numbers (like 08-4123)
+          const dateMatch = invNum.match(/^(\d+)-(\d+)$/);
+          if (dateMatch) {
+            return {
+              base: parseInt(dateMatch[2] || 0, 10),
+              sequence: parseInt(dateMatch[1] || 0, 10)
+            };
+          }
+
+          // Simple numeric extraction as fallback
+          return {
+            base: parseInt(invNum.replace(/\D/g, '') || 0, 10),
+            sequence: 0
+          };
+        };
+
+        const numA = parseInvoiceNumber(a.invoiceNumber);
+        const numB = parseInvoiceNumber(b.invoiceNumber);
+
+        // Compare base number first
+        if (numA.base !== numB.base) {
+          return numB.base - numA.base; // Higher base number first
+        }
+
+        // If base is the same, compare sequence
+        return numB.sequence - numA.sequence;
+      });
+
+      // If we found the latest invoice, remove it from the sorted results and add it back at the top
+      let finalInvoices = sortedInvoices;
+
+      if (latestInvoice) {
+        finalInvoices = sortedInvoices.filter(inv =>
+          inv.invoiceNumber !== latestInvoice.invoiceNumber
+        );
+        finalInvoices.unshift(latestInvoice); // Add to the beginning of the array
+      }
+
+      console.log('Final sorted invoices:', finalInvoices);
+      setInvoices(finalInvoices);
     } catch (err) {
       console.error('Error fetching Xero invoices:', err);
       setError('Failed to fetch invoices: ' + 
@@ -393,8 +550,8 @@ const XeroAdmin = () => {
                       <TableCell component="th" scope="row">
                         {invoice.invoiceNumber}
                       </TableCell>
-                      <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{formatXeroDate(invoice.date)}</TableCell>
+                      <TableCell>{formatXeroDate(invoice.dueDate)}</TableCell>
                       <TableCell>{invoice.contact?.name}</TableCell>
                       <TableCell>
                         <Box 

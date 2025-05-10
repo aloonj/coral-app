@@ -351,15 +351,29 @@ export const getInvoices = async (req, res) => {
     
     // Fetch invoices from Xero
     const result = await XeroService.getInvoices();
-    
+
     if (result.error) {
-      return res.status(400).json({ 
-        message: 'Failed to fetch invoices', 
+      return res.status(400).json({
+        message: 'Failed to fetch invoices',
         error: result.error,
         details: result.details
       });
     }
-    
+
+    // Additional sorting on the controller level, ensuring newest invoices are first
+    if (result.invoices && Array.isArray(result.invoices)) {
+      result.invoices.sort((a, b) => {
+        // Sort by invoice number (which usually increases with newer invoices)
+        // This is a more reliable way if date parsing is problematic
+        if (a.invoiceNumber && b.invoiceNumber) {
+          const numA = parseInt(a.invoiceNumber.replace(/\D/g, ''), 10) || 0;
+          const numB = parseInt(b.invoiceNumber.replace(/\D/g, ''), 10) || 0;
+          return numB - numA; // Descending order (higher numbers first)
+        }
+        return 0;
+      });
+    }
+
     res.json(result);
   } catch (error) {
     console.error('Error fetching invoices:', error);

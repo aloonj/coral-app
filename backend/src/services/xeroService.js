@@ -944,8 +944,11 @@ class XeroService {
         'Xero-Tenant-Id': tenantIdString
       };
 
-      // Get invoices using direct API call
-      const response = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
+      // Get invoices using direct API call with the order parameter to sort by UpdatedDateUTC DESC
+      // Note: Available order fields include UpdatedDateUTC, Date, DueDate, InvoiceNumber, etc.
+      // Format is ?order=FIELD DESC or ?order=FIELD ASC
+      // See Xero API documentation for more details: https://developer.xero.com/documentation/api/accounting/invoices
+      const response = await fetch('https://api.xero.com/api.xro/2.0/Invoices?order=UpdatedDateUTC DESC', {
         method: 'GET',
         headers: headers
       });
@@ -956,8 +959,17 @@ class XeroService {
       }
       
       const invoicesData = await response.json();
-      
-      // Transform the response to a more frontend-friendly format
+
+      // Log an example invoice to see the date format
+      if (invoicesData.Invoices && invoicesData.Invoices.length > 0) {
+        console.log('Example Xero invoice date format:', {
+          Date: invoicesData.Invoices[0].Date,
+          DueDate: invoicesData.Invoices[0].DueDate,
+          dateType: typeof invoicesData.Invoices[0].Date
+        });
+      }
+
+      // Transform the response to a more frontend-friendly format and sort by date (newest first)
       const invoices = invoicesData.Invoices.map(invoice => ({
         id: invoice.InvoiceID,
         invoiceNumber: invoice.InvoiceNumber,
@@ -978,7 +990,49 @@ class XeroService {
           unitAmount: item.UnitAmount,
           lineAmount: item.LineAmount
         }))
-      }));
+      }))
+      // Sort invoices by date (newest first)
+      .sort((a, b) => {
+        try {
+          // Parse dates for comparison
+          let dateA = 0;
+          let dateB = 0;
+
+          if (a.date) {
+            if (typeof a.date === 'string' && a.date.includes('/Date(')) {
+              const match = a.date.match(/\/Date\((\d+)(?:[-+]\d+)?\)\//);
+              if (match && match[1]) {
+                dateA = parseInt(match[1], 10);
+              }
+            } else {
+              const parsedDate = new Date(a.date);
+              if (!isNaN(parsedDate.getTime())) {
+                dateA = parsedDate.getTime();
+              }
+            }
+          }
+
+          if (b.date) {
+            if (typeof b.date === 'string' && b.date.includes('/Date(')) {
+              const match = b.date.match(/\/Date\((\d+)(?:[-+]\d+)?\)\//);
+              if (match && match[1]) {
+                dateB = parseInt(match[1], 10);
+              }
+            } else {
+              const parsedDate = new Date(b.date);
+              if (!isNaN(parsedDate.getTime())) {
+                dateB = parsedDate.getTime();
+              }
+            }
+          }
+
+          // Newest first (descending order)
+          return dateB - dateA;
+        } catch (error) {
+          console.error('Error sorting invoices by date:', error);
+          return 0; // Don't change order if there's an error
+        }
+      });
 
       return {
         success: true,
