@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Card, CardContent, TextField, Divider, Grid,
   Switch, FormControlLabel, Alert, Paper, Link, Snackbar,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress,
+  FormControl, Select, MenuItem, Tabs, Tab
 } from '@mui/material';
 import api, { xeroService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,6 +66,8 @@ const XeroAdmin = () => {
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [mockMode, setMockMode] = useState(true);
   const [invoices, setInvoices] = useState([]);
+  const [filteredInvoices, setFilteredInvoices] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('DRAFT');
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [testFormData, setTestFormData] = useState({
     clientName: 'Test Client',
@@ -334,12 +337,27 @@ const XeroAdmin = () => {
 
       console.log('Final sorted invoices:', finalInvoices);
       setInvoices(finalInvoices);
+
+      // Apply filter immediately after fetching
+      applyStatusFilter(finalInvoices, statusFilter);
     } catch (err) {
       console.error('Error fetching Xero invoices:', err);
       setError('Failed to fetch invoices: ' + 
                (err.response?.data?.error || err.message));
     } finally {
       setLoadingInvoices(false);
+    }
+  };
+  
+  // Helper to apply the status filter
+  const applyStatusFilter = (invoiceList, filter) => {
+    if (!invoiceList) return;
+    
+    if (filter === 'ALL') {
+      setFilteredInvoices(invoiceList);
+    } else {
+      const filtered = invoiceList.filter(invoice => invoice.status === filter);
+      setFilteredInvoices(filtered);
     }
   };
 
@@ -383,6 +401,11 @@ const XeroAdmin = () => {
       fetchInvoices();
     }
   }, [xeroStatus?.connected]);
+  
+  // Apply filter when status filter changes or invoices update
+  useEffect(() => {
+    applyStatusFilter(invoices, statusFilter);
+  }, [statusFilter, invoices]);
 
   if (!user || !['ADMIN', 'SUPERADMIN'].includes(user.role)) {
     return (
@@ -505,16 +528,43 @@ const XeroAdmin = () => {
       {/* Invoices Table */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">Invoices</Typography>
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              onClick={fetchInvoices}
-              disabled={loadingInvoices || !xeroStatus?.connected}
+          <Box sx={{ display: 'flex', flexDirection: 'column', mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Invoices</Typography>
+              <Button 
+                variant="outlined" 
+                color="primary" 
+                onClick={fetchInvoices}
+                disabled={loadingInvoices || !xeroStatus?.connected}
+              >
+                Refresh Invoices
+              </Button>
+            </Box>
+            
+            <Tabs
+              value={statusFilter}
+              onChange={(e, newValue) => setStatusFilter(newValue)}
+              aria-label="invoice status tabs"
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                '& .MuiTab-root': {
+                  fontWeight: 'bold',
+                  my: 0.5,
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  }
+                }
+              }}
             >
-              Refresh Invoices
-            </Button>
+              <Tab label="Draft" value="DRAFT" />
+              <Tab label="Authorised" value="AUTHORISED" />
+              <Tab label="Paid" value="PAID" />
+              <Tab label="Voided" value="VOIDED" />
+              <Tab label="All Statuses" value="ALL" />
+            </Tabs>
           </Box>
           
           {!xeroStatus?.connected ? (
@@ -528,6 +578,10 @@ const XeroAdmin = () => {
           ) : invoices.length === 0 ? (
             <Alert severity="info">
               No invoices found for this tenant.
+            </Alert>
+          ) : filteredInvoices.length === 0 && statusFilter !== 'ALL' ? (
+            <Alert severity="info">
+              No invoices found with status "{statusFilter}".
             </Alert>
           ) : (
             <TableContainer component={Paper}>
@@ -545,7 +599,7 @@ const XeroAdmin = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {invoices.map((invoice) => (
+                  {filteredInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
                       <TableCell component="th" scope="row">
                         {invoice.invoiceNumber}
@@ -566,7 +620,8 @@ const XeroAdmin = () => {
                             backgroundColor: 
                               invoice.status === 'PAID' ? 'success.main' :
                               invoice.status === 'AUTHORISED' ? 'warning.main' :
-                              invoice.status === 'DRAFT' ? 'info.main' : 'error.main',
+                              invoice.status === 'DRAFT' ? 'info.main' : 
+                              invoice.status === 'VOIDED' ? 'error.dark' : 'error.main',
                           }}
                         >
                           {invoice.status}
