@@ -7,7 +7,8 @@ import {
   generateInvoice,
   sendInvoice,
   disconnectXero,
-  getInvoices
+  getInvoices,
+  generateTestInvoice
 } from '../controllers/xeroController.js';
 
 const router = express.Router();
@@ -55,6 +56,13 @@ router.get('/invoices',
   authenticate,
   authorize('ADMIN', 'SUPERADMIN'),
   getInvoices
+);
+
+// Generate a test invoice
+router.post('/invoices/test',
+  authenticate,
+  authorize('ADMIN', 'SUPERADMIN'),
+  generateTestInvoice
 );
 
 // Disconnect from Xero

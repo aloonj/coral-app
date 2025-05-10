@@ -251,6 +251,75 @@ export const sendInvoice = async (req, res) => {
   }
 };
 
+// Generate a test invoice with provided data
+export const generateTestInvoice = async (req, res) => {
+  try {
+    // Make sure Xero service is initialized
+    await XeroService.ensureInitialized();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Check if Xero is configured
+    const status = await XeroService.getStatus();
+    if (!status.connected) {
+      return res.status(503).json({
+        message: 'Xero integration not available',
+        status
+      });
+    }
+
+    const testData = req.body;
+
+    if (!testData) {
+      return res.status(400).json({ message: 'Test invoice data is required' });
+    }
+
+    // Create a test invoice in Xero
+    const result = await XeroService.generateTestInvoice(testData);
+
+    if (result.error) {
+      return res.status(400).json({
+        message: 'Failed to generate test invoice',
+        error: result.error,
+        details: result.details
+      });
+    }
+
+    // If sendToClient is true, also send the invoice
+    if (testData.sendToClient && result.invoice && result.invoice.id) {
+      const sendResult = await XeroService.sendInvoice(result.invoice.id);
+
+      if (sendResult.error) {
+        return res.status(400).json({
+          message: 'Test invoice generated but failed to send',
+          invoice: result.invoice,
+          error: sendResult.error,
+          details: sendResult.details
+        });
+      }
+
+      return res.json({
+        message: 'Test invoice generated and sent to client',
+        invoice: result.invoice
+      });
+    }
+
+    res.json({
+      message: 'Test invoice generated successfully',
+      invoice: result.invoice
+    });
+  } catch (error) {
+    console.error('Error generating test invoice:', error);
+    res.status(500).json({
+      message: 'Error generating test invoice',
+      error: error.message
+    });
+  }
+};
+
 // Disconnect from Xero
 // Get all invoices for the current tenant
 export const getInvoices = async (req, res) => {

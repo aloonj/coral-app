@@ -1015,6 +1015,173 @@ class XeroService {
       return { error: 'Failed to disconnect from Xero' };
     }
   }
+
+  // Generate a test invoice directly in Xero
+  async generateTestInvoice(testData) {
+    await this.ensureInitialized();
+
+    if (!this.client) return { error: 'Xero not configured' };
+    if (!this.tenantId) return { error: 'Xero tenant ID not configured' };
+
+    // Ensure we have a valid token
+    const tokenStatus = await this.ensureToken();
+    if (tokenStatus.error) {
+      return tokenStatus;
+    }
+
+    try {
+      const tenantIdString = this.tenantId;
+      if (!tenantIdString) {
+        return { error: 'Xero tenant ID not available for invoice generation' };
+      }
+      console.log('Using tenant ID for test invoice generation:', tenantIdString);
+
+      // Create headers for API call
+      const headers = {
+        'Authorization': `Bearer ${this.tokenSet.access_token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Xero-Tenant-Id': tenantIdString
+      };
+
+      // Prepare test client contact
+      const contactName = testData.clientName || 'Test Client';
+      const contactEmail = testData.clientEmail || 'test@example.com';
+      const contactPhone = testData.clientPhone || '';
+
+      // Find if contact already exists
+      let contactsUrl = `https://api.xero.com/api.xro/2.0/Contacts?where=Name=="${encodeURIComponent(contactName)}"`;
+      if (contactEmail) {
+        contactsUrl += ` OR EmailAddress=="${encodeURIComponent(contactEmail)}"`;
+      }
+
+      const contactsResponse = await fetch(contactsUrl, {
+        method: 'GET',
+        headers: headers
+      });
+
+      if (!contactsResponse.ok) {
+        const errorText = await contactsResponse.text();
+        throw new Error(`API call failed with status ${contactsResponse.status}: ${errorText}`);
+      }
+
+      const contactsData = await contactsResponse.json();
+
+      // Use existing contact or create new one
+      let contact;
+      if (contactsData.Contacts && contactsData.Contacts.length > 0) {
+        contact = contactsData.Contacts[0];
+        console.log('Using existing contact for test invoice:', contact.Name);
+      } else {
+        // Create new contact
+        const newContact = {
+          Name: contactName,
+          FirstName: contactName.split(' ')[0],
+          LastName: contactName.split(' ').slice(1).join(' ') || ' ',
+          EmailAddress: contactEmail
+        };
+
+        // Add phone if available
+        if (contactPhone) {
+          newContact.Phones = [
+            {
+              PhoneType: "MOBILE",
+              PhoneNumber: contactPhone
+            }
+          ];
+        }
+
+        // Create contact via API call
+        const createContactResponse = await fetch('https://api.xero.com/api.xro/2.0/Contacts', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ Contacts: [newContact] })
+        });
+
+        if (!createContactResponse.ok) {
+          const errorText = await createContactResponse.text();
+          throw new Error(`Contact creation failed with status ${createContactResponse.status}: ${errorText}`);
+        }
+
+        const createContactData = await createContactResponse.json();
+        contact = createContactData.Contacts[0];
+        console.log('Created new contact for test invoice:', contact.Name);
+      }
+
+      // Prepare line items for the test invoice
+      const lineItems = [];
+
+      // Add first item
+      lineItems.push({
+        Description: testData.item1Name || 'Test Coral',
+        Quantity: testData.item1Quantity || 1,
+        UnitAmount: testData.item1Price || 10.00,
+        AccountCode: '200',
+        TaxType: 'NONE'
+      });
+
+      // Add second item if included
+      if (testData.includeSecondItem) {
+        lineItems.push({
+          Description: testData.item2Name || 'Test Coral 2',
+          Quantity: testData.item2Quantity || 1,
+          UnitAmount: testData.item2Price || 15.00,
+          AccountCode: '200',
+          TaxType: 'NONE'
+        });
+      }
+
+      // Prepare invoice object
+      const invoice = {
+        Type: 'ACCREC',
+        Contact: {
+          ContactID: contact.ContactID
+        },
+        Date: new Date().toISOString().split('T')[0],
+        DueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        LineItems: lineItems,
+        Reference: 'Test Invoice',
+        Status: 'DRAFT'
+      };
+
+      console.log('Creating test invoice with data:', JSON.stringify(invoice));
+
+      // Create invoice using API call
+      const invoiceResponse = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ Invoices: [invoice] })
+      });
+
+      if (!invoiceResponse.ok) {
+        const errorText = await invoiceResponse.text();
+        throw new Error(`Invoice creation failed with status ${invoiceResponse.status}: ${errorText}`);
+      }
+
+      const invoiceData = await invoiceResponse.json();
+
+      // Return the created invoice
+      const createdInvoice = invoiceData.Invoices[0];
+
+      return {
+        success: true,
+        message: 'Test invoice generated successfully in Xero',
+        invoice: {
+          id: createdInvoice.InvoiceID,
+          invoiceNumber: createdInvoice.InvoiceNumber,
+          reference: createdInvoice.Reference,
+          total: createdInvoice.Total,
+          url: createdInvoice.OnlineInvoiceUrl
+        }
+      };
+    } catch (error) {
+      console.error('Error generating test invoice in Xero:', error);
+      return {
+        error: 'Failed to generate test invoice',
+        details: error.message
+      };
+    }
+  }
 }
 
 export default new XeroService();
