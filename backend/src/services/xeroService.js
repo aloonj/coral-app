@@ -7,26 +7,7 @@ import { XeroToken } from '../models/XeroToken.js';
 
 dotenv.config();
 
-// Try to delete the file-based token if it exists
-const deleteFileBasedToken = async () => {
-  try {
-    const fs = await import('fs/promises');
-    const path = await import('path');
-    const { fileURLToPath } = await import('url');
-
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const tokenFilePath = path.join(__dirname, '../../../data/xero-token.json');
-
-    await fs.unlink(tokenFilePath).catch(() => {
-      console.log('No file-based token to delete or unable to delete');
-    });
-
-    console.log('Deleted file-based token if it existed');
-  } catch (fsError) {
-    console.log('Error attempting to delete file-based token:', fsError.message);
-  }
-};
+// No longer needed - tokens are stored in database only
 
 // Initialize Xero client
 const initXero = () => {
@@ -45,8 +26,7 @@ const initXero = () => {
       return null;
     }
 
-    // Try to delete any old file-based token
-    deleteFileBasedToken();
+    // No longer using file-based tokens
 
     const xero = new XeroClient({
       clientId: process.env.XERO_CLIENT_ID,
@@ -70,36 +50,64 @@ class XeroService {
   constructor() {
     this.client = xeroClient;
     this.tokenSet = null;
-
-    // Always try to load from database first, fallback to env var
     this.tenantId = null;
-    this.loadTenantIdFromDatabase();
-
-    // If database load fails, use environment variable as fallback
-    if (!this.tenantId) {
-      console.log('No tenant ID found in database, checking environment variables');
-      this.tenantId = process.env.XERO_TENANT_ID;
-      if (this.tenantId) {
-        console.log('Using tenant ID from environment variables:', this.tenantId);
-      }
-    }
+    
+    // Load both token and tenant ID from database on initialization
+    this.loadFromDatabase();
   }
 
-  // Load tenant ID from database
-  async loadTenantIdFromDatabase() {
+  // Load both token and tenant ID from database
+  async loadFromDatabase() {
     try {
+      console.log('Loading Xero credentials from database...');
       // Find the most recent active token
       const token = await XeroToken.findOne({
         where: { active: true },
         order: [['updatedAt', 'DESC']]
       });
 
-      if (token && token.tenantId) {
+      if (token) {
+        // Set tenant ID
         this.tenantId = token.tenantId;
         console.log('Loaded Xero tenant ID from database:', this.tenantId);
+        
+        // Convert to TokenSet format and store in memory
+        this.tokenSet = new TokenSet({
+          access_token: token.accessToken,
+          refresh_token: token.refreshToken,
+          id_token: token.idToken,
+          expires_at: Math.floor(new Date(token.expiresAt).getTime() / 1000),
+          scope: token.scope,
+          token_type: token.tokenType
+        });
+        console.log('Loaded Xero token from database successfully');
+        
+        // Check if token is expired and will need refresh on next use
+        const expiryDate = new Date(token.expiresAt);
+        const now = new Date();
+        if (expiryDate <= now) {
+          console.log('Loaded token is expired and will be refreshed on next API call');
+        } else {
+          const minutesRemaining = Math.round((expiryDate - now) / 60000);
+          console.log(`Loaded token is valid for approximately ${minutesRemaining} more minutes`);
+        }
+      } else {
+        // Fallback to environment variable for tenant ID
+        console.log('No token found in database, checking environment variables');
+        this.tenantId = process.env.XERO_TENANT_ID;
+        if (this.tenantId) {
+          console.log('Using tenant ID from environment variables:', this.tenantId);
+        } else {
+          console.log('No Xero tenant ID available - authentication will be required');
+        }
       }
     } catch (error) {
-      console.error('Error loading tenant ID from database:', error);
+      console.error('Error loading Xero credentials from database:', error);
+      // Fallback to environment variable for tenant ID
+      this.tenantId = process.env.XERO_TENANT_ID;
+      if (this.tenantId) {
+        console.log('Using tenant ID from environment variables after database error:', this.tenantId);
+      }
     }
   }
 
@@ -899,24 +907,7 @@ class XeroService {
       this.tokenSet = null;
       this.tenantId = null;
 
-      // Try to delete the file-based token if it exists
-      try {
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        const { fileURLToPath } = await import('url');
-
-        const __filename = fileURLToPath(import.meta.url);
-        const __dirname = path.dirname(__filename);
-        const tokenFilePath = path.join(__dirname, '../../../data/xero-token.json');
-
-        await fs.unlink(tokenFilePath).catch(() => {
-          console.log('No file-based token to delete or unable to delete');
-        });
-
-        console.log('Deleted file-based token if it existed');
-      } catch (fsError) {
-        console.log('Error attempting to delete file-based token:', fsError.message);
-      }
+      // No longer using file-based tokens - database only
 
       console.log('Disconnected from Xero');
       return { success: true };
