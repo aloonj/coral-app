@@ -314,7 +314,7 @@ const Orders = () => {
     return statusFlow[currentStatus] || null;
   };
 
-  const getNextStatuses = (currentStatus) => {
+  const getNextStatuses = (currentStatus, invoiceStatus) => {
     const statusFlow = {
       PENDING: ['CONFIRMED', 'CANCELLED'],
       CONFIRMED: ['PROCESSING', 'CANCELLED'],
@@ -323,6 +323,12 @@ const Orders = () => {
       COMPLETED: [],
       CANCELLED: []
     };
+
+    // If order is invoiced, don't allow cancellation
+    if (invoiceStatus === 'INVOICED') {
+      return (statusFlow[currentStatus] || []).filter(status => status !== 'CANCELLED');
+    }
+
     return statusFlow[currentStatus] || [];
   };
 
@@ -527,7 +533,7 @@ const Orders = () => {
             </Button>
           )}
           
-          {getNextStatuses(order.status).map(nextStatus => (
+          {getNextStatuses(order.status, order.invoiceStatus).map(nextStatus => (
             <Button
               key={nextStatus}
               variant="outlined"
@@ -565,39 +571,7 @@ const Orders = () => {
             </Button>
           )}
 
-          {order.status !== 'CANCELLED' && !order.archived && (
-            order.invoiceStatus === 'INVOICED' ? (
-              <Button
-                variant="outlined"
-                onClick={() => handleMarkInvoiced(order.id, false)}
-                disabled={invoiceGenerating[order.id]}
-                sx={{
-                  ...getStatusButtonColor('NOT_INVOICED'),
-                  '&:hover': {
-                    opacity: 0.9,
-                    transform: 'translateY(-1px)'
-                  }
-                }}
-              >
-                {invoiceGenerating[order.id] ? 'Processing...' : 'Mark as Not Invoiced'}
-              </Button>
-            ) : (
-              <Button
-                variant="outlined"
-                onClick={() => handleMarkInvoiced(order.id, true)}
-                disabled={invoiceGenerating[order.id]}
-                sx={{
-                  ...getStatusButtonColor('INVOICED'),
-                  '&:hover': {
-                    opacity: 0.9,
-                    transform: 'translateY(-1px)'
-                  }
-                }}
-              >
-                {invoiceGenerating[order.id] ? 'Processing...' : 'Mark as Invoiced'}
-              </Button>
-            )
-          )}
+          {/* Removed mark as invoiced/not invoiced buttons as they're replaced by the Xero invoice functionality */}
 
           {order.status === 'COMPLETED' && order.invoiceStatus === 'INVOICED' && (
             <Button
