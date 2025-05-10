@@ -46,6 +46,7 @@ const Orders = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [xeroStatus, setXeroStatus] = useState({ connected: false });
   const [invoiceLoading, setInvoiceLoading] = useState({});
+  const [invoiceGenerating, setInvoiceGenerating] = useState({});
 
   // Check Xero connection status
   const checkXeroStatus = async () => {
@@ -213,15 +214,18 @@ const Orders = () => {
     }
   };
 
-  const handleMarkPaid = async (orderId, paid = true) => {
-    const action = paid ? 'paid' : 'unpaid';
+  const handleMarkInvoiced = async (orderId, invoiced = true) => {
+    const invoiceStatus = invoiced ? 'INVOICED' : 'INVOICE_PENDING';
+    const action = invoiced ? 'invoiced' : 'not invoiced';
     if (window.confirm(`Are you sure you want to mark this order as ${action}?`)) {
       try {
+        setInvoiceGenerating(prev => ({ ...prev, [orderId]: true }));
+
         // Optimistically update the local state
         setOrders(prevOrders => {
           const updateOrderInSection = section =>
             section.map(order =>
-              order.id === orderId ? { ...order, paid } : order
+              order.id === orderId ? { ...order, invoiceStatus } : order
             );
 
           return {
@@ -233,12 +237,18 @@ const Orders = () => {
         });
 
         // Make the API call
-        await orderService.updateOrder(orderId, { paid });
+        if (invoiced) {
+          await orderService.markOrderAsInvoiced(orderId);
+        } else {
+          await orderService.resetOrderInvoiceStatus(orderId);
+        }
       } catch (err) {
         console.error(`Error marking order as ${action}:`, err);
         setError(`Failed to mark order as ${action}: ` + (err.response?.data?.message || err.message));
         // If there was an error, fetch all orders to ensure consistency
         fetchOrders();
+      } finally {
+        setInvoiceGenerating(prev => ({ ...prev, [orderId]: false }));
       }
     }
   };
@@ -374,12 +384,12 @@ const Orders = () => {
         borderColor: '#E53E3E',
         color: '#C53030'
       },
-      PAID: {
+      INVOICED: {
         backgroundColor: '#F0FDF4',
         borderColor: '#166534',
         color: '#166534'
       },
-      UNPAID: {
+      NOT_INVOICED: {
         backgroundColor: '#FEF2F2',
         borderColor: '#991B1B',
         color: '#991B1B'
@@ -422,8 +432,8 @@ const Orders = () => {
         </Box>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <Chip 
-            label={order.paid ? 'Paid' : 'Unpaid'}
-            color={order.paid ? 'success' : 'error'}
+            label={order.invoiceStatus === 'INVOICED' ? 'Invoiced' : 'Not Invoiced'}
+            color={order.invoiceStatus === 'INVOICED' ? 'success' : 'error'}
             variant="outlined"
             size="small"
           />
@@ -556,38 +566,40 @@ const Orders = () => {
           )}
 
           {order.status !== 'CANCELLED' && !order.archived && (
-            order.paid ? (
+            order.invoiceStatus === 'INVOICED' ? (
               <Button
                 variant="outlined"
-                onClick={() => handleMarkPaid(order.id, false)}
+                onClick={() => handleMarkInvoiced(order.id, false)}
+                disabled={invoiceGenerating[order.id]}
                 sx={{
-                  ...getStatusButtonColor('UNPAID'),
+                  ...getStatusButtonColor('NOT_INVOICED'),
                   '&:hover': {
                     opacity: 0.9,
                     transform: 'translateY(-1px)'
                   }
                 }}
               >
-                Mark as Unpaid
+                {invoiceGenerating[order.id] ? 'Processing...' : 'Mark as Not Invoiced'}
               </Button>
             ) : (
               <Button
                 variant="outlined"
-                onClick={() => handleMarkPaid(order.id, true)}
+                onClick={() => handleMarkInvoiced(order.id, true)}
+                disabled={invoiceGenerating[order.id]}
                 sx={{
-                  ...getStatusButtonColor('PAID'),
+                  ...getStatusButtonColor('INVOICED'),
                   '&:hover': {
                     opacity: 0.9,
                     transform: 'translateY(-1px)'
                   }
                 }}
               >
-                Mark as Paid
+                {invoiceGenerating[order.id] ? 'Processing...' : 'Mark as Invoiced'}
               </Button>
             )
           )}
 
-          {order.status === 'COMPLETED' && order.paid && (
+          {order.status === 'COMPLETED' && order.invoiceStatus === 'INVOICED' && (
             <Button
               variant="outlined"
               onClick={() => handleArchive(order.id)}
@@ -603,8 +615,8 @@ const Orders = () => {
             </Button>
           )}
           
-          {/* Xero Invoice Button - Show for paid orders that are not cancelled */}
-          {xeroStatus.connected && order.paid && order.status !== 'CANCELLED' && (
+          {/* Xero Invoice Button - Show for orders that are not cancelled and not invoiced */}
+          {xeroStatus.connected && order.invoiceStatus !== 'INVOICED' && order.status !== 'CANCELLED' && (
             <Button
               variant="outlined"
               startIcon={<ReceiptIcon />}

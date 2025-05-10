@@ -299,30 +299,34 @@ export const getOrderById = async (req, res) => {
   }
 };
 
-export const markOrderAsPaid = async (req, res) => {
+export const markOrderAsInvoiced = async (req, res) => {
   try {
+    const { xeroInvoiceId } = req.body;
     const order = await Order.findByPk(req.params.id);
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Only allow marking as paid up to COMPLETED status
+    // Only allow invoicing up to COMPLETED status
     if (!['PENDING', 'CONFIRMED', 'PROCESSING', 'READY_FOR_PICKUP', 'COMPLETED'].includes(order.status)) {
       return res.status(400).json({
-        message: 'Cannot mark order as paid in its current status'
+        message: 'Cannot invoice order in its current status'
       });
     }
 
-    await order.update({ paid: true });
+    await order.update({
+      invoiceStatus: 'INVOICED',
+      xeroInvoiceId: xeroInvoiceId || null
+    });
     res.json(order);
   } catch (error) {
-    console.error('Mark order as paid error:', error);
-    res.status(500).json({ message: 'Error marking order as paid' });
+    console.error('Mark order as invoiced error:', error);
+    res.status(500).json({ message: 'Error marking order as invoiced' });
   }
 };
 
-export const markOrderAsUnpaid = async (req, res) => {
+export const resetOrderInvoiceStatus = async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
 
@@ -332,15 +336,18 @@ export const markOrderAsUnpaid = async (req, res) => {
 
     if (order.archived) {
       return res.status(400).json({
-        message: 'Cannot modify payment status of archived orders'
+        message: 'Cannot modify invoice status of archived orders'
       });
     }
 
-    await order.update({ paid: false });
+    await order.update({
+      invoiceStatus: 'INVOICE_PENDING',
+      xeroInvoiceId: null
+    });
     res.json(order);
   } catch (error) {
-    console.error('Mark order as unpaid error:', error);
-    res.status(500).json({ message: 'Error marking order as unpaid' });
+    console.error('Reset invoice status error:', error);
+    res.status(500).json({ message: 'Error resetting invoice status' });
   }
 };
 
@@ -370,9 +377,9 @@ export const archiveOrder = async (req, res) => {
       });
     }
 
-    if (!order.paid) {
+    if (order.invoiceStatus !== 'INVOICED') {
       return res.status(400).json({
-        message: 'Cannot archive unpaid orders'
+        message: 'Cannot archive orders that have not been invoiced'
       });
     }
 
@@ -683,12 +690,45 @@ export const purgeArchivedOrders = async (req, res) => {
       where: { archived: true }
     });
 
-    res.json({ 
+    res.json({
       message: 'Archived orders purged successfully',
       count: result
     });
   } catch (error) {
     console.error('Purge archived orders error:', error);
     res.status(500).json({ message: 'Error purging archived orders' });
+  }
+};
+
+// Get orders that need to be invoiced (filtered for invoice pending)
+export const getOrdersToInvoice = async (req, res) => {
+  try {
+    // Find orders that haven't been invoiced yet
+    const orders = await Order.findAll({
+      where: {
+        invoiceStatus: 'INVOICE_PENDING',
+        archived: false,
+        // Include only orders that are in a state that can be invoiced
+        status: ['CONFIRMED', 'PROCESSING', 'READY_FOR_PICKUP', 'COMPLETED']
+      },
+      include: [
+        {
+          model: Client,
+          as: 'client',
+          attributes: ['id', 'name', 'email', 'phone', 'discountRate']
+        },
+        {
+          model: Coral,
+          as: 'items',
+          through: { attributes: ['quantity', 'priceAtOrder', 'subtotal'] }
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json(orders);
+  } catch (error) {
+    console.error('Get orders to invoice error:', error);
+    res.status(500).json({ message: 'Error fetching orders to invoice' });
   }
 };

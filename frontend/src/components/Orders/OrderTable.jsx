@@ -132,7 +132,7 @@ const OrderTable = ({
   onStatusUpdate,
   onArchive,
   onDelete,
-  onMarkPaid,
+  onMarkInvoiced,
   showActions = true
 }) => {
   const getNextStatuses = (currentStatus) => {
@@ -190,11 +190,11 @@ const OrderTable = ({
                 </td>
                 <td style={styles.td}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <PaymentBadge paid={order.paid} />
-                    {showActions && order.status !== 'CANCELLED' && onMarkPaid && !order.archived && (
-                      order.paid ? (
+                    <PaymentBadge invoiceStatus={order.invoiceStatus} />
+                    {showActions && order.status !== 'CANCELLED' && onMarkInvoiced && !order.archived && (
+                      order.invoiceStatus === 'INVOICED' ? (
                         <button
-                          onClick={() => onMarkPaid(order.id, false)}
+                          onClick={() => onMarkInvoiced(order.id, false)}
                           style={{
                             ...styles.actionButton,
                             backgroundColor: '#fef2f2',
@@ -204,11 +204,11 @@ const OrderTable = ({
                             padding: '0.25rem 0.5rem'
                           }}
                         >
-                          Mark as Unpaid
+                          Mark as Not Invoiced
                         </button>
                       ) : (
                         <button
-                          onClick={() => onMarkPaid(order.id, true)}
+                          onClick={() => onMarkInvoiced(order.id, true)}
                           style={{
                             ...styles.actionButton,
                             backgroundColor: '#f0fdf4',
@@ -218,7 +218,7 @@ const OrderTable = ({
                             padding: '0.25rem 0.5rem'
                           }}
                         >
-                          Mark as Paid
+                          Mark as Invoiced
                         </button>
                       )
                     )}
@@ -269,7 +269,7 @@ const OrderTable = ({
                           </button>
                         )}
 
-                        {order.status === 'COMPLETED' && onArchive && (
+                        {order.status === 'COMPLETED' && order.invoiceStatus === 'INVOICED' && onArchive && (
                           <button
                             onClick={() => onArchive(order.id)}
                             style={{

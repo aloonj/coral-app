@@ -167,11 +167,13 @@ export const orderService = {
     if (data.archived !== undefined) {
       return api.put(`/orders/${id}/archive`, data);
     }
-    if (data.paid !== undefined) {
-      return api.put(`/orders/${id}/${data.paid ? 'paid' : 'unpaid'}`, data);
+    if (data.status !== undefined) {
+      return api.put(`/orders/${id}/status`, data);
     }
-    return api.put(`/orders/${id}/status`, data);
+    return api.put(`/orders/${id}`, data);
   },
+  markOrderAsInvoiced: (id) => api.put(`/orders/${id}/invoice`, {}),
+  resetOrderInvoiceStatus: (id) => api.put(`/orders/${id}/reset-invoice`, {}),
   deleteOrder: (id) => api.delete(`/orders/${id}`),
   purgeArchivedOrders: () => api.delete('/orders/purge/archived'),
 };

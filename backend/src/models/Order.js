@@ -68,10 +68,16 @@ const Order = sequelize.define('Order', {
     allowNull: true,
     comment: 'Stores denormalized order items data after archiving'
   },
-  paid: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-    comment: 'Indicates if the order has been paid'
+  invoiceStatus: {
+    type: DataTypes.ENUM('INVOICE_PENDING', 'INVOICED'),
+    defaultValue: 'INVOICE_PENDING',
+    allowNull: false,
+    comment: 'Indicates if the order has been invoiced in Xero'
+  },
+  xeroInvoiceId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'The ID of the invoice in Xero'
   }
 });
 

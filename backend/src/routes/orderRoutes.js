@@ -9,9 +9,10 @@ import {
   cancelOrder,
   deleteOrder,
   archiveOrder,
-  markOrderAsPaid,
-  markOrderAsUnpaid,
-  purgeArchivedOrders
+  markOrderAsInvoiced,
+  resetOrderInvoiceStatus,
+  purgeArchivedOrders,
+  getOrdersToInvoice
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -86,6 +87,12 @@ router.get('/',
   getOrders
 );
 
+router.get('/to-invoice',
+  authenticate,
+  authorize('ADMIN', 'SUPERADMIN'),
+  getOrdersToInvoice
+);
+
 router.put('/:id/status',
   authenticate,
   authorize('ADMIN', 'SUPERADMIN'),
@@ -93,16 +100,16 @@ router.put('/:id/status',
   updateOrderStatus
 );
 
-router.put('/:id/paid',
+router.put('/:id/invoiced',
   authenticate,
   authorize('ADMIN', 'SUPERADMIN'),
-  markOrderAsPaid
+  markOrderAsInvoiced
 );
 
-router.put('/:id/unpaid',
+router.put('/:id/reset-invoice',
   authenticate,
   authorize('ADMIN', 'SUPERADMIN'),
-  markOrderAsUnpaid
+  resetOrderInvoiceStatus
 );
 
 router.put('/:id/archive',

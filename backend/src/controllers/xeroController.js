@@ -127,24 +127,24 @@ export const generateInvoice = async (req, res) => {
   try {
     // Make sure Xero service is initialized
     await XeroService.ensureInitialized();
-    
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { orderId } = req.params;
     const { sendToClient = false } = req.body;
-    
+
     // Check if Xero is configured
     const status = await XeroService.getStatus();
     if (!status.connected) {
-      return res.status(503).json({ 
-        message: 'Xero integration not available', 
-        status 
+      return res.status(503).json({
+        message: 'Xero integration not available',
+        status
       });
     }
-    
+
     // Get the order with all required data
     const order = await Order.findByPk(orderId, {
       include: [
@@ -159,26 +159,39 @@ export const generateInvoice = async (req, res) => {
         }
       ]
     });
-    
+
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
-    
+
+    // Check if order is already invoiced
+    if (order.invoiceStatus === 'INVOICED') {
+      return res.status(400).json({
+        message: 'Order has already been invoiced'
+      });
+    }
+
     // Generate the invoice
     const result = await XeroService.generateInvoice(order);
-    
+
     if (result.error) {
-      return res.status(400).json({ 
-        message: 'Failed to generate invoice', 
+      return res.status(400).json({
+        message: 'Failed to generate invoice',
         error: result.error,
         details: result.details
       });
     }
-    
+
+    // Update the order with invoice information
+    await order.update({
+      invoiceStatus: 'INVOICED',
+      xeroInvoiceId: result.invoice.id
+    });
+
     // If sendToClient is true, also send the invoice
     if (sendToClient) {
       const sendResult = await XeroService.sendInvoice(result.invoice.id);
-      
+
       if (sendResult.error) {
         return res.status(400).json({
           message: 'Invoice generated but failed to send',
@@ -187,20 +200,20 @@ export const generateInvoice = async (req, res) => {
           details: sendResult.details
         });
       }
-      
+
       return res.json({
         message: 'Invoice generated and sent to client',
         invoice: result.invoice
       });
     }
-    
+
     res.json({
       message: 'Invoice generated successfully',
       invoice: result.invoice
     });
   } catch (error) {
     console.error('Error generating invoice:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error generating invoice',
       error: error.message
     });

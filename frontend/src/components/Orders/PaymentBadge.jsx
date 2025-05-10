@@ -2,13 +2,13 @@ import React from 'react';
 import { Chip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
-const PaymentBadge = ({ paid }) => {
+const PaymentBadge = ({ invoiceStatus }) => {
   const theme = useTheme();
-  
+
   return (
     <Chip
-      label={paid ? 'Paid' : 'Unpaid'}
-      color={paid ? 'success' : 'error'}
+      label={invoiceStatus === 'INVOICED' ? 'Invoiced' : 'Not Invoiced'}
+      color={invoiceStatus === 'INVOICED' ? 'success' : 'error'}
       variant="outlined"
       size="small"
       sx={{
