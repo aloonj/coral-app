@@ -8,6 +8,8 @@ import { XeroToken } from '../models/XeroToken.js';
 // Get Xero connection status
 export const getXeroStatus = async (req, res) => {
   try {
+    // Make sure Xero service is initialized before checking status
+    await XeroService.ensureInitialized();
     const status = await XeroService.getStatus();
     res.json(status);
   } catch (error) {
@@ -19,6 +21,9 @@ export const getXeroStatus = async (req, res) => {
 // Start Xero OAuth flow
 export const startXeroAuth = async (req, res) => {
   try {
+    // Make sure Xero service is initialized
+    await XeroService.ensureInitialized();
+    
     // Check if we should force a new authentication flow
     const forceNew = req.query.forceNew === 'true';
     console.log('Starting Xero auth with forceNew:', forceNew);
@@ -41,6 +46,9 @@ export const startXeroAuth = async (req, res) => {
 // Handle Xero OAuth callback
 export const handleXeroCallback = async (req, res) => {
   try {
+    // Make sure Xero service is initialized
+    await XeroService.ensureInitialized();
+    
     console.log('Xero callback controller called with body:', req.body);
     console.log('Xero callback controller called with query:', req.query);
     
@@ -117,6 +125,9 @@ export const handleXeroCallback = async (req, res) => {
 // Generate and optionally send a Xero invoice for an order
 export const generateInvoice = async (req, res) => {
   try {
+    // Make sure Xero service is initialized
+    await XeroService.ensureInitialized();
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -199,6 +210,9 @@ export const generateInvoice = async (req, res) => {
 // Send an existing invoice
 export const sendInvoice = async (req, res) => {
   try {
+    // Make sure Xero service is initialized
+    await XeroService.ensureInitialized();
+    
     const { invoiceId } = req.params;
     
     if (!invoiceId) {
@@ -241,6 +255,9 @@ export const sendInvoice = async (req, res) => {
 // Get all invoices for the current tenant
 export const getInvoices = async (req, res) => {
   try {
+    // Make sure Xero service is initialized
+    await XeroService.ensureInitialized();
+    
     // Check if Xero is configured
     const status = await XeroService.getStatus();
     if (!status.connected) {
@@ -273,6 +290,9 @@ export const getInvoices = async (req, res) => {
 
 export const disconnectXero = async (req, res) => {
   try {
+    // Make sure Xero service is initialized
+    await XeroService.ensureInitialized();
+    
     // Deactivate all Xero tokens
     await XeroToken.update(
       { active: false },

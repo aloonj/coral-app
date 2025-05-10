@@ -2,12 +2,10 @@ import * as openid from 'openid-client';
 const { TokenSet } = openid;
 import { XeroClient } from 'xero-node';
 import dotenv from 'dotenv';
-import { jwtDecode } from 'jwt-decode'; // Re-import jwt-decode
+import { jwtDecode } from 'jwt-decode'; 
 import { XeroToken } from '../models/XeroToken.js';
 
 dotenv.config();
-
-// No longer needed - tokens are stored in database only
 
 // Initialize Xero client
 const initXero = () => {
@@ -25,8 +23,6 @@ const initXero = () => {
       console.warn('Xero integration will not be available.');
       return null;
     }
-
-    // No longer using file-based tokens
 
     const xero = new XeroClient({
       clientId: process.env.XERO_CLIENT_ID,
@@ -51,12 +47,60 @@ class XeroService {
     this.client = xeroClient;
     this.tokenSet = null;
     this.tenantId = null;
+    this.initialized = false;
+    this.initializationPromise = null;
     
-    // Load both token and tenant ID from database on initialization
-    this.loadFromDatabase();
+    // Note: we don't automatically call initialize() in the constructor
+    // It needs to be explicitly awaited by the application on startup
   }
 
-  // Load both token and tenant ID from database
+  // Explicit initialization method that returns a promise
+  async initialize() {
+    // Return existing promise if initialization is in progress
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+    
+    // If already initialized, just return a resolved promise
+    if (this.initialized) {
+      return Promise.resolve();
+    }
+    
+    // Start the initialization process
+    this.initializationPromise = (async () => {
+      try {
+        console.log('Initializing Xero service...');
+        await this.loadFromDatabase();
+        
+        // Proactively check token validity and refresh if needed
+        if (this.tokenSet) {
+          try {
+            const isExpired = this.client?.readTokenSet(this.tokenSet).expired();
+            if (isExpired) {
+              console.log('Token expired, refreshing on startup');
+              await this.ensureToken();
+            }
+          } catch (tokenError) {
+            console.error('Error checking token validity:', tokenError);
+            // Continue initialization despite token validation error
+          }
+        }
+        
+        this.initialized = true;
+        console.log('Xero service initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize Xero service:', error);
+        // Reset initialization promise so we can try again
+        this.initializationPromise = null;
+        throw error;
+      }
+    })();
+    
+    return this.initializationPromise;
+  }
+
+  // Private method to load credentials from database
+  // This is called by initialize() and shouldn't be called directly
   async loadFromDatabase() {
     try {
       console.log('Loading Xero credentials from database...');
@@ -111,12 +155,24 @@ class XeroService {
     }
   }
 
+  // Check if service is properly configured
   isConfigured() {
     return !!(this.client && this.tenantId);
+  }
+  
+  // Helper method to ensure service is initialized before any operation
+  async ensureInitialized() {
+    if (!this.initialized) {
+      console.log('Xero service not yet initialized, initializing now...');
+      await this.initialize();
+    }
+    return this.initialized;
   }
 
   // Generate authorization URL for OAuth flow
   async getAuthUrl(forceNew = false) {
+    await this.ensureInitialized();
+    
     if (!this.client) return { error: 'Xero not configured' };
 
     try {
@@ -184,6 +240,8 @@ class XeroService {
 
   // Complete OAuth flow with callback code
   async handleCallback(callbackUrl) {
+    await this.ensureInitialized();
+    
     if (!this.client) return { error: 'Xero not configured' };
 
     console.log('Handling Xero callback with URL:', callbackUrl);
@@ -323,7 +381,7 @@ class XeroService {
     }
   }
 
-  // Save token set to database
+  // Save token set to database with improved error handling
   async saveTokenSet(tokenSet) {
     try {
       // Convert TokenSet to plain object
@@ -390,7 +448,7 @@ class XeroService {
     }
   }
 
-  // Load token set from database
+  // Load token set from database (used by ensureToken)
   async loadTokenSet() {
     try {
       if (!this.tenantId) {
@@ -430,6 +488,8 @@ class XeroService {
 
   // Ensure we have a valid token before making API calls
   async ensureToken() {
+    await this.ensureInitialized();
+    
     if (!this.client) return { error: 'Xero not configured' };
 
     try {
@@ -490,6 +550,8 @@ class XeroService {
 
   // Generate Xero invoice from order
   async generateInvoice(order) {
+    await this.ensureInitialized();
+    
     if (!this.client) return { error: 'Xero not configured' };
     if (!this.tenantId) return { error: 'Xero tenant ID not configured' };
 
@@ -673,6 +735,8 @@ class XeroService {
 
   // Approve and send invoice to client
   async sendInvoice(invoiceId) {
+    await this.ensureInitialized();
+    
     if (!this.client) return { error: 'Xero not configured' };
     if (!this.tenantId) return { error: 'Xero tenant ID not configured' };
 
@@ -741,6 +805,8 @@ class XeroService {
 
   // Get Xero connection status
   async getStatus() {
+    await this.ensureInitialized();
+    
     if (!this.client) {
       return {
         connected: false,
@@ -821,6 +887,8 @@ class XeroService {
 
   // Get all invoices for the current tenant
   async getInvoices() {
+    await this.ensureInitialized();
+    
     if (!this.client) return { error: 'Xero not configured' };
     if (!this.tenantId) return { error: 'Xero tenant ID not configured' };
 
@@ -897,6 +965,7 @@ class XeroService {
 
   // Disconnect from Xero
   async disconnect() {
+    await this.ensureInitialized();
     try {
       // Delete all tokens instead of trying to deactivate them
       await XeroToken.destroy({

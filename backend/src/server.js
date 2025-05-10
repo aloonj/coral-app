@@ -20,6 +20,7 @@ import imageRoutes from './routes/imageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
 import xeroRoutes from './routes/xeroRoutes.js';
+import xeroService from './services/xeroService.js';
 
 // Make Op available globally for models
 global.Op = Op;
@@ -250,8 +251,19 @@ app.use((req, res) => {
 
 // Initialize models and associations, then sync database
 sequelize.sync({ force: false })
-  .then(() => {
+  .then(async () => {
     console.log('Database synced successfully (without altering tables)');
+    
+    // Initialize Xero service before starting the server
+    console.log('Initializing Xero service...');
+    try {
+      await xeroService.initialize();
+      console.log('Xero service initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize Xero service:', error);
+      console.log('Server will continue starting, but Xero integration may not work properly until initialized');
+    }
+    
     const PORT = process.env.PORT || 5000;
     const HOST = process.env.HOST || 'localhost';
     app.listen(PORT, HOST, () => {
