@@ -1,5 +1,5 @@
-import * as openid from 'openid-client';
-const { TokenSet } = openid;
+// Import TokenSet directly to avoid "not a constructor" errors
+import { TokenSet } from 'openid-client';
 import { XeroClient } from 'xero-node';
 import dotenv from 'dotenv';
 import { jwtDecode } from 'jwt-decode'; 
@@ -115,15 +115,45 @@ class XeroService {
         this.tenantId = token.tenantId;
         console.log('Loaded Xero tenant ID from database:', this.tenantId);
         
-        // Convert to TokenSet format and store in memory
-        this.tokenSet = new TokenSet({
-          access_token: token.accessToken,
-          refresh_token: token.refreshToken,
-          id_token: token.idToken,
-          expires_at: Math.floor(new Date(token.expiresAt).getTime() / 1000),
-          scope: token.scope,
-          token_type: token.tokenType
-        });
+        try {
+          // Convert to TokenSet format and store in memory
+          this.tokenSet = new TokenSet({
+            access_token: token.accessToken,
+            refresh_token: token.refreshToken,
+            id_token: token.idToken,
+            expires_at: Math.floor(new Date(token.expiresAt).getTime() / 1000),
+            scope: token.scope,
+            token_type: token.tokenType
+          });
+        } catch (tokenSetError) {
+          console.error('Error creating TokenSet object:', tokenSetError);
+          
+          // Fallback to plain object if TokenSet constructor fails
+          this.tokenSet = {
+            access_token: token.accessToken,
+            refresh_token: token.refreshToken,
+            id_token: token.idToken,
+            expires_at: Math.floor(new Date(token.expiresAt).getTime() / 1000),
+            scope: token.scope,
+            token_type: token.tokenType,
+            
+            // Add minimal TokenSet-like functionality
+            expired: function() {
+              return this.expires_at < Math.floor(Date.now() / 1000);
+            },
+            toJSON: function() {
+              return {
+                access_token: this.access_token,
+                refresh_token: this.refresh_token,
+                id_token: this.id_token,
+                expires_in: this.expires_at - Math.floor(Date.now() / 1000),
+                scope: this.scope,
+                token_type: this.token_type
+              };
+            }
+          };
+          console.log('Created fallback token object instead of TokenSet');
+        }
         console.log('Loaded Xero token from database successfully');
         
         // Check if token is expired and will need refresh on next use
@@ -467,15 +497,52 @@ class XeroService {
         return null;
       }
 
-      // Convert to TokenSet format
-      const tokenSet = new TokenSet({
-        access_token: tokenRecord.accessToken,
-        refresh_token: tokenRecord.refreshToken, // Fixed: Using refresh_token instead of refreshToken
-        id_token: tokenRecord.idToken,
-        expires_at: Math.floor(new Date(tokenRecord.expiresAt).getTime() / 1000),
-        scope: tokenRecord.scope,
-        token_type: tokenRecord.tokenType
-      });
+      try {
+        // Convert to TokenSet format
+        const tokenSet = new TokenSet({
+          access_token: tokenRecord.accessToken,
+          refresh_token: tokenRecord.refreshToken,
+          id_token: tokenRecord.idToken,
+          expires_at: Math.floor(new Date(tokenRecord.expiresAt).getTime() / 1000),
+          scope: tokenRecord.scope,
+          token_type: tokenRecord.tokenType
+        });
+        
+        // Store in memory for current session
+        this.tokenSet = tokenSet;
+        return tokenSet;
+      } catch (tokenSetError) {
+        console.error('Error creating TokenSet in loadTokenSet:', tokenSetError);
+        
+        // Fallback to plain object with TokenSet-like functionality
+        const fallbackToken = {
+          access_token: tokenRecord.accessToken,
+          refresh_token: tokenRecord.refreshToken,
+          id_token: tokenRecord.idToken,
+          expires_at: Math.floor(new Date(tokenRecord.expiresAt).getTime() / 1000),
+          scope: tokenRecord.scope,
+          token_type: tokenRecord.tokenType,
+          
+          // Add minimal TokenSet-like functionality
+          expired: function() {
+            return this.expires_at < Math.floor(Date.now() / 1000);
+          },
+          toJSON: function() {
+            return {
+              access_token: this.access_token,
+              refresh_token: this.refresh_token,
+              id_token: this.id_token,
+              expires_in: this.expires_at - Math.floor(Date.now() / 1000),
+              scope: this.scope,
+              token_type: this.token_type
+            };
+          }
+        };
+        
+        // Store fallback object in memory
+        this.tokenSet = fallbackToken;
+        return fallbackToken;
+      }
 
       // Store in memory for current session
       this.tokenSet = tokenSet;
