@@ -24,7 +24,8 @@ import {
 import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Print as PrintIcon
 } from '@mui/icons-material';
 import { StatusBadge } from '../components/StyledComponents';
 import OrderDetails from '../components/Orders/OrderDetails';
@@ -228,6 +229,141 @@ const Orders = () => {
     });
   };
 
+  const handlePrintOrder = (order) => {
+    const printWindow = window.open('', '_blank');
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Order #${order.id}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #333;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+              margin-bottom: 20px;
+            }
+            .order-info {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 20px;
+            }
+            .order-info div {
+              flex: 1;
+            }
+            .items-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+            }
+            .items-table th,
+            .items-table td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+            }
+            .items-table th {
+              background-color: #f2f2f2;
+              font-weight: bold;
+            }
+            .total-row {
+              font-weight: bold;
+              font-size: 1.1em;
+            }
+            .notes {
+              background-color: #f8f9fa;
+              padding: 10px;
+              border-left: 4px solid #007bff;
+              margin-top: 20px;
+            }
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Order #${order.id}</h1>
+            <p>Date: ${formatDate(order.createdAt)}</p>
+          </div>
+          
+          <div class="order-info">
+            <div>
+              <strong>Client:</strong><br>
+              ${order.client?.name || order.archivedClientData?.name || 'Unknown Client'}
+            </div>
+            <div>
+              <strong>Pickup Date:</strong><br>
+              ${formatDate(order.preferredPickupDate)}
+            </div>
+            <div>
+              <strong>Status:</strong><br>
+              ${order.status.replace(/_/g, ' ')}
+            </div>
+            <div>
+              <strong>Payment:</strong><br>
+              ${order.paid ? 'Paid' : 'Unpaid'}
+            </div>
+          </div>
+          
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Price per Unit</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.items?.map(item => `
+                <tr>
+                  <td>${item?.speciesName || 'Unknown Species'}</td>
+                  <td>${item?.OrderItem?.quantity || 0}</td>
+                  <td>${import.meta.env.VITE_DEFAULT_CURRENCY}${parseFloat(item?.OrderItem?.priceAtOrder || 0).toFixed(2)}</td>
+                  <td>${import.meta.env.VITE_DEFAULT_CURRENCY}${parseFloat(item?.OrderItem?.subtotal || 0).toFixed(2)}</td>
+                </tr>
+              `).join('') || '<tr><td colspan="4">No items</td></tr>'}
+              <tr class="total-row">
+                <td colspan="3" style="text-align: right;"><strong>Total Amount:</strong></td>
+                <td><strong>${import.meta.env.VITE_DEFAULT_CURRENCY}${parseFloat(order.totalAmount || 0).toFixed(2)}</strong></td>
+              </tr>
+              ${(order.client?.discountRate > 0 || order.archivedClientData?.discountRate > 0) ? `
+                <tr>
+                  <td colspan="4" style="text-align: center; font-style: italic; color: #666;">
+                    ${order.client?.discountRate || order.archivedClientData?.discountRate}% discount applied
+                  </td>
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
+          
+          ${order.notes ? `
+            <div class="notes">
+              <strong>Notes:</strong><br>
+              ${order.notes}
+            </div>
+          ` : ''}
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+
   const getFilteredArchivedOrders = () => {
     if (timeFilter === 'all') return orders.archived;
     
@@ -389,6 +525,20 @@ const Orders = () => {
             size="small"
           />
           <StatusBadge status={order.status} />
+          <IconButton
+            onClick={() => handlePrintOrder(order)}
+            size="small"
+            sx={{ 
+              color: 'primary.main',
+              '&:hover': {
+                backgroundColor: 'primary.light',
+                color: 'primary.contrastText'
+              }
+            }}
+            title="Print Order"
+          >
+            <PrintIcon />
+          </IconButton>
         </Box>
       </Box>
 
