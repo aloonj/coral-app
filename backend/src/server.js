@@ -122,12 +122,14 @@ async function handleGoogleCallback(req, res) {
       console.log(`⚡ Attempt ${retryCount}/${maxRetries} processing Google callback`);
       
       try {
+        console.log('🚨 BEFORE passport.authenticate call');
         
         // Try to authenticate with Google strategy
         passport.authenticate('google', { 
           session: false,
           failWithError: true
         })(req, res, (err) => {
+          console.log('🚨 INSIDE passport.authenticate callback - err:', err ? err.message : 'none');
           // If we hit an error but have retries left, try again
           if (err && retryCount < maxRetries) {
             console.log(`Authentication error, retrying (${retryCount}/${maxRetries}):`, err.message);

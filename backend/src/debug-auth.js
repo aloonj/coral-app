@@ -32,15 +32,31 @@ router.get('/debug/db-test', async (req, res) => {
   }
 });
 
+// Test if passport strategy exists
+router.get('/debug/passport-status', (req, res) => {
+  const hasGoogleStrategy = !!passport._strategies.google;
+  res.json({
+    hasGoogleStrategy,
+    strategies: Object.keys(passport._strategies || {})
+  });
+});
+
 // Simplified callback handler without retries
 router.get('/debug/google/callback', (req, res) => {
   console.log('🔍 DEBUG: Google callback received:', req.url);
   console.log('🔍 DEBUG: Query params:', req.query);
+  console.log('🔍 DEBUG: Has Google strategy:', !!passport._strategies.google);
+  
+  const timeoutId = setTimeout(() => {
+    console.error('🔍 DEBUG: Passport authenticate timed out after 10 seconds');
+    res.status(504).json({ error: 'Authentication timeout' });
+  }, 10000);
   
   passport.authenticate('google', { 
     session: false,
     failWithError: true
   })(req, res, (err) => {
+    clearTimeout(timeoutId);
     console.log('🔍 DEBUG: Passport authenticate callback triggered');
     
     if (err) {

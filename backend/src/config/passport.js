@@ -29,6 +29,7 @@ export default function configurePassport() {
     passReqToCallback: true,
     scope: ['profile', 'email']
   }, async (req, accessToken, refreshToken, profile, done) => {
+    console.log('🚨 PASSPORT CALLBACK START - Strategy callback function invoked');
     // Mark the strategy as initialized after first use
     if (!googleStrategyInitialized) {
       console.log('Google strategy initialized successfully');
@@ -39,6 +40,8 @@ export default function configurePassport() {
     console.log('Google auth callback triggered');
     console.log('Request URL:', req.originalUrl);
     console.log('Request headers:', req.headers);
+    console.log('🚨 PASSPORT - Got accessToken:', accessToken ? 'YES' : 'NO');
+    console.log('🚨 PASSPORT - Got profile:', profile ? 'YES' : 'NO');
     
     try {
       // Add additional timing safety - increased to 50ms for better reliability
